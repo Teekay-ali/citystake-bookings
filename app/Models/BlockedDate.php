@@ -11,17 +11,17 @@ class BlockedDate extends Model
     use HasFactory;
 
     protected $fillable = [
-        'property_id',
+        'unit_id',
         'blocked_date',
-        'reason'
+        'reason',
     ];
 
     protected $casts = [
         'blocked_date' => 'date',
     ];
 
-    public function property(): BelongsTo
+    public function unit(): BelongsTo
     {
-        return $this->belongsTo(Property::class);
+        return $this->belongsTo(Unit::class);
     }
 }

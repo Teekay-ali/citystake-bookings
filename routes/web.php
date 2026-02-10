@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\UnitTypeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -11,9 +11,9 @@ Route::get('/', function () {
     return Inertia::render('Home');
 })->name('home');
 
-Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
-Route::get('/properties/{property:slug}', [PropertyController::class, 'show'])->name('properties.show');
-Route::post('/properties/{property:slug}/check-availability', [PropertyController::class, 'checkAvailability'])
+Route::get('/properties', [UnitTypeController::class, 'index'])->name('properties.index');
+Route::get('/properties/{building:slug}/{unitType:slug}', [UnitTypeController::class, 'show'])->name('properties.show');
+Route::post('/properties/{building:slug}/{unitType:slug}/check-availability', [UnitTypeController::class, 'checkAvailability'])
     ->name('properties.check-availability');
 
 // Authenticated routes
@@ -28,8 +28,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Booking routes
-    Route::get('/properties/{property:slug}/book', [BookingController::class, 'create'])->name('bookings.create');
-    Route::post('/properties/{property:slug}/book', [BookingController::class, 'store'])->name('bookings.store');
+    Route::get('/properties/{building:slug}/{unitType:slug}/book', [BookingController::class, 'create'])->name('bookings.create');
+    Route::post('/properties/{building:slug}/{unitType:slug}/book', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/bookings/{booking}/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
 });
 

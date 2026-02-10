@@ -3,7 +3,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
-    property: Object,
+    building: Object,
+    unitType: Object,
     bookingData: Object,
 });
 
@@ -32,7 +33,7 @@ const formatDate = (date) => {
 };
 
 const submit = () => {
-    form.post(route('bookings.store', props.property.slug));
+    form.post(route('bookings.store', [props.building.slug, props.unitType.slug]));
 };
 </script>
 
@@ -55,7 +56,7 @@ const submit = () => {
                     <div class="space-y-8">
                         <!-- Trip Details -->
                         <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
-                            <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">Your stay</h2>
+                            <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">Your trip</h2>
 
                             <div class="space-y-4">
                                 <div class="flex justify-between items-start">
@@ -111,14 +112,15 @@ const submit = () => {
                             <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mb-6">
                                 <div class="flex items-start space-x-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-900">
                                     <img
-                                        v-if="property.primary_image"
-                                        :src="property.primary_image.image_path"
-                                        :alt="property.name"
+                                        v-if="building.primary_image"
+                                        :src="building.primary_image.image_path"
+                                        :alt="building.name"
                                         class="w-24 h-24 rounded-xl object-cover"
                                     />
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="font-medium text-gray-900 dark:text-white mb-1">{{ property.name }}</h3>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ property.bedroom_type }}</p>
+                                        <h3 class="font-medium text-gray-900 dark:text-white mb-1">{{ unitType.name }}</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ building.name }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ unitType.bedroom_type }}</p>
                                     </div>
                                 </div>
 
@@ -127,7 +129,7 @@ const submit = () => {
                                     <h3 class="font-medium text-gray-900 dark:text-white mb-4">Price details</h3>
 
                                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                        <span>{{ formatPrice(property.base_price_per_night) }} × {{ bookingData.nights }} nights</span>
+                                        <span>{{ formatPrice(unitType.base_price_per_night) }} × {{ bookingData.nights }} nights</span>
                                         <span>{{ formatPrice(bookingData.subtotal) }}</span>
                                     </div>
 

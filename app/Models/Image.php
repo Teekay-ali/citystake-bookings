@@ -4,25 +4,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class PropertyImage extends Model
+class Image extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'property_id',
+        'imageable_id',
+        'imageable_type',
         'image_path',
         'sort_order',
-        'is_primary'
+        'is_primary',
     ];
 
     protected $casts = [
         'is_primary' => 'boolean',
     ];
 
-    public function property(): BelongsTo
+    public function imageable(): MorphTo
     {
-        return $this->belongsTo(Property::class);
+        return $this->morphTo();
     }
 }

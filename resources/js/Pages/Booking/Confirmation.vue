@@ -57,17 +57,18 @@ const formatDate = (date) => {
                     <!-- Property -->
                     <div class="flex items-start space-x-4 pb-8 mb-8 border-b border-gray-100 dark:border-gray-900">
                         <img
-                            v-if="booking.property.primary_image"
-                            :src="booking.property.primary_image.image_path"
-                            :alt="booking.property.name"
+                            v-if="booking.building.primary_image"
+                            :src="booking.building.primary_image.image_path"
+                            :alt="booking.building.name"
                             class="w-28 h-28 rounded-xl object-cover"
                         />
                         <div class="flex-1 min-w-0">
                             <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-2">
-                                {{ booking.property.name }}
+                                {{ booking.unit_type.name }}
                             </h2>
-                            <p class="text-gray-600 dark:text-gray-400 mb-1">{{ booking.property.address }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-500">{{ booking.property.bedroom_type }} • Up to {{ booking.property.max_guests }} guests</p>
+                            <p class="text-gray-600 dark:text-gray-400 mb-1">{{ booking.building.name }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500">{{ booking.building.address }} • {{ booking.unit_type.bedroom_type }}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-600 mt-2">Unit: {{ booking.unit.unit_number }}</p>
                         </div>
                     </div>
 
@@ -86,7 +87,7 @@ const formatDate = (date) => {
                     <!-- Price Summary -->
                     <div class="space-y-3">
                         <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                            <span>{{ formatPrice(booking.property.base_price_per_night) }} × {{ booking.nights }} nights</span>
+                            <span>{{ formatPrice(booking.unit_type.base_price_per_night) }} × {{ booking.nights }} nights</span>
                             <span>{{ formatPrice(booking.subtotal) }}</span>
                         </div>
                         <div class="flex justify-between text-gray-600 dark:text-gray-400">

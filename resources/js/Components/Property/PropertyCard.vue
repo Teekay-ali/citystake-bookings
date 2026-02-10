@@ -2,7 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 
 defineProps({
-    property: Object,
+    unitType: Object,
 });
 
 const formatPrice = (price) => {
@@ -17,15 +17,15 @@ const formatPrice = (price) => {
 
 <template>
     <Link
-        :href="route('properties.show', property.slug)"
+        :href="route('properties.show', [unitType.building.slug, unitType.slug])"
         class="group block"
     >
         <!-- Image -->
         <div class="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-900 mb-4">
             <img
-                v-if="property.primary_image"
-                :src="property.primary_image.image_path"
-                :alt="property.name"
+                v-if="unitType.primary_image"
+                :src="unitType.primary_image.image_path"
+                :alt="unitType.name"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
             />
             <div v-else class="w-full h-full flex items-center justify-center">
@@ -41,23 +41,23 @@ const formatPrice = (price) => {
             <div class="flex items-start justify-between">
                 <div class="flex-1 min-w-0">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white truncate group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
-                        {{ property.name }}
+                        {{ unitType.name }}
                     </h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {{ property.city }}
+                        {{ unitType.building.name }} • {{ unitType.building.city }}
                     </p>
                 </div>
             </div>
 
             <div class="flex items-baseline space-x-1">
-                <span class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatPrice(property.base_price_per_night) }}</span>
+                <span class="text-lg font-semibold text-gray-900 dark:text-white">{{ formatPrice(unitType.base_price_per_night) }}</span>
                 <span class="text-sm text-gray-500 dark:text-gray-400">/ night</span>
             </div>
 
             <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                <span>{{ property.bedroom_type }}</span>
+                <span>{{ unitType.bedroom_type }}</span>
                 <span>•</span>
-                <span>Up to {{ property.max_guests }} guests</span>
+                <span>Up to {{ unitType.max_guests }} guests</span>
             </div>
         </div>
     </Link>

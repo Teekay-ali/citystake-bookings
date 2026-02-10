@@ -6,15 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
             $table->string('booking_reference')->unique();
-            $table->foreignId('property_id')->constrained();
+
+            $table->foreignId('building_id')->constrained();
+            $table->foreignId('unit_type_id')->constrained();
+            $table->foreignId('unit_id')->constrained();
             $table->foreignId('user_id')->constrained();
 
             $table->date('check_in');
@@ -38,13 +38,10 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['property_id', 'check_in', 'check_out']);
+            $table->index(['unit_id', 'check_in', 'check_out']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('bookings');

@@ -5,18 +5,21 @@ import { router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 
 const props = defineProps({
-    properties: Object,
+    unitTypes: Object,
+    buildings: Array,
     filters: Object,
 });
 
 const bedroomFilter = ref(props.filters.bedroom_type || '');
 const guestsFilter = ref(props.filters.guests || '');
+const buildingFilter = ref(props.filters.building || '');
 const sortFilter = ref(props.filters.sort || '');
 
 const applyFilters = () => {
     router.get(route('properties.index'), {
         bedroom_type: bedroomFilter.value,
         guests: guestsFilter.value,
+        building: buildingFilter.value,
         sort: sortFilter.value,
     }, {
         preserveState: true,
@@ -24,7 +27,7 @@ const applyFilters = () => {
     });
 };
 
-watch([bedroomFilter, guestsFilter, sortFilter], () => {
+watch([bedroomFilter, guestsFilter, buildingFilter, sortFilter], () => {
     applyFilters();
 });
 </script>
@@ -39,12 +42,22 @@ watch([bedroomFilter, guestsFilter, sortFilter], () => {
                         Available properties
                     </h1>
                     <p class="text-lg text-gray-600 dark:text-gray-400 font-light">
-                        {{ properties.total }} apartments ready for your next stay
+                        {{ unitTypes.total }} apartment types ready for your next stay
                     </p>
                 </div>
 
                 <!-- Filters - Minimal Design -->
                 <div class="flex flex-wrap gap-3 mb-12">
+                    <select
+                        v-model="buildingFilter"
+                        class="px-5 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
+                    >
+                        <option value="">All locations</option>
+                        <option v-for="building in buildings" :key="building.id" :value="building.id">
+                            {{ building.name }}
+                        </option>
+                    </select>
+
                     <select
                         v-model="bedroomFilter"
                         class="px-5 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
@@ -77,11 +90,11 @@ watch([bedroomFilter, guestsFilter, sortFilter], () => {
                 </div>
 
                 <!-- Property Grid -->
-                <div v-if="properties.data.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 mb-16">
+                <div v-if="unitTypes.data.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 mb-16">
                     <PropertyCard
-                        v-for="property in properties.data"
-                        :key="property.id"
-                        :property="property"
+                        v-for="unitType in unitTypes.data"
+                        :key="unitType.id"
+                        :unit-type="unitType"
                     />
                 </div>
 
@@ -94,9 +107,9 @@ watch([bedroomFilter, guestsFilter, sortFilter], () => {
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="properties.links.length > 3" class="flex justify-center items-center space-x-2">
+                <div v-if="unitTypes.links.length > 3" class="flex justify-center items-center space-x-2">
                     <component
-                        v-for="(link, index) in properties.links"
+                        v-for="(link, index) in unitTypes.links"
                         :key="index"
                         :is="link.url ? 'button' : 'span'"
                         @click="link.url && router.visit(link.url)"

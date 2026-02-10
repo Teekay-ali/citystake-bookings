@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
-use App\Models\Property;
+use App\Models\Building;
+use App\Models\UnitType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -11,17 +12,22 @@ use Inertia\Response;
 
 class BookingController extends Controller
 {
-    public function create(Request $request, Property $property): Response
+    public function create(Request $request, Building $building, UnitType $unitType): Response
     {
         $request->validate([
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
-            'guests' => 'required|integer|min:1|max:' . $property->max_guests,
+            'guests' => 'required|integer|min:1|max:' . $unitType->max_guests,
         ]);
 
+        // Check if unit type belongs to building
+        if ($unitType->building_id !== $building->id) {
+            abort(404);
+        }
+
         // Check availability
-        if (!$property->isAvailable($request->check_in, $request->check_out)) {
-            return redirect()->back()->with('error', 'Property is not available for selected dates');
+        if (!$unitType->hasAvailability($request->check_in, $request->check_out)) {
+            return redirect()->back()->with('error', 'No units available for selected dates');
         }
 
         // Calculate pricing
@@ -30,10 +36,11 @@ class BookingController extends Controller
             'check_out' => $request->check_out,
             'guests' => $request->guests,
         ]);
-        $booking->calculateTotal($property);
+        $booking->calculateTotal($unitType);
 
         return Inertia::render('Booking/Create', [
-            'property' => $property->load('primaryImage'),
+            'building' => $building->load('primaryImage'),
+            'unitType' => $unitType,
             'bookingData' => [
                 'check_in' => $request->check_in,
                 'check_out' => $request->check_out,
@@ -47,27 +54,37 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(Request $request, Property $property)
+    public function store(Request $request, Building $building, UnitType $unitType)
     {
         $validated = $request->validate([
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
-            'guests' => 'required|integer|min:1|max:' . $property->max_guests,
+            'guests' => 'required|integer|min:1|max:' . $unitType->max_guests,
             'special_requests' => 'nullable|string|max:500',
         ]);
 
-        try {
-            $booking = DB::transaction(function () use ($validated, $property) {
-                // Lock property to prevent double booking
-                $property = Property::lockForUpdate()->findOrFail($property->id);
+        // Check if unit type belongs to building
+        if ($unitType->building_id !== $building->id) {
+            abort(404);
+        }
 
-                if (!$property->isAvailable($validated['check_in'], $validated['check_out'])) {
-                    throw new \Exception('Property is no longer available for selected dates');
+        try {
+            $booking = DB::transaction(function () use ($validated, $building, $unitType) {
+                // Lock unit type to prevent double booking
+                $unitType = UnitType::lockForUpdate()->findOrFail($unitType->id);
+
+                // Find an available unit (Option A: Auto-assign)
+                $availableUnit = $unitType->findAvailableUnit($validated['check_in'], $validated['check_out']);
+
+                if (!$availableUnit) {
+                    throw new \Exception('No units available for selected dates');
                 }
 
                 $booking = new Booking([
                     'booking_reference' => Booking::generateReference(),
-                    'property_id' => $property->id,
+                    'building_id' => $building->id,
+                    'unit_type_id' => $unitType->id,
+                    'unit_id' => $availableUnit->id,
                     'user_id' => auth()->id(),
                     'check_in' => $validated['check_in'],
                     'check_out' => $validated['check_out'],
@@ -75,7 +92,7 @@ class BookingController extends Controller
                     'special_requests' => $validated['special_requests'] ?? null,
                 ]);
 
-                $booking->calculateTotal($property);
+                $booking->calculateTotal($unitType);
                 $booking->save();
 
                 return $booking;
@@ -100,7 +117,7 @@ class BookingController extends Controller
             abort(403);
         }
 
-        $booking->load(['property.primaryImage']);
+        $booking->load(['building.primaryImage', 'unitType', 'unit']);
 
         return Inertia::render('Booking/Confirmation', [
             'booking' => $booking,
