@@ -1,3 +1,39 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Vue DatePicker Custom Styles */
+.vue-datepicker-custom {
+    --dp-font-family: 'Inter var', 'Inter', sans-serif;
+    --dp-border-radius: 0.75rem;
+    --dp-cell-border-radius: 0.5rem;
+    --dp-button-height: 2.75rem;
+}
+
+.dark .vue-datepicker-custom {
+    --dp-background-color: rgb(3 7 18);
+    --dp-text-color: rgb(243 244 246);
+    --dp-hover-color: rgb(17 24 39);
+    --dp-hover-text-color: rgb(255 255 255);
+    --dp-hover-icon-color: rgb(255 255 255);
+    --dp-primary-color: rgb(255 255 255);
+    --dp-primary-text-color: rgb(17 24 39);
+    --dp-secondary-color: rgb(55 65 81);
+    --dp-border-color: rgb(55 65 81);
+    --dp-menu-border-color: rgb(55 65 81);
+    --dp-border-color-hover: rgb(75 85 99);
+}
+
+.vue-datepicker-custom {
+    --dp-background-color: rgb(255 255 255);
+    --dp-text-color: rgb(17 24 39);
+    --dp-hover-color: rgb(249 250 251);
+    --dp-hover-text-color: rgb(17 24 39);
+    --dp-hover-icon-color: rgb(17 24 39);
+    --dp-primary-color: rgb(17 24 39);
+    --dp-primary-text-color: rgb(255 255 255);
+    --dp-secondary-color: rgb(229 231 235);
+    --dp-border-color: rgb(229 231 235);
+    --dp-menu-border-color: rgb(229 231 235);
+    --dp-border-color-hover: rgb(209 213 219);
+}

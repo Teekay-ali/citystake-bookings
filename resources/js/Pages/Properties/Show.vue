@@ -2,19 +2,37 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import flatPickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
 
 const props = defineProps({
     building: Object,
     unitType: Object,
 });
 
+
 const selectedImage = ref(props.unitType.images[0]?.image_path || null);
-const checkIn = ref('');
-const checkOut = ref('');
 const guests = ref(2);
 const isCheckingAvailability = ref(false);
 const availabilityMessage = ref('');
 const availableUnitsCount = ref(0);
+
+const dateRange = ref('');
+const checkIn = ref('');
+const checkOut = ref('');
+
+const dateConfig = {
+    mode: 'range',
+    dateFormat: 'd M Y',
+    minDate: 'today',
+    onClose: (selectedDates) => {
+        if (selectedDates.length === 2) {
+            checkIn.value = selectedDates[0].toISOString().split('T')[0];
+            checkOut.value = selectedDates[1].toISOString().split('T')[0];
+        }
+    }
+};
+
 
 const formatPrice = (price) => {
     return new Intl.NumberFormat('en-NG', {
@@ -35,12 +53,12 @@ const calculateNights = computed(() => {
 
 const estimatedTotal = computed(() => {
     if (calculateNights.value === 0) return 0;
-    const subtotal = calculateNights.value * props.unitType.base_price_per_night;
-    const serviceCharge = subtotal * (props.unitType.service_charge_percent / 100);
-    return subtotal + props.unitType.cleaning_fee + serviceCharge;
+    const subtotal = calculateNights.value * parseFloat(props.unitType.base_price_per_night);
+    const serviceCharge = subtotal * (parseFloat(props.unitType.service_charge_percent) / 100);
+    const total = subtotal + parseFloat(props.unitType.cleaning_fee) + serviceCharge;
+    return total;
 });
 
-// Combine building and unit type amenities
 const allAmenities = computed(() => {
     const buildingAmenities = props.building.amenities || [];
     const unitAmenities = props.unitType.specific_amenities || [];
@@ -92,7 +110,6 @@ const proceedToBooking = () => {
     });
 };
 
-const minDate = new Date().toISOString().split('T')[0];
 </script>
 
 <template>
@@ -140,7 +157,6 @@ const minDate = new Date().toISOString().split('T')[0];
                             />
                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
 
-                            <!-- Show all photos button on last image -->
                             <div v-if="index === 3 && unitType.images.length > 5" class="absolute inset-0 bg-black/60 flex items-center justify-center">
                                 <span class="text-white text-sm font-medium">+{{ unitType.images.length - 5 }} more</span>
                             </div>
@@ -245,24 +261,12 @@ const minDate = new Date().toISOString().split('T')[0];
                                 <div class="space-y-4 mb-6">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Check in
+                                            Select dates
                                         </label>
-                                        <input
-                                            v-model="checkIn"
-                                            type="date"
-                                            :min="minDate"
-                                            class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Check out
-                                        </label>
-                                        <input
-                                            v-model="checkOut"
-                                            type="date"
-                                            :min="checkIn || minDate"
+                                        <flat-pickr
+                                            v-model="dateRange"
+                                            :config="dateConfig"
+                                            placeholder="Check-in → Check-out"
                                             class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
                                         />
                                     </div>
@@ -286,7 +290,7 @@ const minDate = new Date().toISOString().split('T')[0];
                                 <div v-if="calculateNights > 0" class="space-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">
                                     <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                                         <span>{{ formatPrice(unitType.base_price_per_night) }} × {{ calculateNights }} nights</span>
-                                        <span>{{ formatPrice(calculateNights * unitType.base_price_per_night) }}</span>
+                                        <span>{{ formatPrice(calculateNights * parseFloat(unitType.base_price_per_night)) }}</span>
                                     </div>
                                     <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                                         <span>Cleaning fee</span>
@@ -294,7 +298,7 @@ const minDate = new Date().toISOString().split('T')[0];
                                     </div>
                                     <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                                         <span>Service charge</span>
-                                        <span>{{ formatPrice((calculateNights * unitType.base_price_per_night) * (unitType.service_charge_percent / 100)) }}</span>
+                                        <span>{{ formatPrice((calculateNights * parseFloat(unitType.base_price_per_night)) * (parseFloat(unitType.service_charge_percent) / 100)) }}</span>
                                     </div>
                                 </div>
 

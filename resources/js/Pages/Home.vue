@@ -2,20 +2,37 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import flatPickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
 
-const checkIn = ref('');
-const checkOut = ref('');
+const dateRange = ref({ start: '', end: '' });
 const guests = ref(2);
 
+const dateConfig = {
+    mode: 'range',
+    dateFormat: 'd M Y',
+    minDate: 'today',
+    onChange: (selectedDates) => {
+        if (selectedDates.length === 2) {
+            dateRange.value.start = selectedDates[0].toISOString().split('T')[0];
+            dateRange.value.end = selectedDates[1].toISOString().split('T')[0];
+        }
+    }
+};
+
 const searchProperties = () => {
+    if (!dateRange.value.start || !dateRange.value.end) {
+        router.get(route('properties.index'));
+        return;
+    }
+
     router.get(route('properties.index'), {
-        check_in: checkIn.value,
-        check_out: checkOut.value,
+        check_in: dateRange.value.start,
+        check_out: dateRange.value.end,
         guests: guests.value
     });
 };
 
-const minDate = new Date().toISOString().split('T')[0];
 
 const featuredDestinations = [
     {
@@ -57,29 +74,16 @@ const featuredDestinations = [
 
                     <!-- Search Card -->
                     <div class="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl max-w-4xl">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <!-- Check-in -->
-                            <div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Dates -->
+                            <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Check-in
+                                    Dates
                                 </label>
-                                <input
-                                    v-model="checkIn"
-                                    type="date"
-                                    :min="minDate"
-                                    class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
-                                />
-                            </div>
-
-                            <!-- Check-out -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Check-out
-                                </label>
-                                <input
-                                    v-model="checkOut"
-                                    type="date"
-                                    :min="checkIn || minDate"
+                                <flat-pickr
+                                    v-model="dateRange"
+                                    :config="dateConfig"
+                                    placeholder="Check-in → Check-out"
                                     class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent"
                                 />
                             </div>
@@ -100,16 +104,16 @@ const featuredDestinations = [
                                     <option :value="8">8+ guests</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <!-- Search Button -->
-                            <div class="flex items-end">
-                                <button
-                                    @click="searchProperties"
-                                    class="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium py-3 px-6 rounded-xl transition-all"
-                                >
-                                    Search
-                                </button>
-                            </div>
+                        <!-- Search Button -->
+                        <div class="mt-4">
+                            <button
+                                @click="searchProperties"
+                                class="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium py-3 px-6 rounded-xl transition-all"
+                            >
+                                Search properties
+                            </button>
                         </div>
                     </div>
                 </div>
