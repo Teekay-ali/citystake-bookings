@@ -1,0 +1,222 @@
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue';
+import {
+    Calendar,
+    Users,
+    MapPin,
+    CreditCard,
+    Shield,
+    CheckCircle,
+    Receipt
+} from 'lucide-vue-next';
+
+const props = defineProps({
+    booking: Object,
+    paystackPublicKey: String,
+});
+
+const isProcessing = ref(false);
+const paystackLoaded = ref(false);
+
+// Load Paystack script
+onMounted(() => {
+    if (!window.PaystackPop) {
+        const script = document.createElement('script');
+        script.src = 'https://js.paystack.co/v1/inline.js';
+        script.onload = () => {
+            paystackLoaded.value = true;
+        };
+        document.head.appendChild(script);
+    } else {
+        paystackLoaded.value = true;
+    }
+});
+
+
+const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(price);
+};
+
+const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+};
+
+
+const payWithPaystack = () => {
+    if (!paystackLoaded.value) {
+        alert('Payment system is loading, please try again in a moment.');
+        return;
+    }
+
+    isProcessing.value = true;
+
+    const handler = window.PaystackPop.setup({
+        key: props.paystackPublicKey,
+        email: props.booking.guest_email,
+        amount: props.booking.total_amount * 100, // Convert to kobo
+        currency: 'NGN',
+        ref: props.booking.booking_reference + '-' + Math.floor((Math.random() * 1000000000) + 1),
+        metadata: {
+            booking_reference: props.booking.booking_reference,
+            guest_name: props.booking.guest_name,
+            guest_phone: props.booking.guest_phone,
+        },
+        callback: function(response) {
+            // Redirect to verify payment
+            window.location.href = route('bookings.verify', {
+                bookingReference: props.booking.booking_reference,
+                reference: response.reference
+            });
+        },
+        onClose: function() {
+            isProcessing.value = false;
+        }
+    });
+
+    handler.openIframe();
+};
+
+</script>
+
+<template>
+    <AppLayout>
+        <Head title="Payment - Complete Your Booking" />
+
+        <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
+            <div class="max-w-4xl mx-auto px-6 lg:px-8">
+                <!-- Header -->
+                <div class="text-center mb-12">
+                    <div class="w-20 h-20 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center mx-auto mb-6">
+                        <CreditCard class="w-10 h-10 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">
+                        Complete your payment
+                    </h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-400">
+                        Booking Reference: <span class="font-medium">{{ booking.booking_reference }}</span>
+                    </p>
+                </div>
+
+                <!-- Booking Summary Card -->
+                <div class="border border-gray-200 dark:border-gray-800 rounded-3xl p-8 mb-8">
+                    <!-- Property Details -->
+                    <div class="flex items-start space-x-4 pb-6 mb-6 border-b border-gray-100 dark:border-gray-900">
+                        <img
+                            v-if="booking.unit_type.images && booking.unit_type.images[0]"
+                            :src="booking.unit_type.images[0].image_path"
+                            :alt="booking.unit_type.name"
+                            class="w-24 h-24 rounded-xl object-cover"
+                        />
+                        <div class="flex-1">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                                {{ booking.unit_type.name }}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center mb-2">
+                                <MapPin class="w-4 h-4 mr-1" />
+                                {{ booking.building.name }} • {{ booking.building.address }}
+                            </p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                                <span class="flex items-center">
+                                    <Calendar class="w-4 h-4 mr-1" />
+                                    {{ booking.nights }} nights
+                                </span>
+                                <span class="flex items-center">
+                                    <Users class="w-4 h-4 mr-1" />
+                                    {{ booking.guests }} guests
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trip Details -->
+                    <div class="grid grid-cols-2 gap-6 mb-6 pb-6 border-b border-gray-100 dark:border-gray-900">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">CHECK-IN</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ formatDate(booking.check_in) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">CHECK-OUT</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ formatDate(booking.check_out) }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Guest Details -->
+                    <div class="mb-6 pb-6 border-b border-gray-100 dark:border-gray-900">
+                        <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Guest Information</h3>
+                        <div class="space-y-2 text-sm">
+                            <p class="text-gray-600 dark:text-gray-400">
+                                <span class="font-medium text-gray-900 dark:text-white">Name:</span> {{ booking.guest_name }}
+                            </p>
+                            <p class="text-gray-600 dark:text-gray-400">
+                                <span class="font-medium text-gray-900 dark:text-white">Email:</span> {{ booking.guest_email }}
+                            </p>
+                            <p class="text-gray-600 dark:text-gray-400">
+                                <span class="font-medium text-gray-900 dark:text-white">Phone:</span> {{ booking.guest_phone }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Price Breakdown -->
+                    <div class="space-y-3 mb-6">
+                        <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                            <Receipt class="w-4 h-4 mr-2" />
+                            Price Details
+                        </h3>
+                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                            <span>{{ formatPrice(booking.subtotal / booking.nights) }} × {{ booking.nights }} nights</span>
+                            <span>{{ formatPrice(booking.subtotal) }}</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                            <span>Cleaning fee</span>
+                            <span>{{ formatPrice(booking.cleaning_fee) }}</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
+                            <span>Service charge</span>
+                            <span>{{ formatPrice(booking.service_charge) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Total -->
+                    <div class="pt-6 border-t border-gray-100 dark:border-gray-900">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-lg font-medium text-gray-900 dark:text-white">Total Amount</span>
+                            <span class="text-3xl font-light text-gray-900 dark:text-white">
+                                {{ formatPrice(booking.total_amount) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Button -->
+                <button
+                    @click="payWithPaystack"
+                    :disabled="isProcessing"
+                    class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-medium py-4 px-6 rounded-full transition-all disabled:cursor-not-allowed flex items-center justify-center group mb-6"
+                >
+                    <Shield v-if="!isProcessing" class="w-5 h-5 mr-2" />
+                    <span v-if="!isProcessing">Pay Securely with Paystack</span>
+                    <span v-else>Processing...</span>
+                </button>
+
+                <!-- Security Notice -->
+                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-6 text-center">
+                    <div class="flex items-center justify-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Shield class="w-4 h-4" />
+                        <span>Secured by Paystack • Your payment information is encrypted</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </AppLayout>
+</template>

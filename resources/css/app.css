@@ -37,3 +37,28 @@
     --dp-menu-border-color: rgb(229 231 235);
     --dp-border-color-hover: rgb(209 213 219);
 }
+
+/* Toast Customization */
+.Vue-Toastification__toast {
+    @apply rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800;
+}
+
+.Vue-Toastification__toast--success {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+}
+
+.Vue-Toastification__toast--error {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+}
+
+.Vue-Toastification__toast--info {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+}
+
+.Vue-Toastification__toast--warning {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+}
+
+.Vue-Toastification__progress-bar {
+    @apply bg-gray-900 dark:bg-white;
+}

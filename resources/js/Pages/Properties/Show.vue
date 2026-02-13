@@ -163,15 +163,34 @@ const checkAvailability = async () => {
 };
 
 const proceedToBooking = () => {
+    console.log('proceedToBooking called!');
+    console.log('checkIn:', checkIn.value);
+    console.log('checkOut:', checkOut.value);
+    console.log('guests:', guests.value);
+    console.log('calculateNights:', calculateNights.value);
+
     if (!checkIn.value || !checkOut.value || guests.value < 1) {
+        console.log('Validation failed');
         alert('Please select dates and number of guests');
         return;
     }
+
+    console.log('About to navigate to:', route('bookings.create', [props.building.slug, props.unitType.slug]));
+    console.log('With params:', {
+        check_in: checkIn.value,
+        check_out: checkOut.value,
+        guests: guests.value,
+    });
 
     router.get(route('bookings.create', [props.building.slug, props.unitType.slug]), {
         check_in: checkIn.value,
         check_out: checkOut.value,
         guests: guests.value,
+    }, {
+        onStart: () => console.log('Navigation started'),
+        onSuccess: () => console.log('Navigation succeeded'),
+        onError: (errors) => console.log('Navigation errors:', errors),
+        onFinish: () => console.log('Navigation finished'),
     });
 };
 

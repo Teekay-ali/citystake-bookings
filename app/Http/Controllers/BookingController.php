@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PaystackService;
+
 use App\Models\Booking;
 use App\Models\Building;
 use App\Models\UnitType;
@@ -12,7 +14,7 @@ use Inertia\Response;
 
 class BookingController extends Controller
 {
-    public function create(Request $request, Building $building, UnitType $unitType): Response
+    public function create(Request $request, Building $building, UnitType $unitType)
     {
         $request->validate([
             'check_in' => 'required|date|after_or_equal:today',
@@ -27,7 +29,7 @@ class BookingController extends Controller
 
         // Check availability
         if (!$unitType->hasAvailability($request->check_in, $request->check_out)) {
-            return redirect()->back()->with('error', 'No units available for selected dates');
+            return redirect()->back()->with('error', 'Sorry, no units are available for the selected dates. Please try different dates.');
         }
 
         // Calculate pricing
@@ -39,8 +41,8 @@ class BookingController extends Controller
         $booking->calculateTotal($unitType);
 
         return Inertia::render('Booking/Create', [
-            'building' => $building->load('primaryImage'),
-            'unitType' => $unitType,
+            'building' => $building->load('images'),
+            'unitType' => $unitType->load('images'),
             'bookingData' => [
                 'check_in' => $request->check_in,
                 'check_out' => $request->check_out,
@@ -60,7 +62,10 @@ class BookingController extends Controller
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
             'guests' => 'required|integer|min:1|max:' . $unitType->max_guests,
-            'special_requests' => 'nullable|string|max:500',
+            'guest_name' => 'required|string|max:255',
+            'guest_email' => 'required|email|max:255',
+            'guest_phone' => 'required|string|max:20',
+            'special_requests' => 'nullable|string|max:1000',
         ]);
 
         // Check if unit type belongs to building
@@ -73,7 +78,7 @@ class BookingController extends Controller
                 // Lock unit type to prevent double booking
                 $unitType = UnitType::lockForUpdate()->findOrFail($unitType->id);
 
-                // Find an available unit (Option A: Auto-assign)
+                // Find an available unit
                 $availableUnit = $unitType->findAvailableUnit($validated['check_in'], $validated['check_out']);
 
                 if (!$availableUnit) {
@@ -89,6 +94,9 @@ class BookingController extends Controller
                     'check_in' => $validated['check_in'],
                     'check_out' => $validated['check_out'],
                     'guests' => $validated['guests'],
+                    'guest_name' => $validated['guest_name'],
+                    'guest_email' => $validated['guest_email'],
+                    'guest_phone' => $validated['guest_phone'],
                     'special_requests' => $validated['special_requests'] ?? null,
                 ]);
 
@@ -98,15 +106,81 @@ class BookingController extends Controller
                 return $booking;
             });
 
-            // TODO: Initialize Paystack payment here (Phase 3)
-            // For now, redirect to confirmation
-            return redirect()->route('bookings.confirmation', $booking)
+            // Redirect to payment page
+            return redirect()->route('bookings.payment', $booking->booking_reference)
                 ->with('success', 'Booking created successfully! Proceed to payment.');
 
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', $e->getMessage())
                 ->withInput();
+        }
+    }
+
+    public function payment($bookingReference)
+    {
+        $booking = Booking::where('booking_reference', $bookingReference)
+            ->with(['building.images', 'unitType.images', 'unit'])
+            ->firstOrFail();
+
+        // Ensure user can only view their own booking
+        if ($booking->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // If already paid, redirect to confirmation
+        if ($booking->isPaid()) {
+            return redirect()->route('bookings.confirmation', $booking);
+        }
+
+        $paystackService = new PaystackService();
+
+        return Inertia::render('Booking/Payment', [
+            'booking' => $booking,
+            'paystackPublicKey' => $paystackService->getPublicKey(),
+        ]);
+    }
+
+    public function verifyPayment(Request $request, $bookingReference)
+    {
+        $booking = Booking::where('booking_reference', $bookingReference)->firstOrFail();
+
+        // Ensure user can only verify their own booking
+        if ($booking->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $reference = $request->query('reference');
+
+        if (!$reference) {
+            return redirect()->route('bookings.payment', $bookingReference)
+                ->with('error', 'Payment reference not found');
+        }
+
+        try {
+            $paystackService = new PaystackService();
+            $response = $paystackService->verifyTransaction($reference);
+
+            if ($response['status'] && $response['data']['status'] === 'success') {
+                // Update booking
+                $booking->update([
+                    'payment_status' => 'paid',
+                    'status' => 'confirmed',
+                    'paystack_reference' => $reference,
+                    'paid_at' => now(),
+                ]);
+
+                return redirect()->route('bookings.confirmation', $booking)
+                    ->with('success', 'Payment successful! Your booking is confirmed.');
+            } else {
+                return redirect()->route('bookings.payment', $bookingReference)
+                    ->with('error', 'Payment verification failed. Please try again.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Payment verification error: ' . $e->getMessage());
+
+            return redirect()->route('bookings.payment', $bookingReference)
+                ->with('error', 'An error occurred while verifying payment.');
         }
     }
 

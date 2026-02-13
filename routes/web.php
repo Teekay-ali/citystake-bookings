@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/properties/{building:slug}/{unitType:slug}/book', [BookingController::class, 'create'])->name('bookings.create');
     Route::post('/properties/{building:slug}/{unitType:slug}/book', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/bookings/{bookingReference}/payment', [BookingController::class, 'payment'])->name('bookings.payment');
+    Route::get('/bookings/{bookingReference}/verify', [BookingController::class, 'verifyPayment'])->name('bookings.verify');
     Route::get('/bookings/{booking}/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
 });
 

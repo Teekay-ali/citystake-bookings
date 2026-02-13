@@ -37,7 +37,27 @@ const formatDate = (date) => {
 };
 
 const submit = () => {
-    form.post(route('bookings.store', [props.building.slug, props.unitType.slug]));
+    console.log('Submit function called');
+    console.log('Form data:', {
+        check_in: form.check_in,
+        check_out: form.check_out,
+        guests: form.guests,
+        guest_name: form.guest_name,
+        guest_email: form.guest_email,
+        guest_phone: form.guest_phone,
+        special_requests: form.special_requests,
+    });
+    console.log('Form errors before submit:', form.errors);
+    console.log('Route:', route('bookings.store', [props.building.slug, props.unitType.slug]));
+
+    form.post(route('bookings.store', [props.building.slug, props.unitType.slug]), {
+        onSuccess: () => {
+            console.log('Form submitted successfully!');
+        },
+        onError: (errors) => {
+            console.log('Form submission errors:', errors);
+        },
+    });
 };
 </script>
 
@@ -70,7 +90,7 @@ const submit = () => {
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     <!-- Left: Form -->
-                    <div class="space-y-8">
+                    <form @submit.prevent="submit" class="space-y-8">
                         <!-- Trip Details -->
                         <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
                             <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center">
@@ -171,7 +191,7 @@ const submit = () => {
                                 class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all resize-none"
                             ></textarea>
                         </div>
-                    </div>
+                    </form>
 
                     <!-- Right: Summary -->
                     <div>
@@ -228,6 +248,7 @@ const submit = () => {
 
                             <!-- Confirm Button -->
                             <button
+                                type="button"
                                 @click="submit"
                                 :disabled="form.processing"
                                 class="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white dark:text-gray-900 font-medium py-4 px-6 rounded-full transition-all disabled:cursor-not-allowed"
@@ -240,6 +261,7 @@ const submit = () => {
                             </p>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>

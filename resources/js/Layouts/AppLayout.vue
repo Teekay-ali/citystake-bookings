@@ -1,10 +1,36 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useDarkMode } from '@/Composables/useDarkMode';
+import { usePage } from '@inertiajs/vue3';
+import { useToast } from 'vue-toastification';  // Changed this line
 
 const showMobileMenu = ref(false);
 const { isDark, toggle } = useDarkMode();
+
+const showingNavigationDropdown = ref(false);
+const page = usePage();
+const toast = useToast();
+
+// Watch for flash messages
+watch(
+    () => page.props.flash,
+    (flash) => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+        if (flash?.info) {
+            toast.info(flash.info);
+        }
+        if (flash?.warning) {
+            toast.warning(flash.warning);
+        }
+    },
+    { deep: true, immediate: true }  // Added immediate: true
+);
 </script>
 
 <template>
