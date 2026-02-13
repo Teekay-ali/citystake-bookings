@@ -1,6 +1,13 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import {
+    MapPin,
+    Shield,
+    Sparkles,
+    Search,
+    ArrowRight
+} from 'lucide-vue-next';
 import { ref } from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
@@ -55,6 +62,8 @@ const featuredDestinations = [
 
 <template>
     <AppLayout>
+        <Head title="Premium Short-let Apartments in Abuja" />
+
         <!-- Hero Section with Search -->
         <div class="relative bg-white dark:bg-gray-950">
             <!-- Hero Image/Background -->
@@ -110,11 +119,14 @@ const featuredDestinations = [
                         <div class="mt-4">
                             <button
                                 @click="searchProperties"
-                                class="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium py-3 px-6 rounded-xl transition-all"
+                                class="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium py-3 px-6 rounded-xl transition-all flex items-center justify-center group"
                             >
+                                <Search class="w-5 h-5 mr-2" />
                                 Search properties
+                                <ArrowRight class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                             </button>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -146,7 +158,10 @@ const featuredDestinations = [
                         />
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                         <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
-                            <h3 class="text-2xl font-medium mb-2">{{ destination.name }}</h3>
+                            <h3 class="text-2xl font-medium mb-2 flex items-center">
+                                <MapPin class="w-5 h-5 mr-2" />
+                                {{ destination.name }}
+                            </h3>
                             <p class="text-sm text-gray-200">{{ destination.description }}</p>
                         </div>
                     </Link>
@@ -169,10 +184,7 @@ const featuredDestinations = [
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
                     <div class="text-center">
                         <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-auto mb-6">
-                            <svg class="w-8 h-8 text-gray-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+                            <MapPin class="w-8 h-8 text-gray-900 dark:text-white" />
                         </div>
                         <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-3">Prime locations</h3>
                         <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -182,9 +194,7 @@ const featuredDestinations = [
 
                     <div class="text-center">
                         <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-auto mb-6">
-                            <svg class="w-8 h-8 text-gray-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
+                            <Shield class="w-8 h-8 text-gray-900 dark:text-white" />
                         </div>
                         <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-3">Secure booking</h3>
                         <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -194,9 +204,7 @@ const featuredDestinations = [
 
                     <div class="text-center">
                         <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-auto mb-6">
-                            <svg class="w-8 h-8 text-gray-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                            </svg>
+                            <Sparkles class="w-8 h-8 text-gray-900 dark:text-white" />
                         </div>
                         <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-3">Premium amenities</h3>
                         <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -221,11 +229,10 @@ const featuredDestinations = [
                     class="inline-flex items-center px-8 py-4 bg-white hover:bg-gray-100 text-gray-900 text-base font-medium rounded-full transition-all group"
                 >
                     View all properties
-                    <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
+                    <ArrowRight class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
             </div>
         </div>
+
     </AppLayout>
 </template>

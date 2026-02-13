@@ -54,7 +54,12 @@ class UnitTypeController extends Controller
         return Inertia::render('Properties/Index', [
             'unitTypes' => $unitTypes,
             'buildings' => $buildings,
-            'filters' => $request->only(['bedroom_type', 'guests', 'building', 'sort']),
+            'filters' => [
+                'bedroom_type' => $request->bedroom_type,
+                'guests' => $request->guests,
+                'building' => $request->building,
+                'sort_by' => $request->sort,
+            ],
         ]);
     }
 

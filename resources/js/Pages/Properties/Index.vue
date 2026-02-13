@@ -1,7 +1,10 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PropertyCard from '@/Components/Property/PropertyCard.vue';
-import { router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+import {
+    Building2
+} from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 
 const props = defineProps({
@@ -13,27 +16,29 @@ const props = defineProps({
 const bedroomFilter = ref(props.filters.bedroom_type || '');
 const guestsFilter = ref(props.filters.guests || '');
 const buildingFilter = ref(props.filters.building || '');
-const sortFilter = ref(props.filters.sort || '');
+const sortBy = ref(props.filters.sort_by || '');
 
 const applyFilters = () => {
     router.get(route('properties.index'), {
         bedroom_type: bedroomFilter.value,
         guests: guestsFilter.value,
         building: buildingFilter.value,
-        sort: sortFilter.value,
+        sort: sortBy.value,
     }, {
         preserveState: true,
         preserveScroll: true,
     });
 };
 
-watch([bedroomFilter, guestsFilter, buildingFilter, sortFilter], () => {
+watch([bedroomFilter, guestsFilter, buildingFilter, sortBy], () => {
     applyFilters();
 });
 </script>
 
 <template>
     <AppLayout>
+        <Head title="Browse Properties" />
+
         <div class="min-h-screen bg-white dark:bg-gray-950">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16">
                 <!-- Header -->
@@ -46,18 +51,23 @@ watch([bedroomFilter, guestsFilter, buildingFilter, sortFilter], () => {
                     </p>
                 </div>
 
-                <!-- Filters - Minimal Design -->
-                <div class="flex flex-wrap gap-3 mb-12">
+                <!-- Filters -->
+                <div class="flex flex-wrap items-center gap-3 mb-8">
+                    <!-- Location Filter -->
                     <select
                         v-model="buildingFilter"
                         class="px-5 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
                     >
-                        <option value="">All locations</option>
-                        <option v-for="building in buildings" :key="building.id" :value="building.id">
+                        <option value="">
+                            <Building2 class="w-4 h-4 inline mr-2" />
+                            All locations
+                        </option>
+                        <option v-for="building in buildings" :key="building.id" :value="building.slug">
                             {{ building.name }}
                         </option>
                     </select>
 
+                    <!-- Bedroom Filter -->
                     <select
                         v-model="bedroomFilter"
                         class="px-5 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
@@ -65,22 +75,24 @@ watch([bedroomFilter, guestsFilter, buildingFilter, sortFilter], () => {
                         <option value="">All bedrooms</option>
                         <option value="2-bed">2 Bedrooms</option>
                         <option value="3-bed">3 Bedrooms</option>
-                        <option value="4-bed">4 Bedrooms</option>
+                        <option value="4-bed">4+ Bedrooms</option>
                     </select>
 
+                    <!-- Guests Filter -->
                     <select
                         v-model="guestsFilter"
                         class="px-5 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
                     >
                         <option value="">Any guests</option>
-                        <option value="2">2+ Guests</option>
-                        <option value="4">4+ Guests</option>
-                        <option value="6">6+ Guests</option>
-                        <option value="8">8+ Guests</option>
+                        <option :value="2">2+ guests</option>
+                        <option :value="4">4+ guests</option>
+                        <option :value="6">6+ guests</option>
+                        <option :value="8">8+ guests</option>
                     </select>
 
+                    <!-- Sort Filter -->
                     <select
-                        v-model="sortFilter"
+                        v-model="sortBy"
                         class="px-5 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
                     >
                         <option value="">Newest first</option>

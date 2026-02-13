@@ -1,6 +1,32 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import {
+    Calendar,
+    Users,
+    Home,
+    Wifi,
+    Wind,
+    Car,
+    Waves,
+    Dumbbell,
+    Shield,
+    Coffee,
+    Tv,
+    UtensilsCrossed,
+    WashingMachine,
+    Check,
+    Info,
+    ArrowLeft,
+    MapPin,
+    Sparkles,
+    Cigarette,    // For no smoking
+    Dog,           // For no pets
+    PartyPopper,   // For no parties
+    Clock,         // For check-in/out times
+    Volume2,       // For noise/quiet hours
+    Baby           // For children rules
+} from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
@@ -17,7 +43,7 @@ const isCheckingAvailability = ref(false);
 const availabilityMessage = ref('');
 const availableUnitsCount = ref(0);
 
-const dateRange = ref('');
+const dateRange = ref(null);
 const checkIn = ref('');
 const checkOut = ref('');
 
@@ -27,12 +53,19 @@ const dateConfig = {
     minDate: 'today',
     onClose: (selectedDates) => {
         if (selectedDates.length === 2) {
-            checkIn.value = selectedDates[0].toISOString().split('T')[0];
-            checkOut.value = selectedDates[1].toISOString().split('T')[0];
+            // Fix timezone issue by using local date string
+            const formatLocalDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            checkIn.value = formatLocalDate(selectedDates[0]);
+            checkOut.value = formatLocalDate(selectedDates[1]);
         }
     }
 };
-
 
 const formatPrice = (price) => {
     return new Intl.NumberFormat('en-NG', {
@@ -64,6 +97,38 @@ const allAmenities = computed(() => {
     const unitAmenities = props.unitType.specific_amenities || [];
     return [...new Set([...buildingAmenities, ...unitAmenities])];
 });
+
+const getAmenityIcon = (amenity) => {
+    const amenityLower = amenity.toLowerCase();
+
+    if (amenityLower.includes('wifi') || amenityLower.includes('internet')) return Wifi;
+    if (amenityLower.includes('air conditioning') || amenityLower.includes('ac')) return Wind;
+    if (amenityLower.includes('parking')) return Car;
+    if (amenityLower.includes('pool') || amenityLower.includes('swimming')) return Waves;
+    if (amenityLower.includes('gym') || amenityLower.includes('fitness')) return Dumbbell;
+    if (amenityLower.includes('security')) return Shield;
+    if (amenityLower.includes('tv') || amenityLower.includes('television') || amenityLower.includes('netflix')) return Tv;
+    if (amenityLower.includes('kitchen') || amenityLower.includes('chef')) return UtensilsCrossed;
+    if (amenityLower.includes('washing') || amenityLower.includes('laundry') || amenityLower.includes('dishwasher')) return WashingMachine;
+    if (amenityLower.includes('coffee') || amenityLower.includes('breakfast')) return Coffee;
+    if (amenityLower.includes('generator') || amenityLower.includes('power')) return Sparkles;
+
+    return Check; // Default icon
+};
+
+const getHouseRuleIcon = (rule) => {
+    const ruleLower = rule.toLowerCase();
+
+    if (ruleLower.includes('smoking') || ruleLower.includes('smoke')) return Cigarette;
+    if (ruleLower.includes('pet') || ruleLower.includes('animal')) return Dog;
+    if (ruleLower.includes('party') || ruleLower.includes('parties') || ruleLower.includes('event')) return PartyPopper;
+    if (ruleLower.includes('check-in') || ruleLower.includes('check in')) return Clock;
+    if (ruleLower.includes('check-out') || ruleLower.includes('check out')) return Clock;
+    if (ruleLower.includes('quiet') || ruleLower.includes('noise')) return Volume2;
+    if (ruleLower.includes('children') || ruleLower.includes('kids')) return Baby;
+
+    return Info; // Default icon
+};
 
 const checkAvailability = async () => {
     if (!checkIn.value || !checkOut.value) {
@@ -114,6 +179,8 @@ const proceedToBooking = () => {
 
 <template>
     <AppLayout>
+        <Head :title="`${unitType.name} - ${building.name}`" />
+
         <div class="bg-white dark:bg-gray-950 min-h-screen">
             <!-- Back Button -->
             <div class="max-w-7xl mx-auto px-6 lg:px-8 pt-8">
@@ -121,9 +188,7 @@ const proceedToBooking = () => {
                     :href="route('properties.index')"
                     class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors group"
                 >
-                    <svg class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
+                    <ArrowLeft class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
                     Back to properties
                 </Link>
             </div>
@@ -183,15 +248,11 @@ const proceedToBooking = () => {
                             </p>
                             <div class="flex items-center space-x-6 mt-6 text-gray-600 dark:text-gray-400">
                                 <span class="flex items-center">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                                    </svg>
+                                    <Home class="w-5 h-5 mr-2" />
                                     {{ unitType.bedroom_type }}
                                 </span>
                                 <span class="flex items-center">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
+                                    <Users class="w-5 h-5 mr-2" />
                                     Up to {{ unitType.max_guests }} guests
                                 </span>
                             </div>
@@ -217,9 +278,10 @@ const proceedToBooking = () => {
                                     :key="amenity"
                                     class="flex items-center space-x-3 text-gray-700 dark:text-gray-300"
                                 >
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
+                                    <component
+                                        :is="getAmenityIcon(amenity)"
+                                        class="w-5 h-5 text-gray-400"
+                                    />
                                     <span>{{ amenity }}</span>
                                 </div>
                             </div>
@@ -234,13 +296,15 @@ const proceedToBooking = () => {
                                     :key="rule"
                                     class="flex items-start space-x-3 text-gray-700 dark:text-gray-300"
                                 >
-                                    <svg class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                                    <component
+                                        :is="getHouseRuleIcon(rule)"
+                                        class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0"
+                                    />
                                     <span>{{ rule }}</span>
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     <!-- Right Column: Booking Card (Sticky) -->
@@ -260,7 +324,8 @@ const proceedToBooking = () => {
                                 <!-- Date Selection -->
                                 <div class="space-y-4 mb-6">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                            <Calendar class="w-4 h-4 mr-1.5" />
                                             Select dates
                                         </label>
                                         <flat-pickr
@@ -272,7 +337,8 @@ const proceedToBooking = () => {
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                            <Users class="w-4 h-4 mr-1.5" />
                                             Guests
                                         </label>
                                         <select
@@ -318,6 +384,7 @@ const proceedToBooking = () => {
                                 <!-- Reserve Button -->
                                 <button
                                     v-if="$page.props.auth.user"
+                                    type="button"
                                     @click="proceedToBooking"
                                     :disabled="!checkIn || !checkOut || calculateNights === 0"
                                     class="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white dark:text-gray-900 dark:disabled:text-gray-500 font-medium py-4 px-6 rounded-full transition-all disabled:cursor-not-allowed"

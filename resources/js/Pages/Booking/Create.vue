@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Calendar, Users, MapPin, User, Mail, Phone, MessageSquare, Receipt, CheckCircle } from 'lucide-vue-next';
 
 const props = defineProps({
     building: Object,
@@ -12,6 +13,9 @@ const form = useForm({
     check_in: props.bookingData.check_in,
     check_out: props.bookingData.check_out,
     guests: props.bookingData.guests,
+    guest_name: '',
+    guest_email: '',
+    guest_phone: '',
     special_requests: '',
 });
 
@@ -39,8 +43,21 @@ const submit = () => {
 
 <template>
     <AppLayout>
+        <Head title="Confirm Booking" />
+
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
             <div class="max-w-5xl mx-auto px-6 lg:px-8">
+                <!-- Back Button -->
+                <Link
+                    :href="route('properties.show', [building.slug, unitType.slug])"
+                    class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors group mb-8"
+                >
+                    <svg class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to property
+                </Link>
+
                 <!-- Header -->
                 <div class="mb-12">
                     <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">
@@ -56,8 +73,10 @@ const submit = () => {
                     <div class="space-y-8">
                         <!-- Trip Details -->
                         <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
-                            <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">Your trip</h2>
-
+                            <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center">
+                                <Calendar class="w-5 h-5 mr-2" />
+                                Your stay
+                            </h2>
                             <div class="space-y-4">
                                 <div class="flex justify-between items-start">
                                     <div>
@@ -76,26 +95,75 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <!-- Guest Info -->
+                        <!-- Guest Information Form -->
                         <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
-                            <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">Guest information</h2>
-
-                            <div class="space-y-4">
+                            <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center">
+                                <User class="w-5 h-5 mr-2" />
+                                Guest information
+                            </h2>
+                            <div class="space-y-6">
+                                <!-- Full Name -->
                                 <div>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">Name</p>
-                                    <p class="text-gray-900 dark:text-white mt-1">{{ $page.props.auth.user.name }}</p>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                        <User class="w-4 h-4 mr-1.5" />
+                                        Full name <span class="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <input
+                                        v-model="form.guest_name"
+                                        type="text"
+                                        required
+                                        class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
+                                        placeholder="Enter full name"
+                                    />
+                                    <p v-if="form.errors.guest_name" class="mt-2 text-sm text-red-600 dark:text-red-400">
+                                        {{ form.errors.guest_name }}
+                                    </p>
                                 </div>
 
-                                <div class="pt-4 border-t border-gray-100 dark:border-gray-900">
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">Email</p>
-                                    <p class="text-gray-900 dark:text-white mt-1">{{ $page.props.auth.user.email }}</p>
+                                <!-- Email -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                        <Mail class="w-4 h-4 mr-1.5" />
+                                        Email address <span class="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <input
+                                        v-model="form.guest_email"
+                                        type="email"
+                                        required
+                                        class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
+                                        placeholder="your.email@example.com"
+                                    />
+                                    <p v-if="form.errors.guest_email" class="mt-2 text-sm text-red-600 dark:text-red-400">
+                                        {{ form.errors.guest_email }}
+                                    </p>
+                                </div>
+
+                                <!-- Phone -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                        <Phone class="w-4 h-4 mr-1.5" />
+                                        Phone number <span class="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <input
+                                        v-model="form.guest_phone"
+                                        type="tel"
+                                        required
+                                        class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
+                                        placeholder="+234 800 000 0000"
+                                    />
+                                    <p v-if="form.errors.guest_phone" class="mt-2 text-sm text-red-600 dark:text-red-400">
+                                        {{ form.errors.guest_phone }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Special Requests -->
                         <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-8">
-                            <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">Special requests</h2>
+                            <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center">
+                                <MessageSquare class="w-5 h-5 mr-2" />
+                                Special requests
+                            </h2>
                             <textarea
                                 v-model="form.special_requests"
                                 rows="4"
@@ -112,24 +180,29 @@ const submit = () => {
                             <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mb-6">
                                 <div class="flex items-start space-x-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-900">
                                     <img
-                                        v-if="building.primary_image"
-                                        :src="building.primary_image.image_path"
-                                        :alt="building.name"
+                                        v-if="unitType.images && unitType.images[0]"
+                                        :src="unitType.images[0].image_path"
+                                        :alt="unitType.name"
                                         class="w-24 h-24 rounded-xl object-cover"
                                     />
                                     <div class="flex-1 min-w-0">
                                         <h3 class="font-medium text-gray-900 dark:text-white mb-1">{{ unitType.name }}</h3>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ building.name }}</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center">
+                                            <MapPin class="w-4 h-4 mr-1" />
+                                            {{ building.name }} • {{ building.address }}
+                                        </p>
                                         <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ unitType.bedroom_type }}</p>
                                     </div>
                                 </div>
 
                                 <!-- Price Breakdown -->
                                 <div class="space-y-3 mb-6">
-                                    <h3 class="font-medium text-gray-900 dark:text-white mb-4">Price details</h3>
-
+                                    <h3 class="font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                                        <Receipt class="w-5 h-5 mr-2" />
+                                        Price details
+                                    </h3>
                                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                        <span>{{ formatPrice(unitType.base_price_per_night) }} × {{ bookingData.nights }} nights</span>
+                                        <span>{{ formatPrice(bookingData.subtotal / bookingData.nights) }} × {{ bookingData.nights }} nights</span>
                                         <span>{{ formatPrice(bookingData.subtotal) }}</span>
                                     </div>
 
@@ -163,7 +236,7 @@ const submit = () => {
                             </button>
 
                             <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                                By selecting the button above, I agree to the terms and conditions
+                                You won't be charged until payment is complete
                             </p>
                         </div>
                     </div>

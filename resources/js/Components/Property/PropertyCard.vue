@@ -1,5 +1,10 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import {
+    Bed,
+    Users,
+    MapPin
+} from 'lucide-vue-next';
 
 defineProps({
     unitType: Object,
@@ -43,8 +48,9 @@ const formatPrice = (price) => {
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white truncate group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
                         {{ unitType.name }}
                     </h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {{ unitType.building.name }} • {{ unitType.building.city }}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 flex items-center">
+                        <MapPin class="w-4 h-4 mr-1 flex-shrink-0" />
+                        {{ unitType.building.address }}, {{ unitType.building.city }}
                     </p>
                 </div>
             </div>
@@ -55,9 +61,14 @@ const formatPrice = (price) => {
             </div>
 
             <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                <span>{{ unitType.bedroom_type }}</span>
-                <span>•</span>
-                <span>Up to {{ unitType.max_guests }} guests</span>
+                <span class="flex items-center">
+                    <Bed class="w-4 h-4 mr-1.5" />
+                    {{ unitType.bedroom_type }}
+                </span>
+                            <span class="flex items-center">
+                    <Users class="w-4 h-4 mr-1.5" />
+                    Up to {{ unitType.max_guests }}
+                </span>
             </div>
         </div>
     </Link>
