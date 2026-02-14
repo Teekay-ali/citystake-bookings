@@ -1,6 +1,7 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+@import "vue-toastification/dist/index.css";
 
 /* Vue DatePicker Custom Styles */
 .vue-datepicker-custom {
@@ -38,27 +39,106 @@
     --dp-border-color-hover: rgb(209 213 219);
 }
 
-/* Toast Customization */
+/* Elegant Toast Styles */
+.Vue-Toastification__container {
+    @apply bottom-6 right-6;
+}
+
+.custom-toast {
+    @apply rounded-2xl shadow-xl border backdrop-blur-sm;
+    @apply min-h-0 py-3 px-4;
+    font-family: 'Inter var', 'Inter', sans-serif;
+}
+
 .Vue-Toastification__toast {
-    @apply rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800;
+    @apply rounded-2xl;
+    padding: 0.875rem 1rem;
+    min-height: auto;
 }
 
 .Vue-Toastification__toast--success {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+    @apply bg-white/95 dark:bg-gray-900/95 border-green-200 dark:border-green-800;
+}
+
+.Vue-Toastification__toast--success .Vue-Toastification__toast-body {
+    @apply text-gray-900 dark:text-white;
 }
 
 .Vue-Toastification__toast--error {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+    @apply bg-white/95 dark:bg-gray-900/95 border-red-200 dark:border-red-800;
 }
 
-.Vue-Toastification__toast--info {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+.Vue-Toastification__toast--error .Vue-Toastification__toast-body {
+    @apply text-gray-900 dark:text-white;
 }
 
 .Vue-Toastification__toast--warning {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+    @apply bg-white/95 dark:bg-gray-900/95 border-yellow-200 dark:border-yellow-800;
+}
+
+.Vue-Toastification__toast--warning .Vue-Toastification__toast-body {
+    @apply text-gray-900 dark:text-white;
+}
+
+.Vue-Toastification__toast--info {
+    @apply bg-white/95 dark:bg-gray-900/95 border-blue-200 dark:border-blue-800;
+}
+
+.Vue-Toastification__toast--info .Vue-Toastification__toast-body {
+    @apply text-gray-900 dark:text-white;
+}
+
+.Vue-Toastification__toast-body {
+    @apply text-sm font-medium;
+    padding: 0;
+    margin: 0;
+}
+
+.Vue-Toastification__icon {
+    @apply w-5 h-5;
+    margin-right: 0.75rem;
 }
 
 .Vue-Toastification__progress-bar {
-    @apply bg-gray-900 dark:bg-white;
+    @apply h-1;
 }
+
+.Vue-Toastification__toast--success .Vue-Toastification__progress-bar {
+    @apply bg-green-500;
+}
+
+.Vue-Toastification__toast--error .Vue-Toastification__progress-bar {
+    @apply bg-red-500;
+}
+
+.Vue-Toastification__toast--warning .Vue-Toastification__progress-bar {
+    @apply bg-yellow-500;
+}
+
+.Vue-Toastification__toast--info .Vue-Toastification__progress-bar {
+    @apply bg-blue-500;
+}
+
+.Vue-Toastification__close-button {
+    @apply text-gray-400 hover:text-gray-600 dark:hover:text-gray-300;
+    opacity: 1;
+}
+
+/* Smooth animations */
+.Vue-Toastification__fade-enter-active,
+.Vue-Toastification__fade-leave-active,
+.Vue-Toastification__fade-move {
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.Vue-Toastification__fade-enter-from {
+    opacity: 0;
+    transform: translateX(2rem);
+}
+
+.Vue-Toastification__fade-leave-to {
+    opacity: 0;
+    transform: translateX(2rem) scale(0.95);
+}
+
+

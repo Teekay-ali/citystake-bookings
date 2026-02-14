@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { useToast } from 'vue-toastification';
 import { Calendar, Users, MapPin, User, Mail, Phone, MessageSquare, Receipt, CheckCircle } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -8,6 +9,8 @@ const props = defineProps({
     unitType: Object,
     bookingData: Object,
 });
+
+const toast = useToast();
 
 const form = useForm({
     check_in: props.bookingData.check_in,
@@ -37,28 +40,31 @@ const formatDate = (date) => {
 };
 
 const submit = () => {
-    console.log('Submit function called');
-    console.log('Form data:', {
-        check_in: form.check_in,
-        check_out: form.check_out,
-        guests: form.guests,
-        guest_name: form.guest_name,
-        guest_email: form.guest_email,
-        guest_phone: form.guest_phone,
-        special_requests: form.special_requests,
-    });
-    console.log('Form errors before submit:', form.errors);
-    console.log('Route:', route('bookings.store', [props.building.slug, props.unitType.slug]));
+    // Client-side validation without toasts (form errors will show inline)
+    if (!form.guest_name || !form.guest_email || !form.guest_phone) {
+        return; // Let inline validation handle this
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.guest_email)) {
+        return; // Let inline validation handle this
+    }
+
+    if (form.guest_phone.length < 10) {
+        return; // Let inline validation handle this
+    }
 
     form.post(route('bookings.store', [props.building.slug, props.unitType.slug]), {
-        onSuccess: () => {
-            console.log('Form submitted successfully!');
-        },
         onError: (errors) => {
-            console.log('Form submission errors:', errors);
+            // Only show toast for server errors, not validation errors
+            const hasValidationErrors = errors.guest_name || errors.guest_email || errors.guest_phone;
+            if (!hasValidationErrors) {
+                toast.error('Unable to create booking. Please try again.');
+            }
         },
     });
 };
+
 </script>
 
 <template>

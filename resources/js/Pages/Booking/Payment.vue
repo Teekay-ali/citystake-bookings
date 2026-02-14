@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
+import { useToast } from 'vue-toastification';
 import {
     Calendar,
     Users,
@@ -19,6 +20,7 @@ const props = defineProps({
 
 const isProcessing = ref(false);
 const paystackLoaded = ref(false);
+const toast = useToast();
 
 // Load Paystack script
 onMounted(() => {
@@ -28,12 +30,14 @@ onMounted(() => {
         script.onload = () => {
             paystackLoaded.value = true;
         };
+        script.onerror = () => {
+            toast.error('Failed to load payment system. Please refresh the page.');
+        };
         document.head.appendChild(script);
     } else {
         paystackLoaded.value = true;
     }
 });
-
 
 const formatPrice = (price) => {
     return new Intl.NumberFormat('en-NG', {
@@ -52,10 +56,9 @@ const formatDate = (date) => {
     });
 };
 
-
 const payWithPaystack = () => {
     if (!paystackLoaded.value) {
-        alert('Payment system is loading, please try again in a moment.');
+        toast.warning('Payment system is still loading, please wait a moment...');
         return;
     }
 
@@ -81,12 +84,12 @@ const payWithPaystack = () => {
         },
         onClose: function() {
             isProcessing.value = false;
+            toast.warning('Payment cancelled. Complete payment to confirm your booking.');
         }
     });
 
     handler.openIframe();
 };
-
 </script>
 
 <template>

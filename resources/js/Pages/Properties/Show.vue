@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { useToast } from 'vue-toastification';
 import {
     Calendar,
     Users,
@@ -36,6 +37,7 @@ const props = defineProps({
     unitType: Object,
 });
 
+const toast = useToast();
 
 const selectedImage = ref(props.unitType.images[0]?.image_path || null);
 const guests = ref(2);
@@ -130,9 +132,11 @@ const getHouseRuleIcon = (rule) => {
     return Info; // Default icon
 };
 
+
 const checkAvailability = async () => {
     if (!checkIn.value || !checkOut.value) {
         availabilityMessage.value = 'Please select check-in and check-out dates';
+        toast.warning('Please select your dates first');
         return;
     }
 
@@ -155,42 +159,35 @@ const checkAvailability = async () => {
         const data = await response.json();
         availabilityMessage.value = data.message;
         availableUnitsCount.value = data.available_units || 0;
+
+        if (data.available_units > 0) {
+            toast.success(`Great! ${data.available_units} unit(s) available for your dates`);
+        } else {
+            toast.error('Sorry, no units available for selected dates');
+        }
     } catch (error) {
         availabilityMessage.value = 'Error checking availability';
+        toast.error('Failed to check availability. Please try again.');
     } finally {
         isCheckingAvailability.value = false;
     }
 };
 
 const proceedToBooking = () => {
-    console.log('proceedToBooking called!');
-    console.log('checkIn:', checkIn.value);
-    console.log('checkOut:', checkOut.value);
-    console.log('guests:', guests.value);
-    console.log('calculateNights:', calculateNights.value);
-
     if (!checkIn.value || !checkOut.value || guests.value < 1) {
-        console.log('Validation failed');
-        alert('Please select dates and number of guests');
+        toast.error('Please select dates and number of guests');
         return;
     }
 
-    console.log('About to navigate to:', route('bookings.create', [props.building.slug, props.unitType.slug]));
-    console.log('With params:', {
-        check_in: checkIn.value,
-        check_out: checkOut.value,
-        guests: guests.value,
-    });
+    if (calculateNights.value < 1) {
+        toast.error('Minimum stay is 1 night');
+        return;
+    }
 
     router.get(route('bookings.create', [props.building.slug, props.unitType.slug]), {
         check_in: checkIn.value,
         check_out: checkOut.value,
         guests: guests.value,
-    }, {
-        onStart: () => console.log('Navigation started'),
-        onSuccess: () => console.log('Navigation succeeded'),
-        onError: (errors) => console.log('Navigation errors:', errors),
-        onFinish: () => console.log('Navigation finished'),
     });
 };
 

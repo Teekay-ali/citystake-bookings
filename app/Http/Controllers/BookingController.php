@@ -9,6 +9,7 @@ use App\Models\Building;
 use App\Models\UnitType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -110,9 +111,16 @@ class BookingController extends Controller
             return redirect()->route('bookings.payment', $booking->booking_reference)
                 ->with('success', 'Booking created successfully! Proceed to payment.');
 
-        } catch (\Exception $e) {
+        }
+
+        catch (\Exception $e) {
+            \Log::error('Booking creation failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
             return redirect()->back()
-                ->with('error', $e->getMessage())
+                ->with('error', 'Unable to create booking: ' . $e->getMessage())
                 ->withInput();
         }
     }
@@ -161,8 +169,10 @@ class BookingController extends Controller
             $paystackService = new PaystackService();
             $response = $paystackService->verifyTransaction($reference);
 
+            \Log::info('Payment verification response', ['response' => $response]);
+
+            // In verifyPayment method - update messages
             if ($response['status'] && $response['data']['status'] === 'success') {
-                // Update booking
                 $booking->update([
                     'payment_status' => 'paid',
                     'status' => 'confirmed',
@@ -170,14 +180,20 @@ class BookingController extends Controller
                     'paid_at' => now(),
                 ]);
 
+                \Log::info('Redirecting with success message');
+
                 return redirect()->route('bookings.confirmation', $booking)
-                    ->with('success', 'Payment successful! Your booking is confirmed.');
+                    ->with('success', '🎉 Payment successful! Your booking is confirmed.');
             } else {
+
+                \Log::info('Payment verification failed', ['response' => $response]);
+
                 return redirect()->route('bookings.payment', $bookingReference)
-                    ->with('error', 'Payment verification failed. Please try again.');
+                    ->with('error', 'Payment verification failed. Please contact support if amount was debited.');
             }
+
         } catch (\Exception $e) {
-            Log::error('Payment verification error: ' . $e->getMessage());
+            \Log::error('Payment verification error: ' . $e->getMessage());
 
             return redirect()->route('bookings.payment', $bookingReference)
                 ->with('error', 'An error occurred while verifying payment.');

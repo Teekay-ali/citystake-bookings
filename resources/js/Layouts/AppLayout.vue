@@ -3,20 +3,47 @@ import { Link } from '@inertiajs/vue3';
 import { ref, watch, onMounted } from 'vue';
 import { useDarkMode } from '@/Composables/useDarkMode';
 import { usePage } from '@inertiajs/vue3';
-import { useToast } from 'vue-toastification';  // Changed this line
+import { useToast } from 'vue-toastification';
 
 const showMobileMenu = ref(false);
 const { isDark, toggle } = useDarkMode();
 
-const showingNavigationDropdown = ref(false);
 const page = usePage();
 const toast = useToast();
 
-// Watch for flash messages
+// Show flash messages on mount
+onMounted(() => {
+    console.log('Flash on mount:', JSON.stringify(page.props.flash));
+    console.log('Flash success:', page.props.flash?.success);
+    console.log('Flash error:', page.props.flash?.error);
+
+    const flash = page.props.flash;
+
+    if (flash?.success) {
+        console.log('Showing success toast:', flash.success);
+
+        toast.success(flash.success);
+    }
+    if (flash?.error) {
+        toast.error(flash.error);
+    }
+    if (flash?.info) {
+        toast.info(flash.info);
+    }
+    if (flash?.warning) {
+        toast.warning(flash.warning);
+    }
+});
+
+// Also watch for changes (for SPA navigation)
 watch(
     () => page.props.flash,
     (flash) => {
+        console.log('Flash changed:', flash);
+
         if (flash?.success) {
+            console.log('Showing success toast from watch:', flash.success);
+
             toast.success(flash.success);
         }
         if (flash?.error) {
@@ -29,7 +56,7 @@ watch(
             toast.warning(flash.warning);
         }
     },
-    { deep: true, immediate: true }  // Added immediate: true
+    { deep: true }
 );
 </script>
 
