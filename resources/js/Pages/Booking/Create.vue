@@ -40,31 +40,16 @@ const formatDate = (date) => {
 };
 
 const submit = () => {
-    // Client-side validation without toasts (form errors will show inline)
-    if (!form.guest_name || !form.guest_email || !form.guest_phone) {
-        return; // Let inline validation handle this
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.guest_email)) {
-        return; // Let inline validation handle this
-    }
-
-    if (form.guest_phone.length < 10) {
-        return; // Let inline validation handle this
-    }
-
     form.post(route('bookings.store', [props.building.slug, props.unitType.slug]), {
         onError: (errors) => {
-            // Only show toast for server errors, not validation errors
-            const hasValidationErrors = errors.guest_name || errors.guest_email || errors.guest_phone;
-            if (!hasValidationErrors) {
-                toast.error('Unable to create booking. Please try again.');
+            // Show first error as toast
+            const firstError = Object.values(errors)[0];
+            if (firstError) {
+                toast.error(firstError);
             }
         },
     });
 };
-
 </script>
 
 <template>
@@ -138,7 +123,12 @@ const submit = () => {
                                         v-model="form.guest_name"
                                         type="text"
                                         required
-                                        class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
+                                        :class="[
+                                            'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
+                                            form.errors.guest_name
+                                                ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500 focus:border-red-500'
+                                                : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'
+                                        ]"
                                         placeholder="Enter full name"
                                     />
                                     <p v-if="form.errors.guest_name" class="mt-2 text-sm text-red-600 dark:text-red-400">
@@ -156,7 +146,12 @@ const submit = () => {
                                         v-model="form.guest_email"
                                         type="email"
                                         required
-                                        class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
+                                        :class="[
+                                            'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
+                                            form.errors.guest_email
+                                                ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500 focus:border-red-500'
+                                                : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'
+                                        ]"
                                         placeholder="your.email@example.com"
                                     />
                                     <p v-if="form.errors.guest_email" class="mt-2 text-sm text-red-600 dark:text-red-400">
@@ -174,7 +169,12 @@ const submit = () => {
                                         v-model="form.guest_phone"
                                         type="tel"
                                         required
-                                        class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all"
+                                        :class="[
+                                            'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
+                                            form.errors.guest_phone
+                                                ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500 focus:border-red-500'
+                                                : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'
+                                        ]"
                                         placeholder="+234 800 000 0000"
                                     />
                                     <p v-if="form.errors.guest_phone" class="mt-2 text-sm text-red-600 dark:text-red-400">
@@ -194,8 +194,16 @@ const submit = () => {
                                 v-model="form.special_requests"
                                 rows="4"
                                 placeholder="Any special requirements? (Optional)"
-                                class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-all resize-none"
+                                :class="[
+                                    'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all resize-none',
+                                    form.errors.special_requests
+                                        ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500 focus:border-red-500'
+                                        : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'
+                                ]"
                             ></textarea>
+                            <p v-if="form.errors.special_requests" class="mt-2 text-sm text-red-600 dark:text-red-400">
+                                {{ form.errors.special_requests }}
+                            </p>
                         </div>
                     </form>
 
@@ -257,9 +265,16 @@ const submit = () => {
                                 type="button"
                                 @click="submit"
                                 :disabled="form.processing"
-                                class="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white dark:text-gray-900 font-medium py-4 px-6 rounded-full transition-all disabled:cursor-not-allowed"
+                                class="w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white dark:text-gray-900 font-medium py-4 px-6 rounded-full transition-all disabled:cursor-not-allowed flex items-center justify-center"
                             >
-                                {{ form.processing ? 'Processing...' : 'Confirm and pay' }}
+                                <span v-if="form.processing" class="flex items-center">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                </span>
+                                <span v-else>Confirm and pay</span>
                             </button>
 
                             <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">

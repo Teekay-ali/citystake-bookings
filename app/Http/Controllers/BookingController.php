@@ -15,6 +15,35 @@ use Inertia\Response;
 
 class BookingController extends Controller
 {
+
+    public function index()
+    {
+        $bookings = Booking::where('user_id', auth()->id())
+            ->with(['building.images', 'unitType.images', 'unit'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(function ($booking) {
+                if ($booking->status === 'cancelled') {
+                    return 'cancelled';
+                } elseif ($booking->check_out < now()) {
+                    return 'past';
+                } elseif ($booking->check_in <= now() && $booking->check_out >= now()) {
+                    return 'active';
+                } else {
+                    return 'upcoming';
+                }
+            });
+
+        return Inertia::render('Booking/Index', [
+            'bookings' => [
+                'upcoming' => $bookings->get('upcoming', collect()),
+                'active' => $bookings->get('active', collect()),
+                'past' => $bookings->get('past', collect()),
+                'cancelled' => $bookings->get('cancelled', collect()),
+            ],
+        ]);
+    }
+
     public function create(Request $request, Building $building, UnitType $unitType)
     {
         $request->validate([
@@ -54,6 +83,20 @@ class BookingController extends Controller
                 'service_charge' => $booking->service_charge,
                 'total_amount' => $booking->total_amount,
             ],
+        ]);
+    }
+
+    public function show(Booking $booking)
+    {
+        // Ensure user can only view their own booking
+        if ($booking->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $booking->load(['building.images', 'unitType.images', 'unit']);
+
+        return Inertia::render('Booking/Show', [
+            'booking' => $booking,
         ]);
     }
 
@@ -169,8 +212,6 @@ class BookingController extends Controller
             $paystackService = new PaystackService();
             $response = $paystackService->verifyTransaction($reference);
 
-            \Log::info('Payment verification response', ['response' => $response]);
-
             // In verifyPayment method - update messages
             if ($response['status'] && $response['data']['status'] === 'success') {
                 $booking->update([
@@ -180,21 +221,14 @@ class BookingController extends Controller
                     'paid_at' => now(),
                 ]);
 
-                \Log::info('Redirecting with success message');
-
-                return redirect()->route('bookings.confirmation', $booking)
+                return redirect()->route('bookings.confirmation', $booking->id)
                     ->with('success', '🎉 Payment successful! Your booking is confirmed.');
             } else {
-
-                \Log::info('Payment verification failed', ['response' => $response]);
-
                 return redirect()->route('bookings.payment', $bookingReference)
                     ->with('error', 'Payment verification failed. Please contact support if amount was debited.');
             }
 
         } catch (\Exception $e) {
-            \Log::error('Payment verification error: ' . $e->getMessage());
-
             return redirect()->route('bookings.payment', $bookingReference)
                 ->with('error', 'An error occurred while verifying payment.');
         }
@@ -212,5 +246,30 @@ class BookingController extends Controller
         return Inertia::render('Booking/Confirmation', [
             'booking' => $booking,
         ]);
+    }
+
+    public function cancel(Booking $booking)
+    {
+        // Ensure user can only cancel their own booking
+        if ($booking->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Check if booking can be cancelled
+        if (!$booking->canBeCancelled()) {
+            return redirect()->back()->with('error', 'This booking cannot be cancelled.');
+        }
+
+        // Cancel the booking
+        $booking->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+        ]);
+
+        // TODO: Process refund via Paystack (if applicable)
+        // TODO: Send cancellation email to guest
+
+        return redirect()->route('bookings.index')
+            ->with('success', 'Booking cancelled successfully.');
     }
 }

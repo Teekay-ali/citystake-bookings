@@ -3,6 +3,112 @@
 @import 'tailwindcss/utilities';
 @import "vue-toastification/dist/index.css";
 
+/* Print Styles - Receipt Format */
+@media print {
+    /* Hide everything by default */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Only show the receipt */
+    .print-receipt,
+    .print-receipt * {
+        visibility: visible;
+    }
+
+    .print-only,
+    .print-only * {
+        visibility: visible !important;
+        display: block !important;
+    }
+
+    /* Hide screen-only elements */
+    .no-print,
+    .no-print * {
+        visibility: hidden !important;
+        display: none !important;
+    }
+
+    nav,
+    footer,
+    nav *,
+    footer * {
+        visibility: hidden !important;
+        display: none !important;
+    }
+
+    /* Position receipt at top of page */
+    .print-receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 21cm; /* A4 width */
+        margin: 0 auto;
+        padding: 2cm;
+    }
+
+    .print-only {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 21cm;
+        padding: 1cm 2cm 0 2cm;
+    }
+
+    /* Remove backgrounds */
+    body {
+        background: white !important;
+    }
+
+    /* Force black text for printing */
+    .print-receipt *,
+    .print-only * {
+        color: black !important;
+        background: white !important;
+        color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Borders should be visible */
+    .print-receipt .border-gray-300,
+    .print-receipt .border-t,
+    .print-receipt .border-b,
+    .print-only .border-gray-300,
+    .print-only .border-t {
+        border-color: #d1d5db !important;
+    }
+
+    /* Keep some colors for emphasis */
+    .print-receipt .text-green-600 {
+        color: #059669 !important;
+    }
+
+    /* Optimize for single page */
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    /* Prevent page breaks inside important sections */
+    .print-receipt > div {
+        page-break-inside: avoid;
+    }
+}
+
+/* Hide print-only content on screen */
+@media screen {
+    .print-only {
+        display: none !important;
+    }
+
+    .print-receipt {
+        display: none !important;
+    }
+}
+
 /* Vue DatePicker Custom Styles */
 .vue-datepicker-custom {
     --dp-font-family: 'Inter var', 'Inter', sans-serif;
@@ -140,5 +246,6 @@
     opacity: 0;
     transform: translateX(2rem) scale(0.95);
 }
+
 
 

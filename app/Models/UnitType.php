@@ -67,12 +67,12 @@ class UnitType extends Model
         return $availableUnit !== null;
     }
 
-    // Find an available unit for booking (Option A: Auto-assign)
+    //Find an available unit for booking (excluding cancelled bookings)
     public function findAvailableUnit(string $checkIn, string $checkOut): ?Unit
     {
         $availableUnits = $this->units()
-            ->where('status', 'available')
             ->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
+                // ONLY check confirmed and pending bookings, NOT cancelled
                 $query->whereIn('status', ['confirmed', 'pending'])
                     ->where(function ($q) use ($checkIn, $checkOut) {
                         $q->whereBetween('check_in', [$checkIn, $checkOut])
@@ -91,12 +91,12 @@ class UnitType extends Model
         return $availableUnits->first();
     }
 
-    // Get count of available units
+    // Get count of available units (excluding cancelled bookings)
     public function getAvailableUnitsCount(string $checkIn, string $checkOut): int
     {
         return $this->units()
-            ->where('status', 'available')
             ->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
+                // ONLY check confirmed and pending bookings, NOT cancelled
                 $query->whereIn('status', ['confirmed', 'pending'])
                     ->where(function ($q) use ($checkIn, $checkOut) {
                         $q->whereBetween('check_in', [$checkIn, $checkOut])
@@ -112,4 +112,5 @@ class UnitType extends Model
             })
             ->count();
     }
+
 }

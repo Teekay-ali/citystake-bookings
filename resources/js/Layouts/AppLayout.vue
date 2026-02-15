@@ -13,15 +13,10 @@ const toast = useToast();
 
 // Show flash messages on mount
 onMounted(() => {
-    console.log('Flash on mount:', JSON.stringify(page.props.flash));
-    console.log('Flash success:', page.props.flash?.success);
-    console.log('Flash error:', page.props.flash?.error);
 
     const flash = page.props.flash;
 
     if (flash?.success) {
-        console.log('Showing success toast:', flash.success);
-
         toast.success(flash.success);
     }
     if (flash?.error) {
@@ -39,11 +34,8 @@ onMounted(() => {
 watch(
     () => page.props.flash,
     (flash) => {
-        console.log('Flash changed:', flash);
 
         if (flash?.success) {
-            console.log('Showing success toast from watch:', flash.success);
-
             toast.success(flash.success);
         }
         if (flash?.error) {
@@ -97,6 +89,12 @@ watch(
                         </button>
 
                         <div v-if="$page.props.auth.user" class="flex items-center space-x-6">
+                            <Link
+                                :href="route('bookings.index')"
+                                class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            >
+                                My Bookings
+                            </Link>
                             <Link
                                 :href="route('profile.edit')"
                                 class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -167,6 +165,13 @@ watch(
                     </button>
 
                     <template v-if="$page.props.auth.user">
+                        <Link
+                            :href="route('bookings.index')"
+                            class="block text-base font-medium text-gray-700 dark:text-gray-300"
+                        >
+                            My Bookings
+                        </Link>
+
                         <Link
                             :href="route('profile.edit')"
                             class="block text-base font-medium text-gray-700 dark:text-gray-300"
