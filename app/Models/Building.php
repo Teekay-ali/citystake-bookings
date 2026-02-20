@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\Cache;
+
 
 class Building extends Model
 {
@@ -29,6 +31,18 @@ class Building extends Model
         'house_rules' => 'array',
         'is_active' => 'boolean',
     ];
+
+    protected static function booted()
+    {
+        // Clear cache when buildings are created, updated, or deleted
+        static::saved(function () {
+            Cache::forget('active_buildings');
+        });
+
+        static::deleted(function () {
+            Cache::forget('active_buildings');
+        });
+    }
 
     public function unitTypes(): HasMany
     {

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\Cache;
+
 
 class UnitType extends Model
 {
@@ -34,6 +36,18 @@ class UnitType extends Model
         'specific_amenities' => 'array',
         'is_active' => 'boolean',
     ];
+
+    protected static function booted()
+    {
+        // Clear cache when unit types are created, updated, or deleted
+        static::saved(function () {
+            Cache::forget('active_buildings');
+        });
+
+        static::deleted(function () {
+            Cache::forget('active_buildings');
+        });
+    }
 
     public function building(): BelongsTo
     {

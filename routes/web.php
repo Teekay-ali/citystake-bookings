@@ -18,6 +18,38 @@ Route::get('/', function () {
     return Inertia::render('Home');
 })->name('home');
 
+Route::get('/about', function () {
+    return Inertia::render('About');
+})->name('about');
+
+Route::get('/contact', function () {
+    return Inertia::render('Contact');
+})->name('contact');
+
+Route::post('/contact', function (Request $request) {
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|max:255',
+        'phone' => 'nullable|string|max:20',
+        'subject' => 'required|string|max:255',
+        'message' => 'required|string|max:2000',
+    ]);
+
+    // TODO: Send email to admin
+    // For now, just log it
+    \Log::info('Contact form submission', $validated);
+
+    return redirect()->back()->with('success', 'Thank you for contacting us! We\'ll get back to you soon.');
+})->name('contact.store');
+
+Route::get('/terms', function () {
+    return Inertia::render('Terms');
+})->name('terms');
+
+Route::get('/privacy', function () {
+    return Inertia::render('Privacy');
+})->name('privacy');
+
 Route::get('/properties', [UnitTypeController::class, 'index'])->name('properties.index');
 Route::get('/properties/{building:slug}/{unitType:slug}', [UnitTypeController::class, 'show'])->name('properties.show');
 Route::post('/properties/{building:slug}/{unitType:slug}/check-availability', [UnitTypeController::class, 'checkAvailability'])

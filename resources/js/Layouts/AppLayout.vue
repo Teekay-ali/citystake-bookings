@@ -225,19 +225,76 @@ watch(
         </main>
 
         <!-- Footer - Minimal -->
-        <footer class="border-t border-gray-100 dark:border-gray-900 mt-32">
+        <!-- Footer -->
+        <footer class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-                <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                        © {{ new Date().getFullYear() }} CityStake. All rights reserved.
-                    </p>
-                    <div class="flex space-x-8">
-                        <a href="#" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Terms</a>
-                        <a href="#" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Privacy</a>
-                        <a href="#" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Contact</a>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            {{ $page.props.appName }}
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Premium apartment rentals in Abuja's finest locations.
+                        </p>
                     </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Company</h4>
+                        <ul class="space-y-2">
+                            <li>
+                                <Link href="/about" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                    About Us
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/contact" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                    Contact
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Support</h4>
+                        <ul class="space-y-2">
+                            <li>
+                                <Link href="/bookings" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                    My Bookings
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/contact" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                    Help Center
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Legal</h4>
+                        <ul class="space-y-2">
+                            <li>
+                                <Link href="/terms" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                    Terms & Conditions
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/privacy" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                    Privacy Policy
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800 text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        © {{ new Date().getFullYear() }} {{ $page.props.appName }}. All rights reserved.
+                    </p>
                 </div>
             </div>
         </footer>
+
+
     </div>
 </template>
