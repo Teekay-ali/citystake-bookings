@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Services\PaystackService;
 
 use App\Models\Booking;
@@ -280,6 +281,12 @@ class BookingController extends Controller
             'status' => 'cancelled',
             'cancelled_at' => now(),
         ]);
+
+        // Log the action
+        AuditLog::log('booking.cancelled', $booking,
+            ['status' => 'confirmed'],
+            ['status' => 'cancelled']
+        );
 
         // Send cancellation email to guest
         Mail::to($booking->guest_email)->send(new BookingCancelled($booking));

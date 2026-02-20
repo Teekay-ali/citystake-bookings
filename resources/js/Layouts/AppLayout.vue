@@ -4,6 +4,7 @@ import { ref, watch, onMounted } from 'vue';
 import { useDarkMode } from '@/Composables/useDarkMode';
 import { usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
+import CookieConsent from '@/Components/CookieConsent.vue';
 
 const showMobileMenu = ref(false);
 const { isDark, toggle } = useDarkMode();
@@ -13,7 +14,6 @@ const toast = useToast();
 
 // Show flash messages on mount
 onMounted(() => {
-
     const flash = page.props.flash;
 
     if (flash?.success) {
@@ -34,7 +34,6 @@ onMounted(() => {
 watch(
     () => page.props.flash,
     (flash) => {
-
         if (flash?.success) {
             toast.success(flash.success);
         }
@@ -50,6 +49,12 @@ watch(
     },
     { deep: true }
 );
+
+// Cookie settings function
+const openCookieSettings = () => {
+    localStorage.removeItem('cookie_consent');
+    window.location.reload();
+};
 </script>
 
 <template>
@@ -224,7 +229,6 @@ watch(
             <slot />
         </main>
 
-        <!-- Footer - Minimal -->
         <!-- Footer -->
         <footer class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
@@ -283,6 +287,14 @@ watch(
                                     Privacy Policy
                                 </Link>
                             </li>
+                            <li>
+                                <button
+                                    @click="openCookieSettings"
+                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-left"
+                                >
+                                    Cookie Settings
+                                </button>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -295,6 +307,7 @@ watch(
             </div>
         </footer>
 
-
+        <!-- Cookie Consent Banner -->
+        <CookieConsent />
     </div>
 </template>
