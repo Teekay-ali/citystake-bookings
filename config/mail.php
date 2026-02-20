@@ -21,9 +21,9 @@ return [
     | Mailer Configurations
     |--------------------------------------------------------------------------
     |
-    | Here you may configure all of the mailers used by your application plus
+    | Here you may configure all the mailers used by your application plus
     | their respective settings. Several examples have been configured for
-    | you and you are free to add your own as your application requires.
+    | you, and you are free to add your own as your application requires.
     |
     | Laravel supports a variety of mail "transport" drivers that can be used
     | when delivering an email. You may specify which one you're using for
@@ -34,6 +34,7 @@ return [
     |            "failover", "roundrobin"
     |
     */
+
 
     'mailers' => [
 
@@ -114,5 +115,7 @@ return [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
+
+    'admin_email' => env('MAIL_ADMIN_EMAIL', 'admin@example.com'),
 
 ];

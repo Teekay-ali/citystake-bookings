@@ -70,25 +70,24 @@ class UnitType extends Model
     //Find an available unit for booking (excluding cancelled bookings)
     public function findAvailableUnit(string $checkIn, string $checkOut): ?Unit
     {
-        $availableUnits = $this->units()
+        return $this->units()
+            ->where('is_available', true)
             ->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
-                // ONLY check confirmed and pending bookings, NOT cancelled
-                $query->whereIn('status', ['confirmed', 'pending'])
+                $query->where('status', '!=', 'cancelled')
                     ->where(function ($q) use ($checkIn, $checkOut) {
                         $q->whereBetween('check_in', [$checkIn, $checkOut])
                             ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                            ->orWhere(function ($subQ) use ($checkIn, $checkOut) {
-                                $subQ->where('check_in', '<=', $checkIn)
+                            ->orWhere(function ($q2) use ($checkIn, $checkOut) {
+                                $q2->where('check_in', '<=', $checkIn)
                                     ->where('check_out', '>=', $checkOut);
                             });
                     });
             })
             ->whereDoesntHave('blockedDates', function ($query) use ($checkIn, $checkOut) {
-                $query->whereBetween('blocked_date', [$checkIn, $checkOut]);
+                $query->where('blocked_from', '<=', $checkOut)
+                    ->where('blocked_to', '>=', $checkIn);
             })
-            ->get();
-
-        return $availableUnits->first();
+            ->first();
     }
 
     // Get count of available units (excluding cancelled bookings)

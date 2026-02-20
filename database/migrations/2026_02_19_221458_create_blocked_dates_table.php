@@ -11,11 +11,15 @@ return new class extends Migration
         Schema::create('blocked_dates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('unit_id')->constrained()->cascadeOnDelete();
-            $table->date('blocked_date');
+            $table->date('blocked_from');
+            $table->date('blocked_to');
             $table->string('reason')->nullable();
+            $table->text('notes')->nullable();
+            $table->foreignId('created_by')->constrained('users');
             $table->timestamps();
 
-            $table->unique(['unit_id', 'blocked_date']);
+            // Add index for faster date range queries
+            $table->index(['unit_id', 'blocked_from', 'blocked_to']);
         });
     }
 

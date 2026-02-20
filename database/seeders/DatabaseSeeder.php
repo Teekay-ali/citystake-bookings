@@ -28,6 +28,14 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('password'),
         ]);
 
+
+        // Create test user
+        User::factory()->create([
+            'name' => 'Abba Toko',
+            'email' => 'abbatka95@gmail.com',
+            'password' => bcrypt('password'),
+        ]);
+
         // Create Buildings with Unit Types and Units
         $this->createAsokoroBuilding();
         $this->createMaitamaBuilding();

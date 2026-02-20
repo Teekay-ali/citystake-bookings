@@ -90,6 +90,13 @@ watch(
 
                         <div v-if="$page.props.auth.user" class="flex items-center space-x-6">
                             <Link
+                                v-if="$page.props.auth.user.is_admin"
+                                :href="route('admin.dashboard')"
+                                class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            >
+                                Admin
+                            </Link>
+                            <Link
                                 :href="route('bookings.index')"
                                 class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                             >
@@ -165,6 +172,13 @@ watch(
                     </button>
 
                     <template v-if="$page.props.auth.user">
+                        <Link
+                            v-if="$page.props.auth.user.is_admin"
+                            :href="route('admin.dashboard')"
+                            class="block text-base font-medium text-gray-700 dark:text-gray-300"
+                        >
+                            Admin
+                        </Link>
                         <Link
                             :href="route('bookings.index')"
                             class="block text-base font-medium text-gray-700 dark:text-gray-300"

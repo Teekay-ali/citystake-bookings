@@ -17,6 +17,7 @@ class Booking extends Model
         'unit_type_id',
         'unit_id',
         'user_id',
+        'created_by_admin_id',
         'check_in',
         'check_out',
         'nights',
@@ -27,6 +28,7 @@ class Booking extends Model
         'total_amount',
         'status',
         'payment_status',
+        'payment_method',
         'paystack_reference',
         'paid_at',
         'special_requests',
@@ -65,6 +67,12 @@ class Booking extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+
+    public function createdByAdmin()
+    {
+        return $this->belongsTo(User::class, 'created_by_admin_id');
     }
 
     // Helper methods

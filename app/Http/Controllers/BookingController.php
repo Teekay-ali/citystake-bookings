@@ -7,6 +7,10 @@ use App\Services\PaystackService;
 use App\Models\Booking;
 use App\Models\Building;
 use App\Models\UnitType;
+use App\Mail\BookingConfirmation;
+use App\Mail\AdminNewBooking;
+use App\Mail\BookingCancelled;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -212,7 +216,6 @@ class BookingController extends Controller
             $paystackService = new PaystackService();
             $response = $paystackService->verifyTransaction($reference);
 
-            // In verifyPayment method - update messages
             if ($response['status'] && $response['data']['status'] === 'success') {
                 $booking->update([
                     'payment_status' => 'paid',
@@ -220,6 +223,13 @@ class BookingController extends Controller
                     'paystack_reference' => $reference,
                     'paid_at' => now(),
                 ]);
+
+                // Send confirmation email to guest
+                Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
+
+                // Send notification to admin
+                $adminEmail = config('mail.admin_email', 'admin@citystake.com');
+                Mail::to($adminEmail)->send(new AdminNewBooking($booking));
 
                 return redirect()->route('bookings.confirmation', $booking->id)
                     ->with('success', '🎉 Payment successful! Your booking is confirmed.');
@@ -229,6 +239,11 @@ class BookingController extends Controller
             }
 
         } catch (\Exception $e) {
+            \Log::error('Payment verification failed', [
+                'reference' => $reference,
+                'error' => $e->getMessage(),
+            ]);
+
             return redirect()->route('bookings.payment', $bookingReference)
                 ->with('error', 'An error occurred while verifying payment.');
         }
@@ -266,10 +281,13 @@ class BookingController extends Controller
             'cancelled_at' => now(),
         ]);
 
+        // Send cancellation email to guest
+        Mail::to($booking->guest_email)->send(new BookingCancelled($booking));
+
         // TODO: Process refund via Paystack (if applicable)
-        // TODO: Send cancellation email to guest
 
         return redirect()->route('bookings.index')
             ->with('success', 'Booking cancelled successfully.');
     }
+
 }

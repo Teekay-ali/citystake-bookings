@@ -17,6 +17,11 @@ class Unit extends Model
         'floor',
         'status',
         'notes',
+        'is_available',
+    ];
+
+    protected $casts = [
+        'is_available' => 'boolean',
     ];
 
     public function unitType(): BelongsTo
@@ -61,4 +66,19 @@ class Unit extends Model
 
         return !$hasBlockedDate;
     }
+
+
+    /**
+     * Check if unit is blocked for given date range
+     */
+    public function isBlockedForDates($checkIn, $checkOut): bool
+    {
+        return $this->blockedDates()
+            ->where(function ($query) use ($checkIn, $checkOut) {
+                $query->where('blocked_from', '<=', $checkOut)
+                    ->where('blocked_to', '>=', $checkIn);
+            })
+            ->exists();
+    }
+
 }
