@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BlockedDateController;
+use App\Http\Controllers\Admin\BookingExportController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
@@ -89,6 +90,7 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->name('ad
     // Bookings
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/create', [AdminBookingController::class, 'create'])->name('bookings.create');
+    Route::get('/bookings/export', [BookingExportController::class, 'export'])->name('bookings.export');
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
 

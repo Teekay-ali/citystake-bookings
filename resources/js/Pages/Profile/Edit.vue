@@ -1,56 +1,99 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppLayout from '@/Layouts/AppLayout.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 import { Head } from '@inertiajs/vue3';
+import { User, Lock, AlertTriangle } from 'lucide-vue-next';
 
 defineProps({
-    mustVerifyEmail: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
+    mustVerifyEmail: Boolean,
+    status: String,
 });
 </script>
 
 <template>
-    <Head title="Profile" />
+    <AppLayout>
+        <Head title="Profile Settings" />
 
-    <AuthenticatedLayout>
-        <template #header>
-            <h2
-                class="text-xl font-semibold leading-tight text-gray-800"
-            >
-                Profile
-            </h2>
-        </template>
-
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <UpdateProfileInformationForm
-                        :must-verify-email="mustVerifyEmail"
-                        :status="status"
-                        class="max-w-xl"
-                    />
+        <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
+            <div class="max-w-5xl mx-auto px-6 lg:px-8">
+                <!-- Header -->
+                <div class="mb-12">
+                    <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-3">
+                        Profile Settings
+                    </h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-400">
+                        Manage your account information and preferences
+                    </p>
                 </div>
 
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <UpdatePasswordForm class="max-w-xl" />
-                </div>
+                <!-- Cards Container -->
+                <div class="space-y-8">
+                    <!-- Profile Information -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
+                        <div class="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                                    <User class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
+                                    Profile Information
+                                </h2>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Update your account's profile information and email address
+                            </p>
+                        </div>
+                        <div class="p-6 md:p-8">
+                            <UpdateProfileInformationForm
+                                :must-verify-email="mustVerifyEmail"
+                                :status="status"
+                            />
+                        </div>
+                    </div>
 
-                <div
-                    class="bg-white p-4 shadow sm:rounded-lg sm:p-8"
-                >
-                    <DeleteUserForm class="max-w-xl" />
+                    <!-- Update Password -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
+                        <div class="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+                                    <Lock class="w-5 h-5 text-green-600 dark:text-green-400" />
+                                </div>
+                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
+                                    Update Password
+                                </h2>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Ensure your account is using a strong password to stay secure
+                            </p>
+                        </div>
+                        <div class="p-6 md:p-8">
+                            <UpdatePasswordForm />
+                        </div>
+                    </div>
+
+                    <!-- Delete Account -->
+                    <div class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/50 rounded-2xl overflow-hidden">
+                        <div class="p-6 md:p-8 border-b border-red-200 dark:border-red-900/50">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                    <AlertTriangle class="w-5 h-5 text-red-600 dark:text-red-400" />
+                                </div>
+                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
+                                    Delete Account
+                                </h2>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Permanently delete your account and all associated data
+                            </p>
+                        </div>
+                        <div class="p-6 md:p-8">
+                            <DeleteUserForm />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </AuthenticatedLayout>
+    </AppLayout>
 </template>

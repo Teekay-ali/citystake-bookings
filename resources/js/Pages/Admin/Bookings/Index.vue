@@ -12,6 +12,7 @@ import {
     ChevronRight,
     Plus,
     Download,
+    FileSpreadsheet,
     Eye,
     CheckCircle,
     XCircle,
@@ -120,6 +121,20 @@ const clearFilters = () => {
     building.value = '';
     paymentStatus.value = '';
 };
+
+// Add export function
+const exportBookings = () => {
+    const params = new URLSearchParams();
+
+    if (status.value) params.append('status', status.value);
+    if (paymentStatus.value) params.append('payment_status', paymentStatus.value);
+    if (building.value) params.append('building_id', building.value);
+    if (search.value) params.append('search', search.value);
+
+    const url = route('admin.bookings.export') + (params.toString() ? '?' + params.toString() : '');
+    window.location.href = url;
+};
+
 </script>
 
 <template>
@@ -135,24 +150,27 @@ const clearFilters = () => {
                             All Bookings
                         </h1>
                         <p class="text-lg text-gray-600 dark:text-gray-400">
-                            {{ bookings.total }} total bookings
+                            Manage and track all property bookings
                         </p>
                     </div>
 
+                    <!-- Export Button -->
                     <div class="flex items-center gap-3">
+                        <button
+                            @click="exportBookings"
+                            class="px-6 py-3 bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white font-medium rounded-full transition-all flex items-center shadow-lg"
+                        >
+                            <Download class="w-5 h-5 mr-2" />
+                            Export to Excel
+                        </button>
+
                         <Link
                             :href="route('admin.bookings.create')"
-                            class="px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all flex items-center"
+                            class="px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all flex items-center shadow-lg"
                         >
                             <Plus class="w-5 h-5 mr-2" />
                             Create Booking
                         </Link>
-                        <button
-                            class="px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-white rounded-xl transition-all flex items-center"
-                        >
-                            <Download class="w-4 h-4 mr-2" />
-                            Export
-                        </button>
                     </div>
                 </div>
 
