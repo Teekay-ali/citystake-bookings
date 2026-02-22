@@ -1,10 +1,11 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
+import UpdateEmailPreferencesForm from './Partials/UpdateEmailPreferencesForm.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 import { Head } from '@inertiajs/vue3';
-import { User, Lock, AlertTriangle } from 'lucide-vue-next';
+import { User, Lock, AlertTriangle, Mail } from 'lucide-vue-next';
 
 defineProps({
     mustVerifyEmail: Boolean,
@@ -70,6 +71,26 @@ defineProps({
                         </div>
                         <div class="p-6 md:p-8">
                             <UpdatePasswordForm />
+                        </div>
+                    </div>
+
+                    <!-- Email Preferences -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
+                        <div class="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
+                                    <Mail class="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                </div>
+                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
+                                    Email Preferences
+                                </h2>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Manage your email notification preferences
+                            </p>
+                        </div>
+                        <div class="p-6 md:p-8">
+                            <UpdateEmailPreferencesForm />
                         </div>
                     </div>
 

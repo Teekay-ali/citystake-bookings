@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingExportController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Profile\EmailPreferencesController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UnitTypeController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -65,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::patch('/profile/email-preferences', [EmailPreferencesController::class, 'update'])->name('profile.email-preferences.update');
 
     // Booking routes
     Route::get('/properties/{building:slug}/{unitType:slug}/book', [BookingController::class, 'create'])->name('bookings.create');
@@ -90,6 +92,7 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->name('ad
     // Bookings
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/create', [AdminBookingController::class, 'create'])->name('bookings.create');
+    Route::get('/bookings/calendar', [App\Http\Controllers\Admin\BookingCalendarController::class, 'index'])->name('bookings.calendar');
     Route::get('/bookings/export', [BookingExportController::class, 'export'])->name('bookings.export');
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
@@ -115,8 +118,10 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->name('ad
     Route::post('/blocked-dates', [BlockedDateController::class, 'store'])->name('blocked-dates.store');
     Route::delete('/blocked-dates/{blockedDate}', [BlockedDateController::class, 'destroy'])->name('blocked-dates.destroy');
 
+    // Analytics
+    Route::get('/analytics/occupancy', [App\Http\Controllers\Admin\OccupancyAnalyticsController::class, 'index'])
+        ->name('analytics.occupancy');
+
 });
-
-
 
 require __DIR__.'/auth.php';

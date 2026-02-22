@@ -262,7 +262,7 @@ const openCookieSettings = () => {
                         <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Support</h4>
                         <ul class="space-y-2">
                             <li>
-                                <Link href="/bookings" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <Link href="/my-bookings" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                     My Bookings
                                 </Link>
                             </li>

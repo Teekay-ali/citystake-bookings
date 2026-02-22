@@ -4,12 +4,14 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import {
     Calendar,
+    Download,
     MapPin,
     Users,
     Clock,
     CheckCircle,
     XCircle,
     AlertCircle,
+    Plus,
     ChevronRight,
     Filter
 } from 'lucide-vue-next';
@@ -90,13 +92,42 @@ const getStatusBadge = (booking) => {
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <!-- Header -->
-                <div class="mb-12">
-                    <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">
-                        My Bookings
-                    </h1>
-                    <p class="text-lg text-gray-600 dark:text-gray-400">
-                        Manage and view all your reservations
-                    </p>
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">
+                            All Bookings
+                        </h1>
+                        <p class="text-lg text-gray-600 dark:text-gray-400">
+                            Manage and track all property bookings
+                        </p>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex items-center gap-3">
+                        <Link
+                            :href="route('admin.bookings.calendar')"
+                            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full transition-all flex items-center shadow-lg"
+                        >
+                            <Calendar class="w-5 h-5 mr-2" />
+                            Calendar View
+                        </Link>
+
+                        <button
+                            @click="exportBookings"
+                            class="px-6 py-3 bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white font-medium rounded-full transition-all flex items-center shadow-lg"
+                        >
+                            <Download class="w-5 h-5 mr-2" />
+                            Export
+                        </button>
+
+                        <Link
+                            :href="route('admin.bookings.create')"
+                            class="px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all flex items-center shadow-lg"
+                        >
+                            <Plus class="w-5 h-5 mr-2" />
+                            Create Booking
+                        </Link>
+                    </div>
                 </div>
 
                 <!-- Tabs -->

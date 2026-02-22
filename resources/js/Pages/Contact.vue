@@ -116,7 +116,7 @@ const submit = () => {
                                 <a href="/about" class="block text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                     About Us
                                 </a>
-                                <a href="/bookings" class="block text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <a href="/my-bookings" class="block text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                     My Bookings
                                 </a>
                             </div>
