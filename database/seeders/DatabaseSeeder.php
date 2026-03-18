@@ -15,26 +15,12 @@ class DatabaseSeeder extends Seeder
     {
         // Create admin user
         User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@citystake.com',
-            'password' => bcrypt('password'),
+            'name' => 'Admin',
+            'email' => 'admin@csbookings.ninetentech.net',
+            'password' => bcrypt('#@CSBookings26#'),
             'is_admin' => true,
         ]);
 
-        // Create test user
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => bcrypt('password'),
-        ]);
-
-
-        // Create test user
-        User::factory()->create([
-            'name' => 'Abba Toko',
-            'email' => 'abbatka95@gmail.com',
-            'password' => bcrypt('password'),
-        ]);
 
         // Create Buildings with Unit Types and Units
         $this->createAsokoroBuilding();
