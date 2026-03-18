@@ -5,6 +5,8 @@ import { useDarkMode } from '@/Composables/useDarkMode';
 import { usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import CookieConsent from '@/Components/CookieConsent.vue';
+import EmailVerificationBanner from '@/Components/EmailVerificationBanner.vue';
+import { LayoutDashboard, CalendarDays, Building2, Ban, BarChart3 } from 'lucide-vue-next';
 
 const showMobileMenu = ref(false);
 const { isDark, toggle } = useDarkMode();
@@ -59,9 +61,13 @@ const openCookieSettings = () => {
 
 <template>
     <div class="min-h-screen bg-white dark:bg-gray-950">
+
+        <EmailVerificationBanner />
+
         <!-- Navigation - Minimal & Clean -->
-        <nav class="fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md z-50 border-b border-gray-100 dark:border-gray-900">
-            <div class="max-w-7xl mx-auto px-6 lg:px-8">
+        <nav class="fixed left-0 right-0 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md z-50 border-b border-gray-100 dark:border-gray-900"
+             :class="$page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'top-[40px]' : 'top-0'">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <div class="flex justify-between items-center h-20">
                     <!-- Logo -->
                     <Link :href="route('home')" class="flex items-center space-x-2">
@@ -94,13 +100,6 @@ const openCookieSettings = () => {
                         </button>
 
                         <div v-if="$page.props.auth.user" class="flex items-center space-x-6">
-                            <Link
-                                v-if="$page.props.auth.user.is_admin"
-                                :href="route('admin.dashboard')"
-                                class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                            >
-                                Admin
-                            </Link>
                             <Link
                                 :href="route('bookings.index')"
                                 class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -178,13 +177,6 @@ const openCookieSettings = () => {
 
                     <template v-if="$page.props.auth.user">
                         <Link
-                            v-if="$page.props.auth.user.is_admin"
-                            :href="route('admin.dashboard')"
-                            class="block text-base font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            Admin
-                        </Link>
-                        <Link
                             :href="route('bookings.index')"
                             class="block text-base font-medium text-gray-700 dark:text-gray-300"
                         >
@@ -224,8 +216,83 @@ const openCookieSettings = () => {
             </div>
         </nav>
 
+        <!-- Admin Navigation Bar -->
+        <div
+            v-if="$page.props.auth.user?.is_admin"
+            class="fixed left-0 right-0 z-40 bg-gray-950 dark:bg-gray-900 border-b border-gray-800"
+            :class="$page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'top-[140px]' : 'top-20'"
+        >
+            <div class="max-w-7xl mx-auto px-6 lg:px-8">
+                <div class="flex items-center gap-1 overflow-x-auto h-12" style="scrollbar-width: none;">
+                    <Link
+                        :href="route('admin.dashboard')"
+                        :class="[
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                    route().current('admin.dashboard')
+                        ? 'bg-white/10 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ]"
+                    >
+                        <LayoutDashboard class="w-4 h-4" />
+                        Dashboard
+                    </Link>
+                    <Link
+                        :href="route('admin.bookings.index')"
+                        :class="[
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                    route().current('admin.bookings.*')
+                        ? 'bg-white/10 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ]"
+                    >
+                        <CalendarDays class="w-4 h-4" />
+                        Bookings
+                    </Link>
+                    <Link
+                        :href="route('admin.properties.index')"
+                        :class="[
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                    route().current('admin.properties.*') || route().current('admin.unit-types.*')
+                        ? 'bg-white/10 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ]"
+                    >
+                        <Building2 class="w-4 h-4" />
+                        Properties
+                    </Link>
+                    <Link
+                        :href="route('admin.blocked-dates.index')"
+                        :class="[
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                    route().current('admin.blocked-dates.*')
+                        ? 'bg-white/10 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ]"
+                    >
+                        <Ban class="w-4 h-4" />
+                        Blocked Dates
+                    </Link>
+                    <Link
+                        :href="route('admin.analytics.occupancy')"
+                        :class="[
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                    route().current('admin.analytics.*')
+                        ? 'bg-white/10 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                ]"
+                    >
+                        <BarChart3 class="w-4 h-4" />
+                        Analytics
+                    </Link>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Content -->
-        <main class="pt-20">
+        <main :class="[
+            $page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'pt-[100px]' : 'pt-20',
+            $page.props.auth.user?.is_admin ? 'pt-[148px]' : ''
+        ]">
             <slot />
         </main>
 

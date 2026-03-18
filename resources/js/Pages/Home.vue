@@ -29,7 +29,9 @@ const formatPrice = (price) => {
     return new Intl.NumberFormat('en-NG').format(price);
 };
 
-const dateRange = ref({ start: '', end: '' });
+const dateRange = ref(null);
+const checkIn = ref('');
+const checkOut = ref('');
 const guests = ref(2);
 
 const dateConfig = {
@@ -38,21 +40,27 @@ const dateConfig = {
     minDate: 'today',
     onChange: (selectedDates) => {
         if (selectedDates.length === 2) {
-            dateRange.value.start = selectedDates[0].toISOString().split('T')[0];
-            dateRange.value.end = selectedDates[1].toISOString().split('T')[0];
+            const formatLocalDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            checkIn.value = formatLocalDate(selectedDates[0]);
+            checkOut.value = formatLocalDate(selectedDates[1]);
         }
     }
 };
 
 const searchProperties = () => {
-    if (!dateRange.value.start || !dateRange.value.end) {
+    if (!checkIn.value || !checkOut.value) {
         router.get(route('properties.index'));
         return;
     }
 
     router.get(route('properties.index'), {
-        check_in: dateRange.value.start,
-        check_out: dateRange.value.end,
+        check_in: checkIn.value,
+        check_out: checkOut.value,
         guests: guests.value
     });
 };
@@ -83,8 +91,7 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
 
         <!-- Hero Section with Search -->
         <div class="relative bg-white dark:bg-gray-950">
-            <div class="relative h-[700px] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 dark:from-gray-950 dark:to-gray-900 overflow-hidden">
-                <!-- Animated Background Pattern -->
+            <div class="relative min-h-[700px] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 dark:from-gray-950 dark:to-gray-900 overflow-hidden">                <!-- Animated Background Pattern -->
                 <div class="absolute inset-0 opacity-10">
                     <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] animate-pulse"></div>
                 </div>
@@ -92,9 +99,7 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
                 <!-- Hero Image Overlay -->
                 <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1600&h=900&fit=crop')] bg-cover bg-center opacity-15"></div>
 
-                <div class="relative max-w-7xl mx-auto px-6 lg:px-8 h-full flex flex-col justify-center">
-                    <!-- Stats Bar at Top -->
-                    <div class="mb-8 flex items-center gap-8 text-white/80">
+                <div class="relative max-w-7xl mx-auto px-6 lg:px-8 py-16 md:h-full flex flex-col justify-center">                    <div class="mb-8 flex items-center gap-8 text-white/80">
                         <div class="flex items-center gap-2">
                             <Building2 class="w-5 h-5" />
                             <span class="text-sm font-light">{{ stats.total_properties }}+ Properties</span>

@@ -36,11 +36,13 @@ class HomeController extends Controller
         });
 
         // Get stats
-        $stats = [
-            'total_properties' => Building::where('is_active', true)->count(),
-            'happy_guests' => Booking::where('status', 'completed')->count(),
-            'locations' => Building::distinct('city')->count('city'),
-        ];
+        $stats = Cache::remember('home_stats', 3600, function () {
+            return [
+                'total_properties' => Building::where('is_active', true)->count(),
+                'happy_guests'     => Booking::where('status', 'completed')->count(),
+                'locations'        => Building::distinct('city')->count('city'),
+            ];
+        });
 
         return Inertia::render('Home', [
             'buildings' => $buildings,

@@ -79,7 +79,10 @@ class BookingController extends Controller
 
     public function create()
     {
-        $buildings = Building::with('unitTypes')->where('is_active', true)->get();
+        $buildings = Building::with(['unitTypes:id,building_id,name,bedroom_type,base_price_per_night'])
+            ->where('is_active', true)
+            ->select('id', 'name')
+            ->get();
 
         return Inertia::render('Admin/Bookings/Create', [
             'buildings' => $buildings,

@@ -13,6 +13,7 @@ class UnitTypeController extends Controller
     public function index(Request $request): Response
     {
         $query = UnitType::with(['building', 'primaryImage'])
+            ->select('id', 'building_id', 'name', 'slug', 'bedroom_type', 'max_guests', 'base_price_per_night', 'is_active', 'created_at')
             ->where('is_active', true)
             ->whereHas('building', function ($q) {
                 $q->where('is_active', true);
