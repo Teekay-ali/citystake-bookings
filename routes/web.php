@@ -27,21 +27,36 @@ Route::get('/contact', function () {
     return Inertia::render('Contact');
 })->name('contact');
 
-Route::post('/contact', function (Request $request) {
+Route::post('/contact', function (\Illuminate\Http\Request $request) {
     $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|max:255',
-        'phone' => 'nullable|string|max:20',
+        'name'    => 'required|string|max:255',
+        'email'   => 'required|email|max:255',
+        'phone'   => 'nullable|string|max:20',
         'subject' => 'required|string|max:255',
         'message' => 'required|string|max:2000',
     ]);
 
-    // TODO: Send email to admin
-    // For now, just log it
-    \Log::info('Contact form submission', $validated);
+    $adminEmail = config('mail.admin_email');
+
+    \Illuminate\Support\Facades\Mail::send(
+        [],
+        [],
+        function ($mail) use ($validated, $adminEmail) {
+            $mail->to($adminEmail)
+                ->replyTo($validated['email'], $validated['name'])
+                ->subject('Contact Form: ' . $validated['subject'])
+                ->html(
+                    '<p><strong>From:</strong> ' . e($validated['name']) . ' &lt;' . e($validated['email']) . '&gt;</p>' .
+                    ($validated['phone'] ? '<p><strong>Phone:</strong> ' . e($validated['phone']) . '</p>' : '') .
+                    '<p><strong>Subject:</strong> ' . e($validated['subject']) . '</p>' .
+                    '<hr><p>' . nl2br(e($validated['message'])) . '</p>'
+                );
+        }
+    );
 
     return redirect()->back()->with('success', 'Thank you for contacting us! We\'ll get back to you soon.');
 })->name('contact.store');
+
 
 Route::get('/terms', function () {
     return Inertia::render('Terms');

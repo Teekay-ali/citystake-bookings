@@ -97,7 +97,13 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
                 </div>
 
                 <!-- Hero Image Overlay -->
-                <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1600&h=900&fit=crop')] bg-cover bg-center opacity-15"></div>
+                <img
+                    src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop&q=60"
+                    alt=""
+                    fetchpriority="high"
+                    class="absolute inset-0 w-full h-full object-cover object-center opacity-15"
+                    aria-hidden="true"
+                />
 
                 <div class="relative max-w-7xl mx-auto px-6 lg:px-8 py-16 md:h-full flex flex-col justify-center">                    <div class="mb-8 flex items-center gap-8 text-white/80">
                         <div class="flex items-center gap-2">
@@ -216,6 +222,7 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
                             <img
                                 :src="building.primary_image"
                                 :alt="building.name"
+                                loading="lazy"
                                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                             />
                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -296,6 +303,7 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
                         <img
                             :src="destination.image"
                             :alt="destination.name"
+                            loading="lazy"
                             class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>

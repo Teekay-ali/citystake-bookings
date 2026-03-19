@@ -476,15 +476,14 @@ const daysUntilCheckIn = computed(() => {
                         <h3 class="text-sm font-semibold text-gray-900 mb-2">Important Information</h3>
                         <ul class="text-xs text-gray-600 space-y-1">
                             <li>• Please bring a valid government-issued ID</li>
-                            <li>• Call 24 hours before arrival: +234 801 234 5678</li>
+                            <li>• Contact us 24 hours before arrival</li>
                             <li>• Free cancellation up to 24 hours before check-in</li>
                         </ul>
                     </div>
 
                     <div class="text-center text-xs text-gray-500 pt-4 border-t border-gray-300">
                         <p>Thank you for choosing CityStake</p>
-                        <p class="mt-1">help@citystake.com • +234 801 234 5678</p>
-                        <p class="mt-2">www.citystake.com</p>
+                        <p class="mt-1">info@csbookings.ninetentech.net</p>
                     </div>
                 </div>
 

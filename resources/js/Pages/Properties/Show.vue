@@ -226,6 +226,7 @@ const proceedToBooking = () => {
                             v-if="unitType.images[0]"
                             :src="unitType.images[0].image_path"
                             :alt="unitType.name"
+                            fetchpriority="high"
                             class="w-full h-full object-cover"
                         />
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
@@ -242,6 +243,7 @@ const proceedToBooking = () => {
                             <img
                                 :src="image.image_path"
                                 :alt="unitType.name"
+                                loading="lazy"
                                 class="w-full h-full object-cover"
                             />
                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>

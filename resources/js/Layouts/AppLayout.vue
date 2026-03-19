@@ -289,10 +289,11 @@ const openCookieSettings = () => {
         </div>
 
         <!-- Main Content -->
-        <main :class="[
-            $page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'pt-[100px]' : 'pt-20',
-            $page.props.auth.user?.is_admin ? 'pt-[148px]' : ''
-        ]">
+        <main :class="
+            $page.props.auth.user?.is_admin
+                ? ($page.props.auth.user.email_verified_at ? 'pt-[128px]' : 'pt-[168px]')
+                : ($page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'pt-[100px]' : 'pt-20')
+        ">
             <slot />
         </main>
 

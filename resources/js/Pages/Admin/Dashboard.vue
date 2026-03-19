@@ -54,10 +54,9 @@ const maxRevenue = computed(() => {
     <AppLayout>
         <Head title="Admin Dashboard" />
 
-        <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
-            <div class="max-w-7xl mx-auto px-6 lg:px-8">
+        <div class="bg-white dark:bg-gray-950 min-h-screen py-8">            <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <!-- Header -->
-                <div class="flex items-center justify-between mb-12">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
                         <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-3">
                             Dashboard
@@ -93,9 +92,9 @@ const maxRevenue = computed(() => {
                 </div>
 
                 <!-- Revenue Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                     <!-- Total Revenue -->
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-8 rounded-2xl border border-blue-200 dark:border-blue-800">
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-5 sm:p-8 rounded-2xl border border-blue-200 dark:border-blue-800">
                         <div class="flex items-center justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                                 <DollarSign class="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -110,7 +109,7 @@ const maxRevenue = computed(() => {
                     </div>
 
                     <!-- This Month Revenue -->
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-8 rounded-2xl border border-green-200 dark:border-green-800">
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-5 sm:p-8 rounded-2xl border border-green-200 dark:border-green-800">
                         <div class="flex items-center justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                                 <Calendar class="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -129,7 +128,7 @@ const maxRevenue = computed(() => {
                     </div>
 
                     <!-- This Year Revenue -->
-                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-8 rounded-2xl border border-purple-200 dark:border-purple-800">
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-5 sm:p-8 rounded-2xl border border-purple-200 dark:border-purple-800">
                         <div class="flex items-center justify-between mb-4">
                             <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                                 <TrendingUp class="w-6 h-6 text-purple-600 dark:text-purple-400" />
@@ -145,7 +144,7 @@ const maxRevenue = computed(() => {
                 </div>
 
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
                         <div class="flex items-center justify-between mb-4">
                             <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -203,9 +202,9 @@ const maxRevenue = computed(() => {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                     <!-- Monthly Revenue Chart -->
-                    <div class="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
+                    <div class="bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
                         <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
                             Revenue Trend (Last 6 Months)
                         </h3>
@@ -230,7 +229,7 @@ const maxRevenue = computed(() => {
                     </div>
 
                     <!-- Revenue by Property -->
-                    <div class="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
+                    <div class="bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
                         <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
                             Top Properties by Revenue
                         </h3>
@@ -253,7 +252,7 @@ const maxRevenue = computed(() => {
                 </div>
 
                 <!-- Payment & Status Breakdown -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                     <!-- Payment Status -->
                     <div class="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
                         <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-6">

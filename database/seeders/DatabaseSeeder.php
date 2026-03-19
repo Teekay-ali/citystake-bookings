@@ -13,19 +13,36 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create admin user
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@csbookings.ninetentech.net',
-            'password' => bcrypt('#@CSBookings26#'),
-            'is_admin' => true,
-        ]);
+        // Admin user — credentials come from .env, never hardcoded
+        $email    = env('ADMIN_EMAIL');
+        $password = env('ADMIN_PASSWORD');
+        $name     = env('ADMIN_NAME', 'Admin');
 
+        if ($email && $password) {
+            User::updateOrCreate(
+                ['email' => $email],
+                [
+                    'name'              => $name,
+                    'password'          => bcrypt($password),
+                    'is_admin'          => true,
+                    'email_verified_at' => now(),
+                ]
+            );
+        }
 
-        // Create Buildings with Unit Types and Units
-        $this->createAsokoroBuilding();
-        $this->createMaitamaBuilding();
-        $this->createWuseBuilding();
+        // Only seed property data if it doesn't already exist
+        // Safe to re-run on production without duplicating data
+        if (!Building::where('slug', 'citystake-asokoro')->exists()) {
+            $this->createAsokoroBuilding();
+        }
+
+        if (!Building::where('slug', 'citystake-maitama')->exists()) {
+            $this->createMaitamaBuilding();
+        }
+
+        if (!Building::where('slug', 'citystake-wuse')->exists()) {
+            $this->createWuseBuilding();
+        }
     }
 
     private function createAsokoroBuilding()

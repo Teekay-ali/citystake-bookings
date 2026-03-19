@@ -59,4 +59,26 @@ class PaystackService
     {
         return $this->publicKey;
     }
+
+    public function refundTransaction(string $reference, int $amountKobo): array
+    {
+        try {
+            $response = $this->client->post("{$this->baseUrl}/refund", [
+                'headers' => [
+                    'Authorization' => "Bearer {$this->secretKey}",
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => [
+                    'transaction'       => $reference,
+                    'amount'            => $amountKobo,
+                    'merchant_note'     => 'Booking cancellation refund',
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (GuzzleException $e) {
+            Log::error('Paystack Refund Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
 }

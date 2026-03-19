@@ -141,7 +141,7 @@ const exportBookings = () => {
     <AppLayout>
         <Head title="All Bookings - Admin" />
 
-        <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
+        <div class="bg-white dark:bg-gray-950 min-h-screen py-8">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-8">
@@ -178,7 +178,7 @@ const exportBookings = () => {
                 <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 mb-8">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         <!-- Search -->
-                        <div class="lg:col-span-2">
+                        <div class="col-span-2 lg:col-span-2">
                             <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Search
                             </label>
@@ -258,7 +258,7 @@ const exportBookings = () => {
 
                 <!-- Bookings Table -->
                 <div class="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
-                    <div class="overflow-x-auto">
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                             <tr>
@@ -357,6 +357,36 @@ const exportBookings = () => {
                             </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <!-- Mobile card list -->
+                    <div class="md:hidden divide-y divide-gray-200 dark:divide-gray-800">
+                        <Link
+                            v-for="booking in bookings.data"
+                            :key="booking.id"
+                            :href="route('admin.bookings.show', booking.id)"
+                            class="flex items-start justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                        >
+                            <div class="space-y-1 min-w-0 flex-1 pr-3">
+                                <p class="text-sm font-mono font-medium text-gray-900 dark:text-white truncate">
+                                    {{ booking.booking_reference }}
+                                </p>
+                                <p class="text-sm text-gray-900 dark:text-white">{{ booking.guest_name }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ booking.building?.name }} · {{ booking.unit_type?.name }}
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ formatDate(booking.check_in) }} → {{ formatDate(booking.check_out) }}
+                                </p>
+                            </div>
+                            <div class="flex flex-col items-end gap-2 shrink-0">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ formatPrice(booking.total_amount) }}
+                </span>
+                                <span :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border', getStatusBadge(booking).class]">
+                    {{ getStatusBadge(booking).text }}
+                </span>
+                            </div>
+                        </Link>
                     </div>
                 </div>
 

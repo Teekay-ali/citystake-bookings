@@ -179,15 +179,19 @@ class BookingController extends Controller
             ->with(['building.images', 'unitType.images', 'unit'])
             ->firstOrFail();
 
-        // Ensure user can only view their own booking
         if ($booking->user_id !== auth()->id()) {
             abort(403);
         }
 
-        // If already paid, redirect to confirmation
         if ($booking->isPaid()) {
             return redirect()->route('bookings.confirmation', $booking);
         }
+
+        // Generate a fresh unique payment reference on every page load
+        // This allows retries if the user closes the Paystack modal
+        $booking->update([
+            'payment_reference' => $booking->booking_reference . '-' . strtoupper(uniqid()),
+        ]);
 
         $paystackService = new PaystackService();
 
@@ -266,35 +270,66 @@ class BookingController extends Controller
 
     public function cancel(Booking $booking)
     {
-        // Ensure user can only cancel their own booking
         if ($booking->user_id !== auth()->id()) {
             abort(403);
         }
 
-        // Check if booking can be cancelled
         if (!$booking->canBeCancelled()) {
             return redirect()->back()->with('error', 'This booking cannot be cancelled.');
         }
 
-        // Cancel the booking
-        $booking->update([
-            'status' => 'cancelled',
-            'cancelled_at' => now(),
-        ]);
+        $daysUntilCheckIn = now()->diffInDays($booking->check_in, false);
+        $refundAmount     = 0;
+        $refundNote       = '';
 
-        // Log the action
-        AuditLog::log('booking.cancelled', $booking,
-            ['status' => 'confirmed'],
-            ['status' => 'cancelled']
-        );
+        // Calculate refund per Terms page policy
+        if ($booking->isPaid() && $booking->paystack_reference) {
+            if ($daysUntilCheckIn > 7) {
+                $refundAmount = $booking->total_amount; // Full refund
+                $refundNote   = 'Full refund applied.';
+            } elseif ($daysUntilCheckIn >= 3) {
+                $refundAmount = $booking->total_amount * 0.5; // 50% refund
+                $refundNote   = '50% refund applied.';
+            }
+            // < 3 days: no refund
+        }
 
-        // Send cancellation email to guest
-        Mail::to($booking->guest_email)->send(new BookingCancelled($booking));
+        DB::transaction(function () use ($booking, $refundAmount, $refundNote) {
+            $booking->update([
+                'status'             => 'cancelled',
+                'cancelled_at'       => now(),
+                'payment_status'     => $refundAmount > 0 ? 'refunded' : $booking->payment_status,
+            ]);
 
-        // TODO: Process refund via Paystack (if applicable)
+            AuditLog::log('booking.cancelled', $booking,
+                ['status' => 'confirmed'],
+                ['status' => 'cancelled', 'refund_amount' => $refundAmount]
+            );
 
-        return redirect()->route('bookings.index')
-            ->with('success', 'Booking cancelled successfully.');
+            if ($refundAmount > 0) {
+                try {
+                    $paystackService = new PaystackService();
+                    $paystackService->refundTransaction(
+                        $booking->paystack_reference,
+                        (int) ($refundAmount * 100) // convert to kobo
+                    );
+                } catch (\Exception $e) {
+                    Log::error('Refund failed for booking ' . $booking->booking_reference, [
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Don't block the cancellation — flag it for manual review
+                }
+            }
+
+            Mail::to($booking->guest_email)->send(new BookingCancelled($booking));
+        });
+
+        $message = 'Booking cancelled successfully.';
+        if ($refundNote) {
+            $message .= ' ' . $refundNote . ' Please allow 5–7 business days.';
+        }
+
+        return redirect()->route('bookings.index')->with('success', $message);
     }
 
 }

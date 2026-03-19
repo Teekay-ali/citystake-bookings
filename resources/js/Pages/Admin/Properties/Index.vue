@@ -108,7 +108,7 @@ const formatPrice = (price) => {
     <AppLayout>
         <Head title="Property Management - Admin" />
 
-        <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
+        <div class="bg-white dark:bg-gray-950 min-h-screen py-8">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-8">
@@ -191,7 +191,7 @@ const formatPrice = (price) => {
 
                 <!-- Search and Filter -->
                 <div v-if="buildings.length > 0" class="mb-6">
-                    <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
                         <div class="flex-1 relative">
                             <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
@@ -205,7 +205,7 @@ const formatPrice = (price) => {
                             <Filter class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <select
                                 v-model="filterStatus"
-                                class="pl-12 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white appearance-none cursor-pointer transition-all min-w-[200px]"
+                                class="pl-12 pr-10 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white appearance-none cursor-pointer transition-all w-full sm:min-w-[180px]"
                             >
                                 <option value="all">All Status</option>
                                 <option value="active">Active Only</option>

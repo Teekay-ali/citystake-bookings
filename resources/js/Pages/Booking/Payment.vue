@@ -69,7 +69,7 @@ const payWithPaystack = () => {
         email: props.booking.guest_email,
         amount: props.booking.total_amount * 100, // Convert to kobo
         currency: 'NGN',
-        ref: props.booking.booking_reference + '-' + Math.floor((Math.random() * 1000000000) + 1),
+        ref: props.booking.payment_reference,
         metadata: {
             booking_reference: props.booking.booking_reference,
             guest_name: props.booking.guest_name,
