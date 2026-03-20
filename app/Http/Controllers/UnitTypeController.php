@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Booking;
 use App\Models\Building;
 use App\Models\UnitType;
 use Illuminate\Http\Request;
@@ -73,10 +74,33 @@ class UnitTypeController extends Controller
             abort(404);
         }
 
+        $userBooking = null;
+
+        if (auth()->check()) {
+            $userBooking = Booking::where('user_id', auth()->id())
+                ->where('unit_type_id', $unitType->id)
+                ->whereNotIn('status', ['cancelled'])
+                ->latest()
+                ->first(['id', 'booking_reference', 'status', 'payment_status', 'check_in', 'check_out']);
+        }
+
+        $similarProperties = UnitType::with(['primaryImage', 'building'])
+            ->where('is_active', true)
+            ->where('id', '!=', $unitType->id)
+            ->where(function ($q) use ($unitType) {
+                $q->where('building_id', $unitType->building_id)
+                    ->orWhere('bedroom_type', $unitType->bedroom_type);
+            })
+            ->limit(3)
+            ->get(['id', 'building_id', 'name', 'slug', 'bedroom_type', 'max_guests', 'base_price_per_night']);
+
         return Inertia::render('Properties/Show', [
-            'building' => $building,
-            'unitType' => $unitType,
+            'building'           => $building,
+            'unitType'           => $unitType,
+            'userBooking'        => $userBooking,
+            'similarProperties'  => $similarProperties,
         ]);
+
     }
 
     public function store(Request $request, Building $building)

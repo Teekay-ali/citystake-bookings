@@ -14,6 +14,13 @@ const { isDark, toggle } = useDarkMode();
 const page = usePage();
 const toast = useToast();
 
+const props = defineProps({
+    hideFooter: {
+        type: Boolean,
+        default: false,
+    },
+});
+
 // Show flash messages on mount
 onMounted(() => {
     const flash = page.props.flash;
@@ -298,7 +305,7 @@ const openCookieSettings = () => {
         </main>
 
         <!-- Footer -->
-        <footer class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto">
+        <footer v-if="!hideFooter && !$page.props.auth.user?.is_admin" class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div>

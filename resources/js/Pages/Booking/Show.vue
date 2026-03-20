@@ -6,7 +6,7 @@ import { useToast } from 'vue-toastification';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import {
     ArrowLeft,
-    Calendar,
+    Calendar, CreditCard,
     MapPin,
     Users,
     Download,
@@ -382,7 +382,19 @@ const daysUntilCheckIn = computed(() => {
 
                         <!-- Actions -->
                         <div class="space-y-3 no-print">
+
+                            <!-- Complete Payment — only if unpaid -->
+                            <Link
+                                v-if="booking.payment_status !== 'paid'"
+                                :href="route('bookings.payment', booking.booking_reference)"
+                                class="w-full flex items-center justify-center px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-all"                            >
+                                <CreditCard class="w-4 h-4 mr-2" />
+                                Complete Payment
+                            </Link>
+
+                            <!-- Print Receipt — only if paid -->
                             <button
+                                v-if="booking.payment_status === 'paid'"
                                 @click="printConfirmation"
                                 class="w-full flex items-center justify-center px-4 py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium rounded-xl transition-all"
                             >
@@ -400,6 +412,7 @@ const daysUntilCheckIn = computed(() => {
                             </button>
 
                         </div>
+
                     </div>
                 </div>
 

@@ -4,10 +4,10 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import {
     Calendar,
-    Users,
-    Home,
-    Wifi,
-    Wind,
+    Users, AlertCircle,
+    Home, CheckCircle,
+    Wifi, ChevronLeft, ChevronRight,
+    Wind, X, Navigation,
     Car,
     Waves,
     Dumbbell,
@@ -28,17 +28,36 @@ import {
     Volume2,       // For noise/quiet hours
     Baby           // For children rules
 } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 
 const props = defineProps({
     building: Object,
     unitType: Object,
+    userBooking: Object,
+    similarProperties: Array,
 });
+
+
 
 const isReserving = ref(false);
 const toast = useToast();
+
+const lightboxOpen = ref(false);
+const lightboxIndex = ref(0);
+
+const lightboxEl = ref(null);
+
+const openLightbox = (index) => {
+    lightboxIndex.value = index;
+    lightboxOpen.value = true;
+    nextTick(() => lightboxEl.value?.focus());
+};
+
+const closeLightbox = () => { lightboxOpen.value = false; };
+const lightboxPrev = () => { lightboxIndex.value = (lightboxIndex.value - 1 + props.unitType.images.length) % props.unitType.images.length; };
+const lightboxNext = () => { lightboxIndex.value = (lightboxIndex.value + 1) % props.unitType.images.length; };
 
 const selectedImage = ref(props.unitType.images[0]?.image_path || null);
 const guests = ref(2);
@@ -49,6 +68,7 @@ const availableUnitsCount = ref(0);
 const dateRange = ref(null);
 const checkIn = ref('');
 const checkOut = ref('');
+
 
 const dateConfig = {
     mode: 'range',
@@ -101,6 +121,16 @@ const allAmenities = computed(() => {
     return [...new Set([...buildingAmenities, ...unitAmenities])];
 });
 
+const userBookingBanner = computed(() => {
+    if (!props.userBooking) return null;
+
+    const isPending = props.userBooking.payment_status === 'pending';
+    const checkIn = new Date(props.userBooking.check_in).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const checkOut = new Date(props.userBooking.check_out).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    return { isPending, checkIn, checkOut };
+});
+
 const getAmenityIcon = (amenity) => {
     const amenityLower = amenity.toLowerCase();
 
@@ -132,7 +162,6 @@ const getHouseRuleIcon = (rule) => {
 
     return Info; // Default icon
 };
-
 
 const checkAvailability = async () => {
     if (!checkIn.value || !checkOut.value) {
@@ -219,9 +248,12 @@ const proceedToBooking = () => {
 
             <!-- Image Gallery -->
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
-                <div class="grid grid-cols-4 gap-2 rounded-3xl overflow-hidden h-[600px]">
+                <div class="grid grid-cols-4 gap-2 rounded-3xl overflow-hidden h-[500px] md:h-[600px]">
                     <!-- Main Image -->
-                    <div class="col-span-4 md:col-span-2 md:row-span-2 relative group cursor-pointer" @click="selectedImage = unitType.images[0]?.image_path">
+                    <div
+                        class="col-span-4 md:col-span-2 md:row-span-2 relative group cursor-pointer"
+                        @click="openLightbox(0)"
+                    >
                         <img
                             v-if="unitType.images[0]"
                             :src="unitType.images[0].image_path"
@@ -231,14 +263,13 @@ const proceedToBooking = () => {
                         />
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                     </div>
-
                     <!-- Thumbnail Grid -->
                     <template v-if="unitType.images.length > 1">
                         <div
                             v-for="(image, index) in unitType.images.slice(1, 5)"
                             :key="image.id"
                             class="relative group cursor-pointer overflow-hidden"
-                            @click="selectedImage = image.image_path"
+                            @click="openLightbox(index + 1)"
                         >
                             <img
                                 :src="image.image_path"
@@ -247,7 +278,6 @@ const proceedToBooking = () => {
                                 class="w-full h-full object-cover"
                             />
                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-
                             <div v-if="index === 3 && unitType.images.length > 5" class="absolute inset-0 bg-black/60 flex items-center justify-center">
                                 <span class="text-white text-sm font-medium">+{{ unitType.images.length - 5 }} more</span>
                             </div>
@@ -256,8 +286,53 @@ const proceedToBooking = () => {
                 </div>
             </div>
 
+            <!-- Lightbox -->
+            <Teleport to="body">
+                <div
+                    v-if="lightboxOpen"
+                    ref="lightboxEl"
+                    tabindex="0"
+                    class="fixed inset-0 z-50 bg-black/95 flex items-center justify-center outline-none"
+                    @click.self="closeLightbox"
+                    @keydown.right="lightboxNext"
+                    @keydown.left="lightboxPrev"
+                    @keydown.esc="closeLightbox"
+                >
+                    <!-- Close -->
+                    <button @click="closeLightbox" class="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all">
+                        <X class="w-6 h-6" />
+                    </button>
+                    <!-- Counter -->
+                    <span class="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
+            {{ lightboxIndex + 1 }} / {{ unitType.images.length }}
+        </span>
+                    <!-- Prev -->
+                    <button
+                        v-if="unitType.images.length > 1"
+                        @click="lightboxPrev"
+                        class="absolute left-4 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all"
+                    >
+                        <ChevronLeft class="w-7 h-7" />
+                    </button>
+                    <!-- Image -->
+                    <img
+                        :src="unitType.images[lightboxIndex]?.image_path"
+                        :alt="unitType.name"
+                        class="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+                    />
+                    <!-- Next -->
+                    <button
+                        v-if="unitType.images.length > 1"
+                        @click="lightboxNext"
+                        class="absolute right-4 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all"
+                    >
+                        <ChevronRight class="w-7 h-7" />
+                    </button>
+                </div>
+            </Teleport>
+
             <!-- Main Content -->
-            <div class="max-w-7xl mx-auto px-6 lg:px-8 pb-24">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8 pb-20 lg:pb-24">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-16">
                     <!-- Left Column: Details -->
                     <div class="lg:col-span-2 space-y-12">
@@ -331,11 +406,108 @@ const proceedToBooking = () => {
                             </div>
                         </div>
 
+                        <!-- Location -->
+                        <div>
+                            <h2 class="text-2xl font-light text-gray-900 dark:text-white mb-6">Location</h2>
+                            <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="font-medium text-gray-900 dark:text-white mb-1">{{ building.name }}</p>
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">{{ building.address }}</p>
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">{{ building.city }}, Nigeria</p>
+                                    </div>
+
+                                    <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(building.address + ', ' + building.city + ', Nigeria')}`"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 text-sm text-gray-700 dark:text-gray-300 rounded-full transition-all flex-shrink-0"
+                                    >
+                                    <Navigation class="w-4 h-4 mr-2" />
+                                    Get directions
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Similar Properties -->
+                        <div v-if="similarProperties && similarProperties.length">
+                            <h2 class="text-2xl font-light text-gray-900 dark:text-white mb-6">Similar properties</h2>
+                            <div class="space-y-4">
+                                <Link
+                                    v-for="prop in similarProperties"
+                                    :key="prop.id"
+                                    :href="route('properties.show', [prop.building.slug, prop.slug])"
+                                    class="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 rounded-2xl transition-all group"
+                                >
+                                    <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-900">
+                                        <img
+                                            v-if="prop.primary_image"
+                                            :src="prop.primary_image.image_path"
+                                            :alt="prop.name"
+                                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-medium text-gray-900 dark:text-white truncate">{{ prop.name }}</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ prop.building.name }} · {{ prop.bedroom_type }}</p>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">
+                                            {{ formatPrice(prop.base_price_per_night) }}<span class="font-normal text-gray-500"> / night</span>
+                                        </p>
+                                    </div>
+                                    <ChevronRight class="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                                </Link>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Right Column: Booking Card (Sticky) -->
                     <div class="lg:col-span-1">
                         <div class="sticky top-24">
+                            <!-- Existing Booking Notice -->
+                            <div
+                                v-if="userBooking && userBookingBanner"
+                                :class="userBookingBanner.isPending
+        ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800'
+        : 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'"
+                                class="border rounded-2xl p-5 mb-6"
+                            >
+                                <div class="flex items-start gap-3">
+                                    <div
+                                        :class="userBookingBanner.isPending ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'"
+                                        class="mt-0.5 flex-shrink-0"
+                                    >
+                                        <AlertCircle v-if="userBookingBanner.isPending" class="w-5 h-5" />
+                                        <CheckCircle v-else class="w-5 h-5" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p
+                                            :class="userBookingBanner.isPending ? 'text-yellow-800 dark:text-yellow-300' : 'text-green-800 dark:text-green-300'"
+                                            class="text-sm font-medium mb-1"
+                                        >
+                                            {{ userBookingBanner.isPending ? 'You have a pending booking' : 'You have a confirmed booking' }}
+                                        </p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                            {{ userBookingBanner.checkIn }} → {{ userBookingBanner.checkOut }}
+                                        </p>
+                                        <div class="flex gap-2 flex-wrap">
+                                            <Link
+                                                v-if="userBookingBanner.isPending"
+                                                :href="route('bookings.payment', userBooking.booking_reference)"
+                                                class="inline-flex items-center px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium rounded-lg transition-all"
+                                            >
+                                                Complete Payment
+                                            </Link>
+                                            <Link
+                                                :href="route('bookings.show', userBooking.id)"
+                                                class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-600 text-xs font-medium rounded-lg transition-all"
+                                            >
+                                                View Booking
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="border border-gray-200 dark:border-gray-800 rounded-3xl p-8 bg-white dark:bg-gray-900 shadow-sm">
                                 <!-- Price -->
                                 <div class="mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">
@@ -345,6 +517,9 @@ const proceedToBooking = () => {
                                         </span>
                                         <span class="ml-2 text-gray-500 dark:text-gray-400">/ night</span>
                                     </div>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                        Excl. cleaning fee & service charge
+                                    </p>
                                 </div>
 
                                 <!-- Date Selection -->
@@ -402,10 +577,19 @@ const proceedToBooking = () => {
                                     </div>
                                 </div>
 
-                                <!-- Availability Message -->
-                                <p v-if="availabilityMessage" class="text-sm mb-4 text-center py-2 px-4 rounded-lg" :class="availabilityMessage.includes('Available') ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'">
-                                    {{ availabilityMessage }}
-                                </p>
+                                <!-- Availability feedback -->
+                                <div v-if="availabilityMessage" class="mb-4">
+                                    <p class="text-sm text-center py-2 px-4 rounded-lg"
+                                       :class="availabilityMessage.includes('Available') ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'">
+                                        {{ availabilityMessage }}
+                                    </p>
+                                    <p
+                                        v-if="availableUnitsCount > 0 && availableUnitsCount <= 2"
+                                        class="text-xs text-center text-amber-600 dark:text-amber-400 font-medium mt-1"
+                                    >
+                                        ⚡ Only {{ availableUnitsCount }} unit{{ availableUnitsCount > 1 ? 's' : '' }} left for these dates
+                                    </p>
+                                </div>
 
                                 <!-- Reserve Button (if authenticated) -->
                                 <button
@@ -443,5 +627,39 @@ const proceedToBooking = () => {
                 </div>
             </div>
         </div>
+
+        <!-- Mobile sticky bottom bar -->
+        <div class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shadow-lg">
+            <div>
+                <p class="text-lg font-medium text-gray-900 dark:text-white">
+                    {{ formatPrice(unitType.base_price_per_night) }}
+                    <span class="text-sm font-normal text-gray-500 dark:text-gray-400">/ night</span>
+                </p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">Excl. fees</p>
+            </div>
+            <button
+                v-if="!userBooking"
+                @click="proceedToBooking"
+                :disabled="isReserving"
+                class="px-6 py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white dark:text-gray-900 text-sm font-medium rounded-full transition-all"
+            >
+                {{ isReserving ? 'Loading...' : 'Reserve' }}
+            </button>
+            <Link
+                v-else-if="userBooking && userBookingBanner?.isPending"
+                :href="route('bookings.payment', userBooking.booking_reference)"
+                class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-full transition-all"
+            >
+                Complete Payment
+            </Link>
+            <Link
+                v-else
+                :href="route('bookings.show', userBooking.id)"
+                class="px-6 py-2.5 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-full transition-all"
+            >
+                View Booking
+            </Link>
+        </div>
+
     </AppLayout>
 </template>

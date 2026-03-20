@@ -93,7 +93,7 @@ const payWithPaystack = () => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :hide-footer="true">
         <Head title="Payment - Complete Your Booking" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">

@@ -53,7 +53,7 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :hide-footer="true">
         <Head title="Confirm Booking" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
