@@ -36,7 +36,7 @@ Route::post('/contact', function (\Illuminate\Http\Request $request) {
         'message' => 'required|string|max:2000',
     ]);
 
-    $adminEmail = config('mail.admin_email');
+    $adminEmail = config('mail.help_email');
 
     \Illuminate\Support\Facades\Mail::send(
         [],

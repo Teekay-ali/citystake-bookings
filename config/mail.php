@@ -116,6 +116,7 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Citystake'),
     ],
 
-    'admin_email' => env('MAIL_ADMIN_EMAIL', 'admin@example.com'),
+    'admin_email' => env('MAIL_ADMIN_EMAIL', 'admin@csbookings.ninetentech.net'),
+    'help_email' => env('MAIL_HELP_EMAIL', 'help@csbookings.ninetentech.net'),
 
 ];
