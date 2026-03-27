@@ -17,6 +17,7 @@ const props = defineProps({
 
 const form = useForm({
     building_id: '',
+    unit_type_id: '',
     unit_id: '',
     blocked_from: '',
     blocked_to: '',
@@ -24,20 +25,30 @@ const form = useForm({
     notes: '',
 });
 
-const selectedBuilding = computed(() => {
-    return props.buildings.find(b => b.id == form.building_id);
+const selectedBuilding = computed(() =>
+    props.buildings.find(b => b.id == form.building_id)
+);
+
+const availableUnitTypes = computed(() =>
+    selectedBuilding.value?.unit_types ?? []
+);
+
+const selectedUnitType = computed(() =>
+    availableUnitTypes.value.find(ut => ut.id == form.unit_type_id)
+);
+
+const availableUnits = computed(() =>
+    selectedUnitType.value?.units ?? []
+);
+
+// Reset downstream when parent changes
+watch(() => form.building_id, () => {
+    form.unit_type_id = '';
+    form.unit_id = '';
 });
 
-const availableUnits = computed(() => {
-    if (!selectedBuilding.value) return [];
-
-    return selectedBuilding.value.units.map(unit => ({
-        id: unit.id,
-        label: `Unit ${unit.unit_number} - ${unit.unit_type.name} (${unit.floor} Floor)`,
-        unitNumber: unit.unit_number,
-        unitType: unit.unit_type.name,
-        floor: unit.floor,
-    }));
+watch(() => form.unit_type_id, () => {
+    form.unit_id = '';
 });
 
 const calculateDuration = computed(() => {
@@ -49,10 +60,6 @@ const calculateDuration = computed(() => {
     return diffDays > 0 ? diffDays : 0;
 });
 
-// Reset unit when building changes
-watch(() => form.building_id, () => {
-    form.unit_id = '';
-});
 
 const commonReasons = [
     'Maintenance & Repairs',
@@ -108,7 +115,7 @@ const submit = () => {
                             Select Unit
                         </h2>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <!-- Building -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -117,12 +124,7 @@ const submit = () => {
                                 <select
                                     v-model="form.building_id"
                                     required
-                                    :class="[
-                                        'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
-                                        form.errors.building_id
-                                            ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
-                                            : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white'
-                                    ]"
+                                    class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
                                 >
                                     <option value="">Select building</option>
                                     <option v-for="building in buildings" :key="building.id" :value="building.id">
@@ -134,6 +136,27 @@ const submit = () => {
                                 </p>
                             </div>
 
+                            <!-- Unit Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Unit Type <span class="text-red-500">*</span>
+                                </label>
+                                <select
+                                    v-model="form.unit_type_id"
+                                    :disabled="!form.building_id"
+                                    required
+                                    class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <option value="">Select unit type</option>
+                                    <option v-for="ut in availableUnitTypes" :key="ut.id" :value="ut.id">
+                                        {{ ut.name }} ({{ ut.bedroom_type }})
+                                    </option>
+                                </select>
+                                <p v-if="form.errors.unit_type_id" class="mt-2 text-sm text-red-600 dark:text-red-400">
+                                    {{ form.errors.unit_type_id }}
+                                </p>
+                            </div>
+
                             <!-- Unit -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -141,19 +164,13 @@ const submit = () => {
                                 </label>
                                 <select
                                     v-model="form.unit_id"
-                                    :disabled="!form.building_id"
+                                    :disabled="!form.unit_type_id"
                                     required
-                                    :class="[
-                                        'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
-                                        form.errors.unit_id
-                                            ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
-                                            : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white',
-                                        !form.building_id && 'opacity-50 cursor-not-allowed'
-                                    ]"
+                                    class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <option value="">Select unit</option>
                                     <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
-                                        {{ unit.label }}
+                                        Unit {{ unit.unit_number }}{{ unit.floor ? ' · ' + unit.floor + ' Floor' : '' }}
                                     </option>
                                 </select>
                                 <p v-if="form.errors.unit_id" class="mt-2 text-sm text-red-600 dark:text-red-400">
@@ -161,6 +178,7 @@ const submit = () => {
                                 </p>
                             </div>
                         </div>
+
                     </div>
 
                     <!-- Date Range -->

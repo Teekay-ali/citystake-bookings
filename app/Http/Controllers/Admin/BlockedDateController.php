@@ -49,9 +49,13 @@ class BlockedDateController extends Controller
 
     public function create()
     {
-        $buildings = Building::with(['units' => function ($q) {
-            $q->select('id', 'unit_type_id', 'unit_number')
-                ->with(['unitType:id,name,bedroom_type']);
+        $buildings = Building::with(['unitTypes' => function ($q) {
+            $q->where('is_active', true)
+                ->select('id', 'building_id', 'name', 'bedroom_type')
+                ->with(['units' => function ($q2) {
+                    $q2->select('id', 'unit_type_id', 'unit_number', 'floor')
+                        ->where('is_available', true);
+                }]);
         }])->where('is_active', true)->select('id', 'name')->get();
 
         return Inertia::render('Admin/BlockedDates/Create', [

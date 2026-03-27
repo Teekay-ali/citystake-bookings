@@ -214,7 +214,7 @@ const clearFilters = () => {
 
                                 <!-- Created By -->
                                 <p class="text-xs text-gray-500 dark:text-gray-500 mt-3">
-                                    Created by {{ block.creator.name }} on {{ formatDate(block.created_at) }}
+                                    Created by {{ block.creator?.name ?? 'System' }} on {{ formatDate(block.created_at) }}
                                 </p>
                             </div>
 
