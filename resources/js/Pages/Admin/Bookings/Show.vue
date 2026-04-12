@@ -457,6 +457,93 @@ function submitCheckIn() {
                             </div>
                         </div>
 
+                        <!-- Late Checkout -->
+                        <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <Clock class="w-5 h-5" />
+                                Late Checkout
+                            </h3>
+
+                            <!-- Can request -->
+                            <div v-if="!booking.late_checkout_requested">
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                    Standard checkout is 12:00 PM. A late checkout fee of
+                                    <span class="font-medium text-gray-900 dark:text-white">₦{{ Number(20000).toLocaleString() }}</span>
+                                    applies.
+                                </p>
+                                <Link
+                                    v-if="['confirmed','checked_in'].includes(booking.status)"
+                                    :href="route('admin.bookings.late-checkout.request', booking.id)"
+                                    method="post"
+                                    as="button"
+                                    class="w-full text-center px-4 py-3 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-all">
+                                    Request Late Checkout
+                                </Link>
+                            </div>
+
+                            <!-- Pending approval -->
+                            <div v-else-if="booking.late_checkout_status === 'pending'" class="space-y-3">
+                                <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+                                    <p class="text-sm font-medium text-amber-700 dark:text-amber-400">Awaiting Manager Approval</p>
+                                    <p class="text-sm text-amber-600 dark:text-amber-500 mt-1">
+                                        Fee: ₦{{ Number(booking.late_checkout_fee).toLocaleString() }}
+                                    </p>
+                                </div>
+                                <!-- Manager/Admin approve or reject -->
+                                <div v-if="$page.props.auth.user.roles.includes('manager') || $page.props.auth.user.roles.includes('super-admin')"
+                                     class="flex gap-2">
+                                    <Link
+                                        :href="route('admin.bookings.late-checkout.approve', booking.id)"
+                                        method="post"
+                                        as="button"
+                                        :data="{ action: 'approved' }"
+                                        class="flex-1 text-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-all">
+                                        Approve
+                                    </Link>
+                                    <Link
+                                        :href="route('admin.bookings.late-checkout.approve', booking.id)"
+                                        method="post"
+                                        as="button"
+                                        :data="{ action: 'rejected' }"
+                                        class="flex-1 text-center px-4 py-2.5 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl text-sm font-medium transition-all">
+                                        Reject
+                                    </Link>
+                                </div>
+                            </div>
+
+                            <!-- Approved — awaiting payment -->
+                            <div v-else-if="booking.late_checkout_status === 'approved'" class="space-y-3">
+                                <div class="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl px-4 py-3">
+                                    <p class="text-sm font-medium text-violet-700 dark:text-violet-400">Late Checkout Approved</p>
+                                    <p class="text-sm text-violet-600 dark:text-violet-500 mt-1">
+                                        Fee of ₦{{ Number(booking.late_checkout_fee).toLocaleString() }} added to total.
+                                    </p>
+                                </div>
+                                <Link
+                                    :href="route('admin.bookings.late-checkout.settle', booking.id)"
+                                    method="post"
+                                    as="button"
+                                    class="w-full text-center px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all">
+                                    Mark Fee as Settled
+                                </Link>
+                            </div>
+
+                            <!-- Settled -->
+                            <div v-else-if="booking.late_checkout_status === 'settled'"
+                                 class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3">
+                                <p class="text-sm font-medium text-emerald-700 dark:text-emerald-400">✓ Late Checkout Fee Settled</p>
+                                <p class="text-sm text-emerald-600 dark:text-emerald-500 mt-1">
+                                    ₦{{ Number(booking.late_checkout_fee).toLocaleString() }} collected.
+                                </p>
+                            </div>
+
+                            <!-- Rejected -->
+                            <div v-else-if="booking.late_checkout_status === 'rejected'"
+                                 class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Late checkout request was rejected.</p>
+                            </div>
+                        </div>
+
 
                         <!-- Timeline -->
                         <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">

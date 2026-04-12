@@ -46,6 +46,12 @@ class Booking extends Model
         'guest_name',
         'guest_email',
         'guest_phone',
+        'late_checkout_requested',
+        'late_checkout_status',
+        'late_checkout_fee',
+        'late_checkout_approved_by',
+        'late_checkout_approved_at',
+        'late_checkout_settled_at',
     ];
 
     protected $casts = [
@@ -61,6 +67,10 @@ class Booking extends Model
         'total_amount' => 'decimal:2',
         'discount_percent' => 'decimal:2',
         'discount_amount'  => 'decimal:2',
+        'late_checkout_requested'   => 'boolean',
+        'late_checkout_fee'         => 'decimal:2',
+        'late_checkout_approved_at' => 'datetime',
+        'late_checkout_settled_at'  => 'datetime',
     ];
 
     public function scopeCheckedIn($query)
@@ -149,6 +159,29 @@ class Booking extends Model
         return $this->status === 'confirmed'
             && $this->payment_status === 'paid'
             && $this->check_in->lte(now()->endOfDay());
+    }
+
+    public function lateCheckoutApprovedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'late_checkout_approved_by');
+    }
+
+    public function canRequestLateCheckout(): bool
+    {
+        return in_array($this->status, ['confirmed', 'checked_in'])
+            && !$this->late_checkout_requested;
+    }
+
+    public function canApproveLateCheckout(): bool
+    {
+        return $this->late_checkout_requested
+            && $this->late_checkout_status === 'pending';
+    }
+
+    public function canSettleLateCheckout(): bool
+    {
+        return $this->late_checkout_status === 'approved'
+            && !$this->late_checkout_settled_at;
     }
 
     // Scopes

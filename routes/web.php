@@ -110,6 +110,7 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->name('ad
     Route::get('/availability', [AvailabilityController::class, 'index'])->name('availability.index');
 
     // Bookings
+    Route::get('/bookings/late-checkout-requests', [AdminBookingController::class, 'lateCheckoutRequests'])->name('bookings.late-checkout.index');
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/create', [AdminBookingController::class, 'create'])->name('bookings.create');
     Route::get('/bookings/calendar', [App\Http\Controllers\Admin\BookingCalendarController::class, 'index'])->name('bookings.calendar');
@@ -117,6 +118,10 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->name('ad
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
+
+    Route::post('/bookings/{booking}/late-checkout/request', [AdminBookingController::class, 'requestLateCheckout'])->name('bookings.late-checkout.request');
+    Route::post('/bookings/{booking}/late-checkout/approve', [AdminBookingController::class, 'approveLateCheckout'])->name('bookings.late-checkout.approve');
+    Route::post('/bookings/{booking}/late-checkout/settle', [AdminBookingController::class, 'settleLateCheckout'])->name('bookings.late-checkout.settle');
 
     // Properties
     Route::get('/properties', [BuildingController::class, 'index'])->name('properties.index');

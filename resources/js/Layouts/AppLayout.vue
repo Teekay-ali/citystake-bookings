@@ -6,7 +6,7 @@ import { usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import CookieConsent from '@/Components/CookieConsent.vue';
 import EmailVerificationBanner from '@/Components/EmailVerificationBanner.vue';
-import { LayoutGrid, LayoutDashboard, CalendarDays, Building2, Ban, BarChart3 } from 'lucide-vue-next';
+import { Clock, LayoutGrid, LayoutDashboard, CalendarDays, Building2, Ban, BarChart3 } from 'lucide-vue-next';
 
 const showMobileMenu = ref(false);
 const { isDark, toggle } = useDarkMode();
@@ -246,15 +246,33 @@ const openCookieSettings = () => {
                     <Link
                         :href="route('admin.bookings.index')"
                         :class="[
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                    route().current('admin.bookings.*')
-                        ? 'bg-white/10 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                ]"
+                            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                            route().current('admin.bookings.*') && !route().current('admin.bookings.late-checkout.index')
+                                ? 'bg-white/10 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        ]"
                     >
                         <CalendarDays class="w-4 h-4" />
                         Bookings
                     </Link>
+
+                    <Link
+                        :href="route('admin.bookings.late-checkout.index')"
+                        :class="[
+                            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                            route().current('admin.bookings.late-checkout.index')
+                                ? 'bg-white/10 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        ]"
+                    >
+                        <Clock class="w-4 h-4" />
+                        Late Checkouts
+                        <span v-if="$page.props.lateCheckoutPendingCount > 0"
+                              class="bg-amber-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
+                            {{ $page.props.lateCheckoutPendingCount }}
+                        </span>
+                    </Link>
+
                     <Link
                         :href="route('admin.availability.index')"
                         :class="[

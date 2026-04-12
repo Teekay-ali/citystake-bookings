@@ -24,4 +24,7 @@ return [
 
     // Allow same-day checkout and check-in on different units
     'allow_same_day_turnover' => false,
+
+    // Late checkout fixed fee (in Naira)
+    'late_checkout_fee' => 20000,
 ];

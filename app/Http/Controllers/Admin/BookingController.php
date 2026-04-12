@@ -213,7 +213,7 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $booking->load(['building', 'unitType', 'unit', 'user', 'checkedInBy']);
+        $booking->load(['building', 'unitType', 'unit', 'user', 'checkedInBy', 'lateCheckoutApprovedBy']);
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => array_merge($booking->toArray(), [
@@ -244,5 +244,94 @@ class BookingController extends Controller
         ]);
 
         return back()->with('success', 'Guest checked in successfully.');
+    }
+
+    public function requestLateCheckout(Booking $booking)
+    {
+        if (!$booking->canRequestLateCheckout()) {
+            return back()->with('error', 'Late checkout cannot be requested for this booking.');
+        }
+
+        $fee = config('booking.late_checkout_fee', 20000);
+
+        $booking->update([
+            'late_checkout_requested' => true,
+            'late_checkout_status'    => 'pending',
+            'late_checkout_fee'       => $fee,
+        ]);
+
+        return back()->with('success', 'Late checkout requested. Awaiting manager approval.');
+    }
+
+    public function approveLateCheckout(Request $request, Booking $booking)
+    {
+        if (!$booking->canApproveLateCheckout()) {
+            return back()->with('error', 'This late checkout request cannot be approved.');
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:approved,rejected',
+        ]);
+
+        $booking->update([
+            'late_checkout_status'       => $validated['action'],
+            'late_checkout_approved_by'  => auth()->id(),
+            'late_checkout_approved_at'  => now(),
+            // Add fee to total only on approval
+            'total_amount' => $validated['action'] === 'approved'
+                ? $booking->total_amount + $booking->late_checkout_fee
+                : $booking->total_amount,
+        ]);
+
+        $message = $validated['action'] === 'approved'
+            ? 'Late checkout approved. Fee added to booking total.'
+            : 'Late checkout request rejected.';
+
+        return back()->with('success', $message);
+    }
+
+    public function settleLateCheckout(Booking $booking)
+    {
+        if (!$booking->canSettleLateCheckout()) {
+            return back()->with('error', 'Late checkout fee has already been settled.');
+        }
+
+        $booking->update([
+            'late_checkout_settled_at' => now(),
+            'late_checkout_status'     => 'settled',
+        ]);
+
+        return back()->with('success', 'Late checkout fee marked as settled.');
+    }
+
+    public function lateCheckoutRequests(Request $request)
+    {
+        $query = Booking::with(['building', 'unitType', 'unit'])
+            ->where('late_checkout_requested', true);
+
+        // Building scope
+        $user = auth()->user();
+        if (!$user->hasGlobalAccess()) {
+            $query->whereIn('building_id', $user->accessibleBuildingIds());
+        }
+
+        // Filter by status
+        if ($request->status) {
+            $query->where('late_checkout_status', $request->status);
+        } else {
+            // Default: show pending first
+            $query->orderByRaw("FIELD(late_checkout_status, 'pending', 'approved', 'settled', 'rejected')");
+        }
+
+        $requests = $query->latest()->paginate(20)->withQueryString();
+
+        return Inertia::render('Admin/Bookings/LateCheckoutRequests', [
+            'requests' => $requests,
+            'filters'  => ['status' => $request->status],
+            'counts'   => [
+                'pending'  => Booking::where('late_checkout_status', 'pending')->count(),
+                'approved' => Booking::where('late_checkout_status', 'approved')->count(),
+            ],
+        ]);
     }
 }

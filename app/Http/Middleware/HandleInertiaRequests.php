@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Booking;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -51,6 +52,9 @@ class HandleInertiaRequests extends Middleware
                 'warning' => fn () => $request->session()->get('warning'),
             ],
             'appName' => config('app.name'),
+            'lateCheckoutPendingCount' => auth()->check()
+                ? Booking::where('late_checkout_status', 'pending')->count()
+                : 0,
         ]);
     }
 
