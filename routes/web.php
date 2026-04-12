@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingExportController;
 use App\Http\Controllers\BookingController;
@@ -103,6 +104,9 @@ Route::middleware('auth')->group(function () {
 // Admin routes
 Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Availability Board
+    Route::get('/availability', [AvailabilityController::class, 'index'])->name('availability.index');
 
     // Bookings
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');

@@ -51,6 +51,11 @@ class Booking extends Model
         'total_amount' => 'decimal:2',
     ];
 
+    public function scopeCheckedIn($query)
+    {
+        return $query->where('status', 'checked_in');
+    }
+
     // Relationships
     public function building(): BelongsTo
     {

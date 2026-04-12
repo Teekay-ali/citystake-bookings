@@ -6,7 +6,7 @@ import { usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import CookieConsent from '@/Components/CookieConsent.vue';
 import EmailVerificationBanner from '@/Components/EmailVerificationBanner.vue';
-import { LayoutDashboard, CalendarDays, Building2, Ban, BarChart3 } from 'lucide-vue-next';
+import { LayoutGrid, LayoutDashboard, CalendarDays, Building2, Ban, BarChart3 } from 'lucide-vue-next';
 
 const showMobileMenu = ref(false);
 const { isDark, toggle } = useDarkMode();
@@ -254,6 +254,18 @@ const openCookieSettings = () => {
                     >
                         <CalendarDays class="w-4 h-4" />
                         Bookings
+                    </Link>
+                    <Link
+                        :href="route('admin.availability.index')"
+                        :class="[
+                            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+                            route().current('admin.availability.*')
+                                ? 'bg-white/10 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        ]"
+                    >
+                        <LayoutGrid class="w-4 h-4" />
+                        Availability
                     </Link>
                     <Link
                         :href="route('admin.properties.index')"
