@@ -32,10 +32,15 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'email' => $request->user()->email,
-                    'is_admin' => $request->user()->is_admin,
+                    'id'                => $request->user()->id,
+                    'name'              => $request->user()->name,
+                    'email'             => $request->user()->email,
+                    'is_admin'          => $request->user()->is_admin,
+                    'is_staff'          => $request->user()->is_staff,
+                    'roles'             => $request->user()->getRoleNames(),
+                    'buildings'         => $request->user()->hasGlobalAccess()
+                        ? null
+                        : $request->user()->buildings()->pluck('id'),
                     'email_verified_at' => $request->user()->email_verified_at,
                 ] : null,
             ],

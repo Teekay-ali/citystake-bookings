@@ -43,6 +43,8 @@ class DatabaseSeeder extends Seeder
         if (!Building::where('slug', 'citystake-wuse')->exists()) {
             $this->createWuseBuilding();
         }
+
+        $this->call(RolesAndPermissionsSeeder::class);
     }
 
     private function createAsokoroBuilding()
