@@ -289,6 +289,14 @@ function submitCheckIn() {
                                     <span class="text-gray-600 dark:text-gray-400">Service charge</span>
                                     <span class="text-gray-900 dark:text-white">{{ formatPrice(booking.service_charge) }}</span>
                                 </div>
+                                <div v-if="booking.discount_amount > 0" class="flex justify-between items-center mt-2">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                                        Discount ({{ booking.discount_percent }}% — {{ booking.discount_type === 'long_stay' ? 'Long stay' : 'Bulk booking' }})
+                                    </span>
+                                                                    <span class="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                        −₦{{ Number(booking.discount_amount).toLocaleString() }}
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="pt-4 border-t border-gray-200 dark:border-gray-800">

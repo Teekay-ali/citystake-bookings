@@ -108,12 +108,20 @@ const calculateNights = computed(() => {
 });
 
 const estimatedTotal = computed(() => {
-    if (calculateNights.value === 0) return 0;
-    const subtotal = calculateNights.value * parseFloat(props.unitType.base_price_per_night);
-    const serviceCharge = subtotal * (parseFloat(props.unitType.service_charge_percent) / 100);
-    const total = subtotal + parseFloat(props.unitType.cleaning_fee) + serviceCharge;
-    return total;
-});
+    if (calculateNights.value === 0) return 0
+
+    const subtotal = calculateNights.value * parseFloat(props.unitType.base_price_per_night)
+    const cleaning = parseFloat(props.unitType.cleaning_fee) || 0
+    const service  = subtotal * ((parseFloat(props.unitType.service_charge_percent) || 0) / 100)
+
+    // Mirror backend discount rules
+    let discountAmount = 0
+    if (calculateNights.value >= 5) {
+        discountAmount = Math.round(subtotal * 0.05 * 100) / 100
+    }
+
+    return (subtotal - discountAmount) + cleaning + service
+})
 
 const allAmenities = computed(() => {
     const buildingAmenities = props.building.amenities || [];
@@ -566,6 +574,10 @@ const proceedToBooking = () => {
                                     <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                                         <span>Service charge</span>
                                         <span>{{ formatPrice((calculateNights * parseFloat(unitType.base_price_per_night)) * (parseFloat(unitType.service_charge_percent) / 100)) }}</span>
+                                    </div>
+                                    <div v-if="calculateNights >= 5" class="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                                        <span>Long stay discount (5% off)</span>
+                                        <span>−{{ formatPrice(calculateNights * parseFloat(unitType.base_price_per_night) * 0.05) }}</span>
                                     </div>
                                 </div>
 

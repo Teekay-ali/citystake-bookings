@@ -40,9 +40,11 @@ const formatDate = (date) => {
 };
 
 const submit = () => {
-    form.post(route('bookings.store', [props.building.slug, props.unitType.slug]), {
+    form.post(route('bookings.store', {
+        building: props.building.slug,
+        unitType: props.unitType.slug,
+    }), {
         onError: (errors) => {
-            // Show first error as toast
             const firstError = Object.values(errors)[0];
             if (firstError) {
                 toast.error(firstError);
@@ -60,7 +62,7 @@ const submit = () => {
             <div class="max-w-5xl mx-auto px-6 lg:px-8">
                 <!-- Back Button -->
                 <Link
-                    :href="route('properties.show', [building.slug, unitType.slug])"
+                    :href="building && unitType ? route('properties.show', [building?.slug, unitType?.slug]) : '#'"
                     class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors group mb-8"
                 >
                     <svg class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,18 +216,18 @@ const submit = () => {
                             <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-8 mb-6">
                                 <div class="flex items-start space-x-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-900">
                                     <img
-                                        v-if="unitType.images && unitType.images[0]"
-                                        :src="unitType.images[0].image_path"
-                                        :alt="unitType.name"
+                                        v-if="unitType?.images && unitType?.images[0]"
+                                        :src="unitType?.images[0].image_path"
+                                        :alt="unitType?.name"
                                         class="w-24 h-24 rounded-xl object-cover"
                                     />
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="font-medium text-gray-900 dark:text-white mb-1">{{ unitType.name }}</h3>
+                                        <h3 class="font-medium text-gray-900 dark:text-white mb-1">{{ unitType?.name }}</h3>
                                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center">
                                             <MapPin class="w-4 h-4 mr-1" />
-                                            {{ building.name }} • {{ building.address }}
+                                            {{ building?.name }} • {{ building?.address }}
                                         </p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ unitType.bedroom_type }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ unitType?.bedroom_type }}</p>
                                     </div>
                                 </div>
 
@@ -248,6 +250,14 @@ const submit = () => {
                                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                                         <span>Service charge</span>
                                         <span>{{ formatPrice(bookingData.service_charge) }}</span>
+                                    </div>
+
+                                    <div v-if="bookingData.discount_amount > 0" class="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                                        <span>
+                                            {{ bookingData.discount_type === 'long_stay' ? 'Long stay discount' : 'Bulk booking discount' }}
+                                            ({{ bookingData.discount_percent }}% off)
+                                        </span>
+                                        <span>−{{ formatPrice(bookingData.discount_amount) }}</span>
                                     </div>
                                 </div>
 

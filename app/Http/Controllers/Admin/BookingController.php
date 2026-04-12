@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Services\DiscountService;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Building;
@@ -79,7 +80,7 @@ class BookingController extends Controller
 
     public function create()
     {
-        $buildings = Building::with(['unitTypes:id,building_id,name,bedroom_type,base_price_per_night'])
+        $buildings = Building::with(['unitTypes:id,building_id,name,bedroom_type,base_price_per_night,cleaning_fee,service_charge_percent,max_guests'])
             ->where('is_active', true)
             ->select('id', 'name')
             ->get();
@@ -152,9 +153,13 @@ class BookingController extends Controller
             }
 
             // Calculate pricing (reuse existing logic)
-            $subtotal = $unitType->base_price_per_night * $nights;
+            $subtotal      = $unitType->base_price_per_night * $nights;
             $serviceCharge = $subtotal * ($unitType->service_charge_percent / 100);
-            $totalAmount = $subtotal + $unitType->cleaning_fee + $serviceCharge;
+            $discount      = DiscountService::resolve($nights);
+            $discountAmt   = $discount['percent'] > 0
+                ? round($subtotal * ($discount['percent'] / 100), 2)
+                : 0;
+            $totalAmount   = ($subtotal - $discountAmt) + $unitType->cleaning_fee + $serviceCharge;
 
             // Create booking
             $booking = Booking::create([
@@ -176,6 +181,9 @@ class BookingController extends Controller
                 'cleaning_fee' => $unitType->cleaning_fee,
                 'service_charge' => $serviceCharge,
                 'total_amount' => $totalAmount,
+                'discount_type'    => $discount['type'],
+                'discount_percent' => $discount['percent'],
+                'discount_amount'  => $discountAmt,
                 'status' => 'confirmed',
                 'payment_status' => 'paid',
                 'payment_method' => $validated['payment_method'],
@@ -212,5 +220,29 @@ class BookingController extends Controller
                 'checked_in_by_name' => $booking->checkedInBy?->name,
             ]),
         ]);
+    }
+
+    public function checkIn(Request $request, Booking $booking)
+    {
+        if (!$booking->canCheckIn()) {
+            return back()->with('error', 'This booking cannot be checked in at this time.');
+        }
+
+        $validated = $request->validate([
+            'amount_received'        => 'required|numeric|min:0',
+            'checkin_payment_method' => 'required|in:cash,pos,bank_transfer,paystack',
+            'checkin_notes'          => 'nullable|string|max:500',
+        ]);
+
+        $booking->update([
+            'status'                 => 'checked_in',
+            'checked_in_at'          => now(),
+            'checked_in_by'          => auth()->id(),
+            'amount_received'        => $validated['amount_received'],
+            'checkin_payment_method' => $validated['checkin_payment_method'],
+            'checkin_notes'          => $validated['checkin_notes'] ?? null,
+        ]);
+
+        return back()->with('success', 'Guest checked in successfully.');
     }
 }

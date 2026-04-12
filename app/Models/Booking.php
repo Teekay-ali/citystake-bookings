@@ -26,6 +26,9 @@ class Booking extends Model
         'cleaning_fee',
         'service_charge',
         'total_amount',
+        'discount_type',
+        'discount_percent',
+        'discount_amount',
         'status',
         'payment_status',
         'payment_method',
@@ -56,6 +59,8 @@ class Booking extends Model
         'cleaning_fee' => 'decimal:2',
         'service_charge' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'discount_percent' => 'decimal:2',
+        'discount_amount'  => 'decimal:2',
     ];
 
     public function scopeCheckedIn($query)
@@ -96,13 +101,25 @@ class Booking extends Model
         return 'CS-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
     }
 
-    public function calculateTotal(UnitType $unitType): void
+    public function calculateTotal(UnitType $unitType, int $unitCount = 1): void
     {
-        $this->nights = Carbon::parse($this->check_in)->diffInDays($this->check_out);
-        $this->subtotal = $this->nights * $unitType->base_price_per_night;
-        $this->cleaning_fee = $unitType->cleaning_fee;
+        $this->nights         = Carbon::parse($this->check_in)->diffInDays($this->check_out);
+        $this->subtotal       = $this->nights * $unitType->base_price_per_night;
+        $this->cleaning_fee   = $unitType->cleaning_fee;
         $this->service_charge = $this->subtotal * ($unitType->service_charge_percent / 100);
-        $this->total_amount = $this->subtotal + $this->cleaning_fee + $this->service_charge;
+
+        // Resolve discount
+        $discount = \App\Services\DiscountService::resolve($this->nights, $unitCount);
+        $this->discount_type    = $discount['type'];
+        $this->discount_percent = $discount['percent'];
+        $this->discount_amount  = $discount['percent'] > 0
+            ? round($this->subtotal * ($discount['percent'] / 100), 2)
+            : 0;
+
+        // Discount applied to subtotal only (not cleaning fee or service charge)
+        $this->total_amount = ($this->subtotal - $this->discount_amount)
+            + $this->cleaning_fee
+            + $this->service_charge;
     }
 
     public function isPaid(): bool

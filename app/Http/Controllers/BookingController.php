@@ -73,22 +73,27 @@ class BookingController extends Controller
             'check_out' => $request->check_out,
             'guests' => $request->guests,
         ]);
+
         $booking->calculateTotal($unitType);
 
         return Inertia::render('Booking/Create', [
-            'building' => $building->load('images'),
-            'unitType' => $unitType->load('images'),
+            'building'    => $building->load('images'),
+            'unitType'    => $unitType->load('images'),
             'bookingData' => [
-                'check_in' => $request->check_in,
-                'check_out' => $request->check_out,
-                'guests' => $request->guests,
-                'nights' => $booking->nights,
-                'subtotal' => $booking->subtotal,
-                'cleaning_fee' => $booking->cleaning_fee,
-                'service_charge' => $booking->service_charge,
-                'total_amount' => $booking->total_amount,
+                'check_in'         => $request->check_in,
+                'check_out'        => $request->check_out,
+                'guests'           => $request->guests,
+                'nights'           => $booking->nights,
+                'subtotal'         => $booking->subtotal,
+                'cleaning_fee'     => $booking->cleaning_fee,
+                'service_charge'   => $booking->service_charge,
+                'discount_type'    => $booking->discount_type,
+                'discount_percent' => $booking->discount_percent,
+                'discount_amount'  => $booking->discount_amount,
+                'total_amount'     => $booking->total_amount,
             ],
         ]);
+
     }
 
     public function show(Booking $booking)

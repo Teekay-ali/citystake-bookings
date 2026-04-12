@@ -62,15 +62,31 @@ const calculateNights = computed(() => {
 
 const pricing = computed(() => {
     if (!selectedUnitType.value || calculateNights.value === 0) {
-        return { subtotal: 0, cleaning: 0, service: 0, total: 0 };
+        return { subtotal: 0, cleaning: 0, service: 0, discountAmount: 0, discountPercent: 0, discountType: null, total: 0 };
     }
 
-    const subtotal = selectedUnitType.value.base_price_per_night * calculateNights.value;
-    const cleaning = parseFloat(selectedUnitType.value.cleaning_fee);
-    const service = subtotal * (parseFloat(selectedUnitType.value.service_charge_percent) / 100);
-    const total = subtotal + cleaning + service;
+    const nights   = calculateNights.value;
+    const subtotal = selectedUnitType.value.base_price_per_night * nights;
+    const cleaning = parseFloat(selectedUnitType.value.cleaning_fee) || 0;
+    const service  = subtotal * ((parseFloat(selectedUnitType.value.service_charge_percent) || 0) / 100);
 
-    return { subtotal, cleaning, service, total };
+    // Mirror backend discount rules
+    let discountPercent = 0;
+    let discountType    = null;
+
+    if (nights >= 7) {
+        // Check bulk first (higher discount) — but walk-in is single unit
+        // so only long_stay applies here; bulk handled server-side for group bookings
+    }
+    if (nights >= 5) {
+        discountPercent = 5;
+        discountType    = 'long_stay';
+    }
+
+    const discountAmount = discountPercent > 0 ? Math.round(subtotal * (discountPercent / 100) * 100) / 100 : 0;
+    const total = (subtotal - discountAmount) + cleaning + service;
+
+    return { subtotal, cleaning, service, discountAmount, discountPercent, discountType, total };
 });
 
 // Reset unit type when building changes
@@ -458,6 +474,11 @@ const submit = () => {
                                         <div class="flex justify-between text-sm">
                                             <span class="text-gray-600 dark:text-gray-400">Service charge</span>
                                             <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.service) }}</span>
+                                        </div>
+                                        <!-- After service charge row, before total -->
+                                        <div v-if="pricing.discountAmount > 0" class="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
+                                            <span>Long stay discount ({{ pricing.discountPercent }}% off)</span>
+                                            <span>−{{ formatPrice(pricing.discountAmount) }}</span>
                                         </div>
                                     </div>
 
