@@ -332,4 +332,28 @@ class BookingController extends Controller
         return redirect()->route('bookings.index')->with('success', $message);
     }
 
+    public function checkIn(Request $request, Booking $booking)
+    {
+        if (!$booking->canCheckIn()) {
+            return back()->with('error', 'This booking cannot be checked in at this time.');
+        }
+
+        $validated = $request->validate([
+            'amount_received'        => 'required|numeric|min:0',
+            'checkin_payment_method' => 'required|in:cash,pos,bank_transfer,paystack',
+            'checkin_notes'          => 'nullable|string|max:500',
+        ]);
+
+        $booking->update([
+            'status'                 => 'checked_in',
+            'checked_in_at'          => now(),
+            'checked_in_by'          => auth()->id(),
+            'amount_received'        => $validated['amount_received'],
+            'checkin_payment_method' => $validated['checkin_payment_method'],
+            'checkin_notes'          => $validated['checkin_notes'] ?? null,
+        ]);
+
+        return back()->with('success', 'Guest checked in successfully.');
+    }
+
 }

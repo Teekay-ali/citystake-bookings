@@ -35,6 +35,11 @@ class Booking extends Model
         'special_requests',
         'cancellation_reason',
         'cancelled_at',
+        'checked_in_at',
+        'checked_in_by',
+        'amount_received',
+        'checkin_payment_method',
+        'checkin_notes',
         'guest_name',
         'guest_email',
         'guest_phone',
@@ -45,6 +50,8 @@ class Booking extends Model
         'check_out' => 'date',
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'checked_in_at' => 'datetime',
+        'amount_received' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'cleaning_fee' => 'decimal:2',
         'service_charge' => 'decimal:2',
@@ -108,11 +115,23 @@ class Booking extends Model
         return $this->status === 'confirmed';
     }
 
+    public function checkedInBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
     public function canBeCancelled(): bool
     {
         return $this->status !== 'cancelled'
             && $this->status !== 'completed'
             && $this->check_in > now();
+    }
+
+    public function canCheckIn(): bool
+    {
+        return $this->status === 'confirmed'
+            && $this->payment_status === 'paid'
+            && $this->check_in->lte(now()->endOfDay());
     }
 
     // Scopes

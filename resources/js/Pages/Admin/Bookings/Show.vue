@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { LogIn } from 'lucide-vue-next';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
@@ -119,6 +120,19 @@ const canCancel = () => {
         && props.booking.status !== 'completed'
         && new Date(props.booking.check_in) > new Date();
 };
+
+const checkInForm = useForm({
+    amount_received: props.booking.total_amount,
+    checkin_payment_method: '',
+    checkin_notes: '',
+})
+
+function submitCheckIn() {
+    checkInForm.post(route('admin.bookings.check-in', props.booking.id), {
+        preserveScroll: true,
+    })
+}
+
 </script>
 
 <template>
@@ -342,6 +356,99 @@ const canCancel = () => {
                                 </button>
                             </div>
                         </div>
+
+                        <!-- Check-in Confirmation -->
+                        <div v-if="booking.status === 'confirmed' && booking.payment_status === 'paid'"
+                             class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6 mt-6">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <LogIn class="w-5 h-5" />
+                                Check-in Guest
+                            </h3>
+
+                            <form @submit.prevent="submitCheckIn" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Amount Received (₦) <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        v-model="checkInForm.amount_received"
+                                        type="number"
+                                        step="0.01"
+                                        :placeholder="booking.total_amount"
+                                        class="w-full px-4 py-2.5 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Payment Method <span class="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        v-model="checkInForm.checkin_payment_method"
+                                        class="w-full px-4 py-2.5 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                        required>
+                                        <option value="">Select method</option>
+                                        <option value="cash">Cash</option>
+                                        <option value="pos">POS</option>
+                                        <option value="bank_transfer">Bank Transfer</option>
+                                        <option value="paystack">Paystack</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Notes (optional)
+                                    </label>
+                                    <textarea
+                                        v-model="checkInForm.checkin_notes"
+                                        rows="2"
+                                        placeholder="Any remarks..."
+                                        class="w-full px-4 py-2.5 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none"
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    :disabled="checkInForm.processing"
+                                    class="w-full px-4 py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                                    <LogIn class="w-4 h-4" />
+                                    Confirm Check-in
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Already checked in -->
+                        <div v-if="booking.status === 'checked_in'"
+                             class="border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-6 mt-6">
+                            <div class="flex items-center gap-2 mb-3">
+                                <LogIn class="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                                <h3 class="text-sm font-semibold text-violet-700 dark:text-violet-400">Checked In</h3>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">Time</span>
+                                    <span class="text-gray-900 dark:text-white">{{ formatDateTime(booking.checked_in_at) }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">By</span>
+                                    <span class="text-gray-900 dark:text-white">{{ booking.checked_in_by_name ?? '—' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">Amount Received</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">₦{{ Number(booking.amount_received).toLocaleString() }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">Method</span>
+                                    <span class="capitalize text-gray-900 dark:text-white">{{ booking.checkin_payment_method?.replace('_', ' ') }}</span>
+                                </div>
+                                <div v-if="booking.checkin_notes" class="pt-2 border-t border-violet-200 dark:border-violet-800">
+                                    <span class="text-gray-500 dark:text-gray-400">Notes: </span>
+                                    <span class="text-gray-900 dark:text-white">{{ booking.checkin_notes }}</span>
+                                </div>
+                            </div>
+                        </div>
+
 
                         <!-- Timeline -->
                         <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">

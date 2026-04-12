@@ -205,10 +205,12 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $booking->load(['building', 'unitType', 'unit', 'user']);
+        $booking->load(['building', 'unitType', 'unit', 'user', 'checkedInBy']);
 
         return Inertia::render('Admin/Bookings/Show', [
-            'booking' => $booking,
+            'booking' => array_merge($booking->toArray(), [
+                'checked_in_by_name' => $booking->checkedInBy?->name,
+            ]),
         ]);
     }
 }

@@ -245,8 +245,15 @@ function formatAmount(n) {
                         </div>
 
                         <Link
+                            v-if="selectedUnit.current_booking?.status === 'confirmed'"
                             :href="route('admin.bookings.show', selectedUnit.current_booking.id)"
-                            class="block w-full text-center px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all">
+                            class="block w-full text-center px-4 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-medium transition-all">
+                            Check-in Guest →
+                        </Link>
+
+                        <Link
+                            :href="route('admin.bookings.show', selectedUnit.current_booking.id)"
+                            class="block w-full text-center px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all mt-2">
                             View Full Booking
                         </Link>
                     </div>
