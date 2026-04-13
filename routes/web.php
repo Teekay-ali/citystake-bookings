@@ -82,8 +82,15 @@ Route::post('/properties/{building:slug}/{unitType:slug}/check-availability', [U
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {
+
     // Dashboard redirect
     Route::get('/dashboard', function () {
+        $user = auth()->user();
+
+        if ($user->is_admin || $user->is_staff) {
+            return redirect()->route('manage.dashboard');
+        }
+
         return redirect()->route('home');
     })->name('dashboard');
 
