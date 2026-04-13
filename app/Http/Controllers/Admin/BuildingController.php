@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Traits\ScopedByBuilding;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
 use Illuminate\Http\Request;
@@ -10,12 +11,18 @@ use Illuminate\Support\Str;
 
 class BuildingController extends Controller
 {
+    use ScopedByBuilding;
+
     public function index()
     {
+        $user = auth()->user();
         $buildings = Building::with(['unitTypes' => function ($query) {
             $query->withCount('units');
         }])
             ->withCount(['unitTypes', 'units'])
+            ->when(!$user->hasGlobalAccess(), function ($q) use ($user) {
+                $q->whereIn('id', $user->accessibleBuildingIds() ?? []);
+            })
             ->latest()
             ->get();
 

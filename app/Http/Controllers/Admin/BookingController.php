@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Traits\ScopedByBuilding;
 use App\Services\DiscountService;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
@@ -15,9 +16,16 @@ use Inertia\Inertia;
 
 class BookingController extends Controller
 {
+    use ScopedByBuilding;
+
     public function index(Request $request)
     {
+        $user  = auth()->user();
         $query = Booking::with(['building', 'unitType', 'unit', 'user']);
+
+        if (!$user->hasGlobalAccess()) {
+            $query->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
+        }
 
         // Filter by status
         if ($request->status) {
@@ -62,7 +70,7 @@ class BookingController extends Controller
         $bookings = $query->paginate(20)->withQueryString();
 
         // Get buildings for filter
-        $buildings = Building::select('id', 'name')->get();
+        $buildings = $this->accessibleBuildings()->select('id', 'name')->get();
 
         return Inertia::render('Admin/Bookings/Index', [
             'bookings' => $bookings,
@@ -80,8 +88,8 @@ class BookingController extends Controller
 
     public function create()
     {
-        $buildings = Building::with(['unitTypes:id,building_id,name,bedroom_type,base_price_per_night,cleaning_fee,service_charge_percent,max_guests'])
-            ->where('is_active', true)
+        $buildings = $this->accessibleBuildings()
+            ->with(['unitTypes:id,building_id,name,bedroom_type,base_price_per_night,cleaning_fee,service_charge_percent,max_guests'])
             ->select('id', 'name')
             ->get();
 

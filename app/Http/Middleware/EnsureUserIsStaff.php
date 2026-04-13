@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureUserIsStaff extends Middleware
+class EnsureUserIsStaff
 {
     public function handle(Request $request, Closure $next): Response
     {

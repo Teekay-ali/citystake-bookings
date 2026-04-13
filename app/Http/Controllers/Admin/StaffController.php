@@ -16,7 +16,6 @@ class StaffController extends Controller
     {
         $staff = User::with(['roles', 'buildings'])
             ->where('is_staff', true)
-            ->orWhere('is_admin', true)
             ->latest()
             ->paginate(20);
 
@@ -64,6 +63,10 @@ class StaffController extends Controller
 
     public function edit(User $staff)
     {
+        if ($staff->is_admin) {
+            abort(403, 'Admin accounts cannot be edited here.');
+        }
+
         $staff->load(['roles', 'buildings']);
 
         return Inertia::render('Admin/Staff/Edit', [
@@ -78,6 +81,11 @@ class StaffController extends Controller
 
     public function update(Request $request, User $staff)
     {
+
+        if ($staff->is_admin) {
+            abort(403, 'Admin accounts cannot be edited here.');
+        }
+
         $validated = $request->validate([
             'name'           => 'required|string|max:255',
             'email'          => 'required|email|unique:users,email,' . $staff->id,

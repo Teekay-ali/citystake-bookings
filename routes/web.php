@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\StaffQueryController;
 use App\Http\Controllers\Admin\StockController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUserIsStaff;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -110,7 +111,7 @@ Route::middleware('auth')->group(function () {
 
 
 // Admin routes
-Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('manage.')->group(function () {
+Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('manage.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Availability Board

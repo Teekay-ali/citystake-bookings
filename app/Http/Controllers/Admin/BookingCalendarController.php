@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Traits\ScopedByBuilding;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Building;
@@ -10,12 +11,17 @@ use Inertia\Inertia;
 
 class BookingCalendarController extends Controller
 {
+    use ScopedByBuilding;
+
     public function index(Request $request)
     {
-        $buildings = Building::where('is_active', true)->get();
+        $buildings = $this->accessibleBuildings()->get();
 
-        // Get bookings for calendar view
+        $user = auth()->user();
         $bookings = Booking::with(['building', 'unitType', 'unit'])
+            ->when(!$user->hasGlobalAccess(), function ($query) use ($user) {
+                $query->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
+            })
             ->when($request->building_id, function ($query, $buildingId) {
                 $query->where('building_id', $buildingId);
             })

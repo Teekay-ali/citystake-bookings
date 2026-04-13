@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Traits\ScopedByBuilding;
 use App\Http\Controllers\Controller;
 use App\Models\BlockedDate;
 use App\Models\Building;
@@ -12,9 +13,18 @@ use Carbon\Carbon;
 
 class BlockedDateController extends Controller
 {
+    use ScopedByBuilding;
+
     public function index(Request $request)
     {
-        $query = BlockedDate::with(['unit.unitType.building', 'creator']); // Changed this line
+        $user  = auth()->user();
+        $query = BlockedDate::with(['unit.unitType.building', 'creator']);
+
+        if (!$user->hasGlobalAccess()) {
+            $query->whereHas('unit.unitType', function ($q) use ($user) {
+                $q->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
+            });
+        }
 
         // Filter by building - need to go through unit_type
         if ($request->building) {
@@ -35,7 +45,7 @@ class BlockedDateController extends Controller
 
         $blockedDates = $query->latest()->paginate(20)->withQueryString();
 
-        $buildings = Building::select('id', 'name')->get();
+        $buildings = $this->accessibleBuildings()->select('id', 'name')->get();
 
         return Inertia::render('Admin/BlockedDates/Index', [
             'blockedDates' => $blockedDates,
@@ -49,14 +59,15 @@ class BlockedDateController extends Controller
 
     public function create()
     {
-        $buildings = Building::with(['unitTypes' => function ($q) {
-            $q->where('is_active', true)
-                ->select('id', 'building_id', 'name', 'bedroom_type')
-                ->with(['units' => function ($q2) {
-                    $q2->select('id', 'unit_type_id', 'unit_number', 'floor')
-                        ->where('is_available', true);
-                }]);
-        }])->where('is_active', true)->select('id', 'name')->get();
+        $buildings = $this->accessibleBuildings()
+            ->with(['unitTypes' => function ($q) {
+                $q->where('is_active', true)
+                    ->select('id', 'building_id', 'name', 'bedroom_type')
+                    ->with(['units' => function ($q2) {
+                        $q2->select('id', 'unit_type_id', 'unit_number', 'floor')
+                            ->where('is_available', true);
+                    }]);
+            }])->select('id', 'name')->get();
 
         return Inertia::render('Admin/BlockedDates/Create', [
             'buildings' => $buildings,

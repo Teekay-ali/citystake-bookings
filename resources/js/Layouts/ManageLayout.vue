@@ -60,34 +60,34 @@ const navGroups = [
     {
         label: 'Properties',
         items: [
-            { label: 'Properties', icon: Building2, route: 'manage.properties.index', match: 'manage.properties.*' },
-            { label: 'Blocked Dates', icon: Ban, route: 'manage.blocked-dates.index', match: 'manage.blocked-dates.*' },
+            { label: 'Properties', icon: Building2, route: 'manage.properties.index', match: 'manage.properties.*', roles: ['super-admin', 'manager'] },
+            { label: 'Blocked Dates', icon: Ban, route: 'manage.blocked-dates.index', match: 'manage.blocked-dates.*', roles: ['super-admin', 'manager'] },
         ]
     },
     {
         label: 'Operations',
         items: [
-            { label: 'Procurement', icon: ShoppingCart, route: 'manage.procurement.index', match: 'manage.procurement.*' },
+            { label: 'Procurement', icon: ShoppingCart, route: 'manage.procurement.index', match: 'manage.procurement.*', roles: ['super-admin', 'manager', 'accountant', 'ceo', 'head-of-procurement'] },
             { label: 'Complaints', icon: AlertTriangle, route: 'manage.complaints.index', match: 'manage.complaints.*' },
             { label: 'Maintenance', icon: Wrench, route: 'manage.maintenance.index', match: 'manage.maintenance.*' },
             { label: 'Stock', icon: Package, route: 'manage.stock.index', match: 'manage.stock.*' },
-            { label: 'Vendors', icon: BookOpen, route: 'manage.vendors.index', match: 'manage.vendors.*'},
+            { label: 'Vendors', icon: BookOpen, route: 'manage.vendors.index', match: 'manage.vendors.*', roles: ['super-admin', 'manager', 'accountant', 'head-of-procurement'] },
         ]
     },
     {
         label: 'Finance & Analytics',
         items: [
-            { label: 'Occupancy', icon: BarChart3, route: 'manage.analytics.occupancy', match: 'manage.analytics.*' },
+            { label: 'Occupancy', icon: BarChart3, route: 'manage.analytics.occupancy', match: 'manage.analytics.*', roles: ['super-admin', 'manager', 'ceo', 'accountant'] },
             { label: 'Financials', icon: DollarSign, route: 'manage.financials.index', match: 'manage.financials.*', soon: true },
         ]
     },
     {
         label: 'Team',
         items: [
-            { label: 'Staff', icon: Users, route: 'manage.staff.index', match: 'manage.staff.*' },
+            { label: 'Staff', icon: Users, route: 'manage.staff.index', match: 'manage.staff.*', roles: ['super-admin', 'manager'] },
+            { label: 'Staff Queries', icon: FileText, route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', roles: ['super-admin', 'manager'] },
             { label: 'Tasks', icon: CheckSquare, route: 'manage.tasks.index', match: 'manage.tasks.*', soon: true },
             { label: 'Messages', icon: MessageSquare, route: 'manage.messages.index', match: 'manage.messages.*', soon: true },
-            { label: 'Staff Queries', icon: FileText, route: 'manage.staff-queries.index', match: 'manage.staff-queries.*' },
         ]
     },
 ]
@@ -109,6 +109,14 @@ const roleLabels = {
     'receptionist': 'Receptionist',
     'staff': 'Staff',
 }
+
+const userRoles = computed(() => user.value?.roles ?? [])
+
+function canSeeItem(item) {
+    if (!item.roles) return true // no restriction — visible to all
+    return userRoles.value.some(role => item.roles.includes(role))
+}
+
 </script>
 
 <template>
@@ -162,7 +170,8 @@ const roleLabels = {
 
             <!-- Nav items -->
             <nav class="flex-1 overflow-y-auto py-4 px-2">
-                <div v-for="group in navGroups" :key="group.label" class="mb-4">
+                <template v-for="group in navGroups" :key="group.label">
+                    <div v-if="group.items.some(item => canSeeItem(item) && !item.soon)" class="mb-4">
 
                     <!-- Group label — hidden when collapsed -->
                     <p v-if="!collapsed"
@@ -174,45 +183,47 @@ const roleLabels = {
 
                     <div class="space-y-0.5">
                         <template v-for="item in group.items" :key="item.label">
+                            <template v-if="canSeeItem(item)">
+                                <!-- Soon (disabled) -->
+                                <div v-if="item.soon"
+                                     :title="collapsed ? item.label : ''"
+                                     :class="collapsed ? 'justify-center px-0' : 'px-3'"
+                                     class="flex items-center gap-3 py-2 rounded-lg text-sm text-gray-300 dark:text-gray-600 cursor-not-allowed">
+                                    <component :is="item.icon" class="w-4 h-4 shrink-0" />
+                                    <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
+                                    <span v-if="!collapsed"
+                                          class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 px-1.5 py-0.5 rounded-full">
+                                        Soon
+                                    </span>
+                                </div>
 
-                            <!-- Soon (disabled) -->
-                            <div v-if="item.soon"
-                                 :title="collapsed ? item.label : ''"
-                                 :class="collapsed ? 'justify-center px-0' : 'px-3'"
-                                 class="flex items-center gap-3 py-2 rounded-lg text-sm text-gray-300 dark:text-gray-600 cursor-not-allowed">
-                                <component :is="item.icon" class="w-4 h-4 shrink-0" />
-                                <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
-                                <span v-if="!collapsed"
-                                      class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 px-1.5 py-0.5 rounded-full">
-                                    Soon
-                                </span>
-                            </div>
-
-                            <!-- Active nav link -->
-                            <Link v-else
-                                  :href="route(item.route)"
-                                  :title="collapsed ? item.label : ''"
-                                  @click="sidebarOpen = false"
-                                  :class="[
-                                    isActive(item.match)
-                                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white',
-                                    collapsed ? 'justify-center px-0' : 'px-3'
-                                ]"
-                                  class="flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-all">
-                                <component :is="item.icon" class="w-4 h-4 shrink-0" />
-                                <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
-                                <span v-if="!collapsed && item.badge && item.badge > 0"
-                                      class="bg-amber-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center">
-                                    {{ item.badge }}
-                                </span>
-                                <!-- Collapsed badge dot -->
-                                <span v-if="collapsed && item.badge && item.badge > 0"
-                                      class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
-                            </Link>
+                                <!-- Active nav link -->
+                                <Link v-else
+                                      :href="route(item.route)"
+                                      :title="collapsed ? item.label : ''"
+                                      @click="sidebarOpen = false"
+                                      :class="[
+                                        isActive(item.match)
+                                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white',
+                                        collapsed ? 'justify-center px-0' : 'px-3'
+                                    ]"
+                                      class="flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-all">
+                                    <component :is="item.icon" class="w-4 h-4 shrink-0" />
+                                    <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
+                                    <span v-if="!collapsed && item.badge && item.badge > 0"
+                                          class="bg-amber-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center">
+                                        {{ item.badge }}
+                                    </span>
+                                    <!-- Collapsed badge dot -->
+                                    <span v-if="collapsed && item.badge && item.badge > 0"
+                                          class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                                </Link>
+                            </template>
                         </template>
                     </div>
                 </div>
+                </template>
             </nav>
 
             <!-- User footer -->
