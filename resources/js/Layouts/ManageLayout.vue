@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
+import { useToast } from 'vue-toastification'
 import {
     LayoutDashboard, CalendarDays, Building2, Ban, BarChart3,
     Users, Grid3x3, Clock, Menu, X, LogOut,
@@ -9,6 +10,8 @@ import {
     ChevronLeft, ChevronRight
 } from 'lucide-vue-next'
 
+const toast = useToast()
+
 const page = usePage()
 const user = computed(() => page.props.auth.user)
 const pendingCount = computed(() => page.props.lateCheckoutPendingCount ?? 0)
@@ -16,6 +19,21 @@ const pendingCount = computed(() => page.props.lateCheckoutPendingCount ?? 0)
 const sidebarOpen = ref(false)       // mobile drawer
 const collapsed = ref(false)          // desktop collapsed state
 const isDark = ref(document.documentElement.classList.contains('dark'))
+
+onMounted(() => {
+    const flash = page.props.flash
+    if (flash?.success) toast.success(flash.success)
+    if (flash?.error) toast.error(flash.error)
+    if (flash?.info) toast.info(flash.info)
+    if (flash?.warning) toast.warning(flash.warning)
+})
+
+watch(() => page.props.flash, (flash) => {
+    if (flash?.success) toast.success(flash.success)
+    if (flash?.error) toast.error(flash.error)
+    if (flash?.info) toast.info(flash.info)
+    if (flash?.warning) toast.warning(flash.warning)
+}, { deep: true })
 
 function toggleDark() {
     isDark.value = !isDark.value
@@ -53,7 +71,7 @@ const navGroups = [
             { label: 'Complaints', icon: AlertTriangle, route: 'manage.complaints.index', match: 'manage.complaints.*', soon: true },
             { label: 'Maintenance', icon: Wrench, route: 'manage.maintenance.index', match: 'manage.maintenance.*', soon: true },
             { label: 'Stock', icon: Package, route: 'manage.stock.index', match: 'manage.stock.*', soon: true },
-            { label: 'Vendors', icon: BookOpen, route: 'manage.vendors.index', match: 'manage.vendors.*', soon: true },
+            { label: 'Vendors', icon: BookOpen, route: 'manage.vendors.index', match: 'manage.vendors.*'},
         ]
     },
     {

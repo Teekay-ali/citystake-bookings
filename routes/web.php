@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\UnitTypeController as AdminUnitTypeController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\VendorController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -157,6 +158,13 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('m
     Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
     Route::post('/staff/{staff}/toggle-active', [StaffController::class, 'toggleActive'])->name('staff.toggle-active');
 
+    // Vendors
+    Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');
+    Route::get('/vendors/create', [VendorController::class, 'create'])->name('vendors.create');
+    Route::post('/vendors', [VendorController::class, 'store'])->name('vendors.store');
+    Route::get('/vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('vendors.edit');
+    Route::put('/vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
+    Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->name('vendors.destroy');
 });
 
 require __DIR__.'/auth.php';
