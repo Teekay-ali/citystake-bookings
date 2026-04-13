@@ -37,7 +37,7 @@ class UnitTypeController extends Controller
 
         UnitType::create($validated);
 
-        return redirect()->route('admin.properties.index')
+        return redirect()->route('manage.properties.index')
             ->with('success', 'Unit type created successfully!');
     }
 
@@ -77,7 +77,7 @@ class UnitTypeController extends Controller
 
         $unitType->update($validated);
 
-        return redirect()->route('admin.properties.index')
+        return redirect()->route('manage.properties.index')
             ->with('success', 'Unit type updated successfully!');
     }
 
@@ -96,7 +96,7 @@ class UnitTypeController extends Controller
 
         $unitType->delete();
 
-        return redirect()->route('admin.properties.index')
+        return redirect()->route('manage.properties.index')
             ->with('success', 'Unit type deleted successfully!');
     }
 }

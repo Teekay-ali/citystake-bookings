@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
@@ -70,7 +70,7 @@ const openDeleteUnitTypeModal = (building, unitType) => {
 
 const deleteBuilding = () => {
     isDeleting.value = true;
-    router.delete(route('admin.properties.destroy', itemToDelete.value.id), {
+    router.delete(route('manage.properties.destroy', itemToDelete.value.id), {
         onFinish: () => {
             isDeleting.value = false;
             showDeleteModal.value = false;
@@ -81,7 +81,7 @@ const deleteBuilding = () => {
 
 const deleteUnitType = () => {
     isDeleting.value = true;
-    router.delete(route('admin.unit-types.destroy', [itemToDelete.value.building.id, itemToDelete.value.unitType.id]), {
+    router.delete(route('manage.unit-types.destroy', [itemToDelete.value.building.id, itemToDelete.value.unitType.id]), {
         onFinish: () => {
             isDeleting.value = false;
             showDeleteUnitTypeModal.value = false;
@@ -105,7 +105,7 @@ const formatPrice = (price) => {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Property Management - Admin" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-8">
@@ -122,7 +122,7 @@ const formatPrice = (price) => {
                     </div>
 
                     <Link
-                        :href="route('admin.properties.create')"
+                        :href="route('manage.properties.create')"
                         class="px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all flex items-center shadow-lg"
                     >
                         <Plus class="w-5 h-5 mr-2" />
@@ -289,7 +289,7 @@ const formatPrice = (price) => {
                                         <!-- Building Actions -->
                                         <div class="flex items-center gap-2">
                                             <Link
-                                                :href="route('admin.properties.edit', building.id)"
+                                                :href="route('manage.properties.edit', building.id)"
                                                 class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                                                 title="Edit property"
                                             >
@@ -316,7 +316,7 @@ const formatPrice = (price) => {
                                     Unit Types
                                 </h3>
                                 <Link
-                                    :href="route('admin.unit-types.create', building.id)"
+                                    :href="route('manage.unit-types.create', building.id)"
                                     class="px-4 py-2 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-white text-sm font-medium rounded-lg transition-all flex items-center"
                                 >
                                     <Plus class="w-4 h-4 mr-1.5" />
@@ -397,7 +397,7 @@ const formatPrice = (price) => {
                                             <Eye class="w-4 h-4" />
                                         </Link>
                                         <Link
-                                            :href="route('admin.unit-types.edit', [building.id, unitType.id])"
+                                            :href="route('manage.unit-types.edit', [building.id, unitType.id])"
                                             class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                                             title="Edit unit type"
                                         >
@@ -420,7 +420,7 @@ const formatPrice = (price) => {
                                     No unit types yet. Add one to get started.
                                 </p>
                                 <Link
-                                    :href="route('admin.unit-types.create', building.id)"
+                                    :href="route('manage.unit-types.create', building.id)"
                                     class="inline-flex items-center text-sm text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                 >
                                     <Plus class="w-4 h-4 mr-1" />
@@ -460,7 +460,7 @@ const formatPrice = (price) => {
                         Get started by adding your first property to begin managing your rental business
                     </p>
                     <Link
-                        :href="route('admin.properties.create')"
+                        :href="route('manage.properties.create')"
                         class="inline-flex items-center px-8 py-4 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all shadow-lg"
                     >
                         <Plus class="w-5 h-5 mr-2" />
@@ -495,5 +495,5 @@ const formatPrice = (price) => {
                 />
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

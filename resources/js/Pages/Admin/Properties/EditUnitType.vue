@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
@@ -80,12 +80,12 @@ const updateMaxGuests = () => {
 };
 
 const submit = () => {
-    form.put(route('admin.unit-types.update', [props.building.id, props.unitType.id]));
+    form.put(route('manage.unit-types.update', [props.building.id, props.unitType.id]));
 };
 
 const deleteUnitType = () => {
     isDeleting.value = true;
-    form.delete(route('admin.unit-types.destroy', [props.building.id, props.unitType.id]), {
+    form.delete(route('manage.unit-types.destroy', [props.building.id, props.unitType.id]), {
         onFinish: () => {
             isDeleting.value = false;
             showDeleteModal.value = false;
@@ -95,7 +95,7 @@ const deleteUnitType = () => {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head :title="`Edit ${unitType.name} - ${building.name}`" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -103,7 +103,7 @@ const deleteUnitType = () => {
                 <!-- Back Button -->
                 <div class="mb-8">
                     <Link
-                        :href="route('admin.properties.index')"
+                        :href="route('manage.properties.index')"
                         class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         <ArrowLeft class="w-4 h-4 mr-2" />
@@ -375,7 +375,7 @@ const deleteUnitType = () => {
                     <!-- Actions -->
                     <div class="flex items-center justify-between pt-6">
                         <Link
-                            :href="route('admin.properties.index')"
+                            :href="route('manage.properties.index')"
                             class="px-6 py-3 border-2 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-all"
                         >
                             Cancel
@@ -405,5 +405,5 @@ const deleteUnitType = () => {
                 />
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

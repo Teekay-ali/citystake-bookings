@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import { useToast } from 'vue-toastification';
@@ -104,12 +104,12 @@ const formatPrice = (price) => {
 };
 
 const submit = () => {
-    form.post(route('admin.bookings.store'));
+    form.post(route('manage.bookings.store'));
 };
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Create Booking - Admin" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -117,7 +117,7 @@ const submit = () => {
                 <!-- Back Button -->
                 <div class="mb-8">
                     <Link
-                        :href="route('admin.bookings.index')"
+                        :href="route('manage.bookings.index')"
                         class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         <ArrowLeft class="w-4 h-4 mr-2" />
@@ -522,5 +522,5 @@ const submit = () => {
                 </form>
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

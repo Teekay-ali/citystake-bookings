@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import {
@@ -76,12 +76,12 @@ const selectReason = (reason) => {
 };
 
 const submit = () => {
-    form.post(route('admin.blocked-dates.store'));
+    form.post(route('manage.blocked-dates.store'));
 };
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Block Dates - Admin" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -89,7 +89,7 @@ const submit = () => {
                 <!-- Back Button -->
                 <div class="mb-8">
                     <Link
-                        :href="route('admin.blocked-dates.index')"
+                        :href="route('manage.blocked-dates.index')"
                         class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         <ArrowLeft class="w-4 h-4 mr-2" />
@@ -312,7 +312,7 @@ const submit = () => {
                     <!-- Actions -->
                     <div class="flex items-center justify-between pt-6">
                         <Link
-                            :href="route('admin.blocked-dates.index')"
+                            :href="route('manage.blocked-dates.index')"
                             class="px-6 py-3 border-2 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-all"
                         >
                             Cancel
@@ -329,5 +329,5 @@ const submit = () => {
                 </form>
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

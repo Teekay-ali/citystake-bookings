@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import {
@@ -55,7 +55,7 @@ const toggleAmenity = (amenity) => {
 };
 
 const submit = () => {
-    form.put(route('admin.properties.update', props.building.id), {
+    form.put(route('manage.properties.update', props.building.id), {
         onSuccess: () => {
             toast.success('Property updated successfully!');
         },
@@ -70,7 +70,7 @@ const submit = () => {
 
 const deleteBuilding = () => {
     isDeleting.value = true;
-    form.delete(route('admin.properties.destroy', props.building.id), {
+    form.delete(route('manage.properties.destroy', props.building.id), {
         onSuccess: () => {
             toast.success('Property deleted successfully!');
         },
@@ -84,7 +84,7 @@ const deleteBuilding = () => {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head :title="`Edit ${building.name} - Admin`" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -92,7 +92,7 @@ const deleteBuilding = () => {
                 <!-- Back Button -->
                 <div class="mb-8">
                     <Link
-                        :href="route('admin.properties.index')"
+                        :href="route('manage.properties.index')"
                         class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         <ArrowLeft class="w-4 h-4 mr-2" />
@@ -274,7 +274,7 @@ const deleteBuilding = () => {
                     <!-- Actions -->
                     <div class="flex items-center justify-between pt-6">
                         <Link
-                            :href="route('admin.properties.index')"
+                            :href="route('manage.properties.index')"
                             class="px-6 py-3 border-2 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-all"
                         >
                             Cancel
@@ -304,5 +304,5 @@ const deleteBuilding = () => {
                 />
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

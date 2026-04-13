@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\UnitTypeController as AdminUnitTypeController;
+use App\Http\Controllers\Admin\StaffController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -103,7 +104,7 @@ Route::middleware('auth')->group(function () {
 
 
 // Admin routes
-Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('manage.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Availability Board
@@ -147,6 +148,14 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->name('ad
     // Analytics
     Route::get('/analytics/occupancy', [App\Http\Controllers\Admin\OccupancyAnalyticsController::class, 'index'])
         ->name('analytics.occupancy');
+
+    // Staff Management
+    Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+    Route::get('/staff/create', [StaffController::class, 'create'])->name('staff.create');
+    Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
+    Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])->name('staff.edit');
+    Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
+    Route::post('/staff/{staff}/toggle-active', [StaffController::class, 'toggleActive'])->name('staff.toggle-active');
 
 });
 

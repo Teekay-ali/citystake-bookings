@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
@@ -26,7 +26,7 @@ const itemToDelete = ref(null);
 const isDeleting = ref(false);
 
 watch([building, status], () => {
-    router.get(route('admin.blocked-dates.index'), {
+    router.get(route('manage.blocked-dates.index'), {
         building: building.value,
         status: status.value,
     }, {
@@ -42,7 +42,7 @@ const openDeleteModal = (blockedDate) => {
 
 const deleteBlockedDate = () => {
     isDeleting.value = true;
-    router.delete(route('admin.blocked-dates.destroy', itemToDelete.value.id), {
+    router.delete(route('manage.blocked-dates.destroy', itemToDelete.value.id), {
         onFinish: () => {
             isDeleting.value = false;
             showDeleteModal.value = false;
@@ -98,7 +98,7 @@ const clearFilters = () => {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Blocked Dates - Admin" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -115,7 +115,7 @@ const clearFilters = () => {
                     </div>
 
                     <Link
-                        :href="route('admin.blocked-dates.create')"
+                        :href="route('manage.blocked-dates.create')"
                         class="px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all flex items-center"
                     >
                         <Plus class="w-5 h-5 mr-2" />
@@ -240,7 +240,7 @@ const clearFilters = () => {
                         Block dates for maintenance or when units are unavailable
                     </p>
                     <Link
-                        :href="route('admin.blocked-dates.create')"
+                        :href="route('manage.blocked-dates.create')"
                         class="inline-flex items-center px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all"
                     >
                         <Plus class="w-5 h-5 mr-2" />
@@ -282,5 +282,5 @@ const clearFilters = () => {
                 />
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

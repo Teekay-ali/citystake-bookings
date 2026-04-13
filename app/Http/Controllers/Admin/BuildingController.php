@@ -45,7 +45,7 @@ class BuildingController extends Controller
 
         Building::create($validated);
 
-        return redirect()->route('admin.properties.index')
+        return redirect()->route('manage.properties.index')
             ->with('success', 'Property created successfully!');
     }
 
@@ -71,7 +71,7 @@ class BuildingController extends Controller
 
         $building->update($validated);
 
-        return redirect()->route('admin.properties.index')
+        return redirect()->route('manage.properties.index')
             ->with('success', 'Property updated successfully!');
     }
 
@@ -85,7 +85,7 @@ class BuildingController extends Controller
 
         $building->delete();
 
-        return redirect()->route('admin.properties.index')
+        return redirect()->route('manage.properties.index')
             ->with('success', 'Property deleted successfully!');
     }
 

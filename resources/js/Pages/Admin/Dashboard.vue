@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import {
     TrendingUp,
@@ -51,7 +51,7 @@ const maxRevenue = computed(() => {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Admin Dashboard" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-8">            <div class="max-w-7xl mx-auto px-6 lg:px-8">
@@ -69,21 +69,21 @@ const maxRevenue = computed(() => {
                     <!-- Quick Actions -->
                     <div class="flex items-center gap-3">
                         <Link
-                            :href="route('admin.analytics.occupancy')"
+                            :href="route('manage.analytics.occupancy')"
                             class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-full transition-all flex items-center shadow-lg"
                         >
                             <BarChart3 class="w-5 h-5 mr-2" />
                             Occupancy Analytics
                         </Link>
                         <Link
-                            :href="route('admin.bookings.calendar')"
+                            :href="route('manage.bookings.calendar')"
                             class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full transition-all flex items-center shadow-lg"
                         >
                             <Calendar class="w-5 h-5 mr-2" />
                             Calendar View
                         </Link>
                         <Link
-                            :href="route('admin.bookings.index')"
+                            :href="route('manage.bookings.index')"
                             class="px-6 py-3 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-full transition-all flex items-center"
                         >
                             All Bookings
@@ -323,7 +323,7 @@ const maxRevenue = computed(() => {
                                 Recent Bookings
                             </h3>
                             <Link
-                                :href="route('admin.bookings.index')"
+                                :href="route('manage.bookings.index')"
                                 class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1"
                             >
                                 View all
@@ -334,7 +334,7 @@ const maxRevenue = computed(() => {
                             <Link
                                 v-for="booking in recentBookings"
                                 :key="booking.id"
-                                :href="route('admin.bookings.show', booking.id)"
+                                :href="route('manage.bookings.show', booking.id)"
                                 class="block p-4 bg-gray-50 dark:bg-gray-950 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
                             >
                                 <div class="flex items-start justify-between mb-2">
@@ -399,5 +399,5 @@ const maxRevenue = computed(() => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

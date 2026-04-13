@@ -6,7 +6,6 @@ import { usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import CookieConsent from '@/Components/CookieConsent.vue';
 import EmailVerificationBanner from '@/Components/EmailVerificationBanner.vue';
-import { Clock, LayoutGrid, LayoutDashboard, CalendarDays, Building2, Ban, BarChart3 } from 'lucide-vue-next';
 
 const showMobileMenu = ref(false);
 const { isDark, toggle } = useDarkMode();
@@ -71,11 +70,12 @@ const openCookieSettings = () => {
 
         <EmailVerificationBanner />
 
-        <!-- Navigation - Minimal & Clean -->
+        <!-- Navigation -->
         <nav class="fixed left-0 right-0 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md z-50 border-b border-gray-100 dark:border-gray-900"
              :class="$page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'top-[40px]' : 'top-0'">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <div class="flex justify-between items-center h-20">
+
                     <!-- Logo -->
                     <Link :href="route('home')" class="flex items-center space-x-2">
                         <span class="text-2xl font-light tracking-tight text-gray-900 dark:text-white">CityStake</span>
@@ -96,17 +96,26 @@ const openCookieSettings = () => {
                             class="p-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                             aria-label="Toggle dark mode"
                         >
-                            <!-- Sun Icon (shown in dark mode) -->
                             <svg v-if="isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
-                            <!-- Moon Icon (shown in light mode) -->
                             <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                             </svg>
                         </button>
 
+                        <!-- Authenticated user -->
                         <div v-if="$page.props.auth.user" class="flex items-center space-x-6">
+
+                            <!-- Dashboard entry point for staff/admin -->
+                            <Link
+                                v-if="$page.props.auth.user.is_admin || $page.props.auth.user.is_staff"
+                                :href="route('manage.dashboard')"
+                                class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-full hover:opacity-90 transition-all"
+                            >
+                                Dashboard
+                            </Link>
+
                             <Link
                                 :href="route('bookings.index')"
                                 class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -129,6 +138,7 @@ const openCookieSettings = () => {
                             </Link>
                         </div>
 
+                        <!-- Guest -->
                         <div v-else class="flex items-center space-x-6">
                             <Link
                                 :href="route('login')"
@@ -183,6 +193,16 @@ const openCookieSettings = () => {
                     </button>
 
                     <template v-if="$page.props.auth.user">
+
+                        <!-- Dashboard entry point for staff/admin (mobile) -->
+                        <Link
+                            v-if="$page.props.auth.user.is_admin || $page.props.auth.user.is_staff"
+                            :href="route('manage.dashboard')"
+                            class="block text-base font-medium text-gray-900 dark:text-white"
+                        >
+                            Dashboard
+                        </Link>
+
                         <Link
                             :href="route('bookings.index')"
                             class="block text-base font-medium text-gray-700 dark:text-gray-300"
@@ -223,119 +243,17 @@ const openCookieSettings = () => {
             </div>
         </nav>
 
-        <!-- Admin Navigation Bar -->
-        <div
-            v-if="$page.props.auth.user?.is_admin"
-            class="fixed left-0 right-0 z-40 bg-gray-950 dark:bg-gray-900 border-b border-gray-800"
-            :class="$page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'top-[140px]' : 'top-20'"
-        >
-            <div class="max-w-7xl mx-auto px-6 lg:px-8">
-                <div class="flex items-center gap-1 overflow-x-auto h-12" style="scrollbar-width: none;">
-                    <Link
-                        :href="route('admin.dashboard')"
-                        :class="[
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                    route().current('admin.dashboard')
-                        ? 'bg-white/10 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                ]"
-                    >
-                        <LayoutDashboard class="w-4 h-4" />
-                        Dashboard
-                    </Link>
-                    <Link
-                        :href="route('admin.bookings.index')"
-                        :class="[
-                            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                            route().current('admin.bookings.*') && !route().current('admin.bookings.late-checkout.index')
-                                ? 'bg-white/10 text-white'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        ]"
-                    >
-                        <CalendarDays class="w-4 h-4" />
-                        Bookings
-                    </Link>
-
-                    <Link
-                        :href="route('admin.bookings.late-checkout.index')"
-                        :class="[
-                            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                            route().current('admin.bookings.late-checkout.index')
-                                ? 'bg-white/10 text-white'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        ]"
-                    >
-                        <Clock class="w-4 h-4" />
-                        Late Checkouts
-                        <span v-if="$page.props.lateCheckoutPendingCount > 0"
-                              class="bg-amber-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
-                            {{ $page.props.lateCheckoutPendingCount }}
-                        </span>
-                    </Link>
-
-                    <Link
-                        :href="route('admin.availability.index')"
-                        :class="[
-                            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                            route().current('admin.availability.*')
-                                ? 'bg-white/10 text-white'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        ]"
-                    >
-                        <LayoutGrid class="w-4 h-4" />
-                        Availability
-                    </Link>
-                    <Link
-                        :href="route('admin.properties.index')"
-                        :class="[
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                    route().current('admin.properties.*') || route().current('admin.unit-types.*')
-                        ? 'bg-white/10 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                ]"
-                    >
-                        <Building2 class="w-4 h-4" />
-                        Properties
-                    </Link>
-                    <Link
-                        :href="route('admin.blocked-dates.index')"
-                        :class="[
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                    route().current('admin.blocked-dates.*')
-                        ? 'bg-white/10 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                ]"
-                    >
-                        <Ban class="w-4 h-4" />
-                        Blocked Dates
-                    </Link>
-                    <Link
-                        :href="route('admin.analytics.occupancy')"
-                        :class="[
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                    route().current('admin.analytics.*')
-                        ? 'bg-white/10 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                ]"
-                    >
-                        <BarChart3 class="w-4 h-4" />
-                        Analytics
-                    </Link>
-                </div>
-            </div>
-        </div>
-
         <!-- Main Content -->
         <main :class="
-            $page.props.auth.user?.is_admin
-                ? ($page.props.auth.user.email_verified_at ? 'pt-[128px]' : 'pt-[168px]')
-                : ($page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'pt-[100px]' : 'pt-20')
+            $page.props.auth?.user && !$page.props.auth.user.email_verified_at
+                ? 'pt-[100px]'
+                : 'pt-20'
         ">
             <slot />
         </main>
 
         <!-- Footer -->
-        <footer v-if="!hideFooter && !$page.props.auth.user?.is_admin" class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto">
+        <footer v-if="!hideFooter" class="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto">
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div>

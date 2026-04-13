@@ -111,7 +111,7 @@ class BlockedDateController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return redirect()->route('admin.blocked-dates.index')
+        return redirect()->route('manage.blocked-dates.index')
             ->with('success', 'Dates blocked successfully!');
     }
 
@@ -119,7 +119,7 @@ class BlockedDateController extends Controller
     {
         $blockedDate->delete();
 
-        return redirect()->route('admin.blocked-dates.index')
+        return redirect()->route('manage.blocked-dates.index')
             ->with('success', 'Blocked dates removed successfully!');
     }
 }

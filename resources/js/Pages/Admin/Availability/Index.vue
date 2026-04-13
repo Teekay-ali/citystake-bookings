@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
-import AppLayout from '@/Layouts/AppLayout.vue'
+import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { Building2, CalendarDays, CheckCircle2, XCircle, Wrench, LogIn, ChevronDown } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -16,7 +16,7 @@ const date = ref(props.selectedDate)
 const buildingId = ref(props.filters.building_id ?? '')
 
 function applyFilters() {
-    router.get(route('admin.availability.index'), {
+    router.get(route('manage.availability.index'), {
         date: date.value,
         building_id: buildingId.value || undefined,
     }, { preserveState: true, replace: true })
@@ -49,7 +49,7 @@ function formatAmount(n) {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Availability Board" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -246,13 +246,13 @@ function formatAmount(n) {
 
                         <Link
                             v-if="selectedUnit.current_booking?.status === 'confirmed'"
-                            :href="route('admin.bookings.show', selectedUnit.current_booking.id)"
+                            :href="route('manage.bookings.show', selectedUnit.current_booking.id)"
                             class="block w-full text-center px-4 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-medium transition-all">
                             Check-in Guest →
                         </Link>
 
                         <Link
-                            :href="route('admin.bookings.show', selectedUnit.current_booking.id)"
+                            :href="route('manage.bookings.show', selectedUnit.current_booking.id)"
                             class="block w-full text-center px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all mt-2">
                             View Full Booking
                         </Link>
@@ -268,5 +268,5 @@ function formatAmount(n) {
                  class="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 backdrop-blur-sm" />
         </Transition>
 
-    </AppLayout>
+    </ManageLayout>
 </template>

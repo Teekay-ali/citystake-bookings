@@ -194,7 +194,7 @@ class BookingController extends Controller
             // Send confirmation email to guest
             Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
 
-            return redirect()->route('admin.bookings.show', $booking->id)
+            return redirect()->route('manage.bookings.show', $booking->id)
                 ->with('success', 'Booking created successfully!');
 
         } catch (\Exception $e) {

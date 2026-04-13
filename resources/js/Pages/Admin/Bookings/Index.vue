@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import {
@@ -51,7 +51,7 @@ watch([status, building, paymentStatus, sortBy, sortOrder], () => {
 });
 
 const applyFilters = () => {
-    router.get(route('admin.bookings.index'), {
+    router.get(route('manage.bookings.index'), {
         search: search.value,
         status: status.value,
         building: building.value,
@@ -131,14 +131,14 @@ const exportBookings = () => {
     if (building.value) params.append('building_id', building.value);
     if (search.value) params.append('search', search.value);
 
-    const url = route('admin.bookings.export') + (params.toString() ? '?' + params.toString() : '');
+    const url = route('manage.bookings.export') + (params.toString() ? '?' + params.toString() : '');
     window.location.href = url;
 };
 
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="All Bookings - Admin" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-8">
@@ -165,7 +165,7 @@ const exportBookings = () => {
                         </button>
 
                         <Link
-                            :href="route('admin.bookings.create')"
+                            :href="route('manage.bookings.create')"
                             class="px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all flex items-center shadow-lg"
                         >
                             <Plus class="w-5 h-5 mr-2" />
@@ -347,7 +347,7 @@ const exportBookings = () => {
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <Link
-                                        :href="route('admin.bookings.show', booking.id)"
+                                        :href="route('manage.bookings.show', booking.id)"
                                         class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                     >
                                         <Eye class="w-4 h-4 mr-1" />
@@ -363,7 +363,7 @@ const exportBookings = () => {
                         <Link
                             v-for="booking in bookings.data"
                             :key="booking.id"
-                            :href="route('admin.bookings.show', booking.id)"
+                            :href="route('manage.bookings.show', booking.id)"
                             class="flex items-start justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
                         >
                             <div class="space-y-1 min-w-0 flex-1 pr-3">
@@ -411,5 +411,5 @@ const exportBookings = () => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { LogIn } from 'lucide-vue-next';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -128,7 +128,7 @@ const checkInForm = useForm({
 })
 
 function submitCheckIn() {
-    checkInForm.post(route('admin.bookings.check-in', props.booking.id), {
+    checkInForm.post(route('manage.bookings.check-in', props.booking.id), {
         preserveScroll: true,
     })
 }
@@ -136,7 +136,7 @@ function submitCheckIn() {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head :title="`Booking ${booking.booking_reference} - Admin`" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -144,7 +144,7 @@ function submitCheckIn() {
                 <!-- Back Button -->
                 <div class="mb-8">
                     <Link
-                        :href="route('admin.bookings.index')"
+                        :href="route('manage.bookings.index')"
                         class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         <ArrowLeft class="w-4 h-4 mr-2" />
@@ -473,7 +473,7 @@ function submitCheckIn() {
                                 </p>
                                 <Link
                                     v-if="['confirmed','checked_in'].includes(booking.status)"
-                                    :href="route('admin.bookings.late-checkout.request', booking.id)"
+                                    :href="route('manage.bookings.late-checkout.request', booking.id)"
                                     method="post"
                                     as="button"
                                     class="w-full text-center px-4 py-3 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-900 dark:text-white rounded-xl text-sm font-medium transition-all">
@@ -493,7 +493,7 @@ function submitCheckIn() {
                                 <div v-if="$page.props.auth.user.roles.includes('manager') || $page.props.auth.user.roles.includes('super-admin')"
                                      class="flex gap-2">
                                     <Link
-                                        :href="route('admin.bookings.late-checkout.approve', booking.id)"
+                                        :href="route('manage.bookings.late-checkout.approve', booking.id)"
                                         method="post"
                                         as="button"
                                         :data="{ action: 'approved' }"
@@ -501,7 +501,7 @@ function submitCheckIn() {
                                         Approve
                                     </Link>
                                     <Link
-                                        :href="route('admin.bookings.late-checkout.approve', booking.id)"
+                                        :href="route('manage.bookings.late-checkout.approve', booking.id)"
                                         method="post"
                                         as="button"
                                         :data="{ action: 'rejected' }"
@@ -520,7 +520,7 @@ function submitCheckIn() {
                                     </p>
                                 </div>
                                 <Link
-                                    :href="route('admin.bookings.late-checkout.settle', booking.id)"
+                                    :href="route('manage.bookings.late-checkout.settle', booking.id)"
                                     method="post"
                                     as="button"
                                     class="w-full text-center px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all">
@@ -591,5 +591,5 @@ function submitCheckIn() {
                 />
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

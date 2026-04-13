@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import { Calendar, Filter, Eye, X } from 'lucide-vue-next';
@@ -37,7 +37,7 @@ const calendarOptions = {
 };
 
 watch(buildingFilter, (newValue) => {
-    router.get(route('admin.bookings.calendar'), {
+    router.get(route('manage.bookings.calendar'), {
         building_id: newValue,
     }, {
         preserveState: true,
@@ -82,7 +82,7 @@ function getPaymentBadge(status) {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Booking Calendar - Admin" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -100,7 +100,7 @@ function getPaymentBadge(status) {
 
                     <div class="flex items-center gap-3">
                         <Link
-                            :href="route('admin.bookings.index')"
+                            :href="route('manage.bookings.index')"
                             class="px-6 py-3 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-full transition-all"
                         >
                             View List
@@ -270,7 +270,7 @@ function getPaymentBadge(status) {
                                 <!-- Actions -->
                                 <div class="flex gap-3">
                                     <Link
-                                        :href="route('admin.bookings.show', selectedEvent.extendedProps.booking_reference)"
+                                        :href="route('manage.bookings.show', selectedEvent.extendedProps.booking_reference)"
                                         class="flex-1 px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-xl transition-all flex items-center justify-center"
                                     >
                                         <Eye class="w-4 h-4 mr-2" />
@@ -283,7 +283,7 @@ function getPaymentBadge(status) {
                 </Transition>
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>
 
 <style>

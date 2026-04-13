@@ -1,5 +1,5 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
 import {
@@ -51,7 +51,7 @@ watch([selectedYear, selectedMonth, selectedBuilding], () => {
 });
 
 const applyFilters = () => {
-    router.get(route('admin.analytics.occupancy'), {
+    router.get(route('manage.analytics.occupancy'), {
         year: selectedYear.value,
         month: selectedMonth.value,
         building_id: selectedBuilding.value,
@@ -90,7 +90,7 @@ const maxTrendRate = computed(() => {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Occupancy Analytics - Admin" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -107,7 +107,7 @@ const maxTrendRate = computed(() => {
                     </div>
 
                     <Link
-                        :href="route('admin.dashboard')"
+                        :href="route('manage.dashboard')"
                         class="px-6 py-3 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-full transition-all"
                     >
                         Back to Dashboard
@@ -337,5 +337,5 @@ const maxTrendRate = computed(() => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>

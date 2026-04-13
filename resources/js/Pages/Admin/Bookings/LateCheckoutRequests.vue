@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
-import AppLayout from '@/Layouts/AppLayout.vue'
+import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { Clock, CheckCircle2, XCircle, ChevronRight } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -13,7 +13,7 @@ const props = defineProps({
 const status = ref(props.filters.status || '')
 
 watch(status, () => {
-    router.get(route('admin.bookings.late-checkout.index'), {
+    router.get(route('manage.bookings.late-checkout.index'), {
         status: status.value || undefined,
     }, { preserveState: true, replace: true })
 })
@@ -35,7 +35,7 @@ function formatAmount(n) {
 </script>
 
 <template>
-    <AppLayout>
+    <ManageLayout>
         <Head title="Late Checkout Requests" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
@@ -113,7 +113,7 @@ function formatAmount(n) {
                                 <!-- Approve/Reject for pending -->
                                 <template v-if="booking.late_checkout_status === 'pending'">
                                     <Link
-                                        :href="route('admin.bookings.late-checkout.approve', booking.id)"
+                                        :href="route('manage.bookings.late-checkout.approve', booking.id)"
                                         method="post"
                                         as="button"
                                         :data="{ action: 'approved' }"
@@ -122,7 +122,7 @@ function formatAmount(n) {
                                         Approve
                                     </Link>
                                     <Link
-                                        :href="route('admin.bookings.late-checkout.approve', booking.id)"
+                                        :href="route('manage.bookings.late-checkout.approve', booking.id)"
                                         method="post"
                                         as="button"
                                         :data="{ action: 'rejected' }"
@@ -135,7 +135,7 @@ function formatAmount(n) {
                                 <!-- Settle for approved -->
                                 <Link
                                     v-else-if="booking.late_checkout_status === 'approved'"
-                                    :href="route('admin.bookings.late-checkout.settle', booking.id)"
+                                    :href="route('manage.bookings.late-checkout.settle', booking.id)"
                                     method="post"
                                     as="button"
                                     class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all">
@@ -144,7 +144,7 @@ function formatAmount(n) {
 
                                 <!-- View booking -->
                                 <Link
-                                    :href="route('admin.bookings.show', booking.id)"
+                                    :href="route('manage.bookings.show', booking.id)"
                                     class="p-2 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-500 transition-all">
                                     <ChevronRight class="w-4 h-4" />
                                 </Link>
@@ -160,5 +160,5 @@ function formatAmount(n) {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </ManageLayout>
 </template>
