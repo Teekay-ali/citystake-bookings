@@ -41,7 +41,7 @@ class HandleInertiaRequests extends Middleware
                     'roles'             => $request->user()->getRoleNames(),
                     'buildings'         => $request->user()->hasGlobalAccess()
                         ? null
-                        : $request->user()->buildings()->pluck('id'),
+                        : $request->user()->buildings()->pluck('buildings.id'),
                     'email_verified_at' => $request->user()->email_verified_at,
                 ] : null,
             ],

@@ -55,7 +55,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function buildings(): BelongsToMany
     {
-        return $this->belongsToMany(Building::class, 'user_buildings')->withTimestamps();
+        return $this->belongsToMany(Building::class, 'user_buildings')
+            ->withTimestamps()
+            ->select('buildings.*'); // always qualify — prevents ambiguous column on any join
     }
 
     // ─── Helpers ──────────────────────────────────────────────────
@@ -76,7 +78,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function accessibleBuildingIds(): ?array
     {
         if ($this->hasGlobalAccess()) {
-            return null; // null = no restriction
+            return null;
         }
 
         return $this->buildings()->pluck('buildings.id')->toArray();

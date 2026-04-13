@@ -7,7 +7,7 @@ import {
     Users, Grid3x3, Clock, Menu, X, LogOut,
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
-    ChevronLeft, ChevronRight
+    ChevronLeft, ChevronRight, FileText
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -87,6 +87,7 @@ const navGroups = [
             { label: 'Staff', icon: Users, route: 'manage.staff.index', match: 'manage.staff.*' },
             { label: 'Tasks', icon: CheckSquare, route: 'manage.tasks.index', match: 'manage.tasks.*', soon: true },
             { label: 'Messages', icon: MessageSquare, route: 'manage.messages.index', match: 'manage.messages.*', soon: true },
+            { label: 'Staff Queries', icon: FileText, route: 'manage.staff-queries.index', match: 'manage.staff-queries.*' },
         ]
     },
 ]

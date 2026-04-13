@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\MaintenanceReportController;
 use App\Http\Controllers\Admin\ProcurementController;
+use App\Http\Controllers\Admin\StaffQueryController;
 
 
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -170,7 +171,6 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('m
     Route::put('/vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
     Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->name('vendors.destroy');
 
-
     // Complaints
     Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
     Route::get('/complaints/create', [ComplaintController::class, 'create'])->name('complaints.create');
@@ -194,6 +194,15 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('m
     Route::get('/procurement/{procurement}', [ProcurementController::class, 'show'])->name('procurement.show');
     Route::post('/procurement/{procurement}/approve', [ProcurementController::class, 'approve'])->name('procurement.approve');
     Route::delete('/procurement/{procurement}', [ProcurementController::class, 'destroy'])->name('procurement.destroy');
+
+
+    // Staff Queries
+    Route::get('/staff-queries', [StaffQueryController::class, 'index'])->name('staff-queries.index');
+    Route::get('/staff-queries/create', [StaffQueryController::class, 'create'])->name('staff-queries.create');
+    Route::post('/staff-queries', [StaffQueryController::class, 'store'])->name('staff-queries.store');
+    Route::get('/staff-queries/{staffQuery}', [StaffQueryController::class, 'show'])->name('staff-queries.show');
+    Route::post('/staff-queries/{staffQuery}/resolve', [StaffQueryController::class, 'resolve'])->name('staff-queries.resolve');
+    Route::delete('/staff-queries/{staffQuery}', [StaffQueryController::class, 'destroy'])->name('staff-queries.destroy');
 
 });
 
