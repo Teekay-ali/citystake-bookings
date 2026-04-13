@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\BuildingController;
 use App\Http\Controllers\Admin\UnitTypeController as AdminUnitTypeController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\VendorController;
+use App\Http\Controllers\Admin\ComplaintController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -165,6 +166,16 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('m
     Route::get('/vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('vendors.edit');
     Route::put('/vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
     Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->name('vendors.destroy');
+
+
+    // Complaints
+    Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
+    Route::get('/complaints/create', [ComplaintController::class, 'create'])->name('complaints.create');
+    Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
+    Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('complaints.show');
+    Route::post('/complaints/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('complaints.resolve');
+    Route::delete('/complaints/{complaint}', [ComplaintController::class, 'destroy'])->name('complaints.destroy');
+
 });
 
 require __DIR__.'/auth.php';

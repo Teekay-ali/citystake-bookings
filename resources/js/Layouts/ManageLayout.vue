@@ -68,7 +68,7 @@ const navGroups = [
         label: 'Operations',
         items: [
             { label: 'Procurement', icon: ShoppingCart, route: 'manage.procurement.index', match: 'manage.procurement.*', soon: true },
-            { label: 'Complaints', icon: AlertTriangle, route: 'manage.complaints.index', match: 'manage.complaints.*', soon: true },
+            { label: 'Complaints', icon: AlertTriangle, route: 'manage.complaints.index', match: 'manage.complaints.*'},
             { label: 'Maintenance', icon: Wrench, route: 'manage.maintenance.index', match: 'manage.maintenance.*', soon: true },
             { label: 'Stock', icon: Package, route: 'manage.stock.index', match: 'manage.stock.*', soon: true },
             { label: 'Vendors', icon: BookOpen, route: 'manage.vendors.index', match: 'manage.vendors.*'},
