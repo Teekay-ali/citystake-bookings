@@ -18,7 +18,7 @@ use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\MaintenanceReportController;
 use App\Http\Controllers\Admin\ProcurementController;
 use App\Http\Controllers\Admin\StaffQueryController;
-
+use App\Http\Controllers\Admin\StockController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -203,6 +203,15 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('m
     Route::get('/staff-queries/{staffQuery}', [StaffQueryController::class, 'show'])->name('staff-queries.show');
     Route::post('/staff-queries/{staffQuery}/resolve', [StaffQueryController::class, 'resolve'])->name('staff-queries.resolve');
     Route::delete('/staff-queries/{staffQuery}', [StaffQueryController::class, 'destroy'])->name('staff-queries.destroy');
+
+    // Stock Keeping
+    Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
+    Route::get('/stock/create', [StockController::class, 'create'])->name('stock.create');
+    Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
+    Route::get('/stock/{stock}', [StockController::class, 'show'])->name('stock.show');
+    Route::post('/stock/{stock}/log', [StockController::class, 'logUsage'])->name('stock.log');
+    Route::get('/stock/{stock}/edit', [StockController::class, 'edit'])->name('stock.edit');
+    Route::put('/stock/{stock}', [StockController::class, 'update'])->name('stock.update');
 
 });
 
