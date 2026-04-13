@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\UnitTypeController as AdminUnitTypeController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\ComplaintController;
+use App\Http\Controllers\Admin\MaintenanceReportController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -175,6 +176,14 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('m
     Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('complaints.show');
     Route::post('/complaints/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('complaints.resolve');
     Route::delete('/complaints/{complaint}', [ComplaintController::class, 'destroy'])->name('complaints.destroy');
+
+    // Maintenance Reports
+    Route::get('/maintenance', [MaintenanceReportController::class, 'index'])->name('maintenance.index');
+    Route::get('/maintenance/create', [MaintenanceReportController::class, 'create'])->name('maintenance.create');
+    Route::post('/maintenance', [MaintenanceReportController::class, 'store'])->name('maintenance.store');
+    Route::get('/maintenance/{maintenance}', [MaintenanceReportController::class, 'show'])->name('maintenance.show');
+    Route::post('/maintenance/{maintenance}/approve', [MaintenanceReportController::class, 'approve'])->name('maintenance.approve');
+    Route::delete('/maintenance/{maintenance}', [MaintenanceReportController::class, 'destroy'])->name('maintenance.destroy');
 
 });
 
