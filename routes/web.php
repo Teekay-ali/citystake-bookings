@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\VendorController;
 use App\Http\Controllers\Admin\ComplaintController;
 use App\Http\Controllers\Admin\MaintenanceReportController;
+use App\Http\Controllers\Admin\ProcurementController;
+
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -184,6 +186,14 @@ Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('manage')->name('m
     Route::get('/maintenance/{maintenance}', [MaintenanceReportController::class, 'show'])->name('maintenance.show');
     Route::post('/maintenance/{maintenance}/approve', [MaintenanceReportController::class, 'approve'])->name('maintenance.approve');
     Route::delete('/maintenance/{maintenance}', [MaintenanceReportController::class, 'destroy'])->name('maintenance.destroy');
+
+    // Procurement
+    Route::get('/procurement', [ProcurementController::class, 'index'])->name('procurement.index');
+    Route::get('/procurement/create', [ProcurementController::class, 'create'])->name('procurement.create');
+    Route::post('/procurement', [ProcurementController::class, 'store'])->name('procurement.store');
+    Route::get('/procurement/{procurement}', [ProcurementController::class, 'show'])->name('procurement.show');
+    Route::post('/procurement/{procurement}/approve', [ProcurementController::class, 'approve'])->name('procurement.approve');
+    Route::delete('/procurement/{procurement}', [ProcurementController::class, 'destroy'])->name('procurement.destroy');
 
 });
 
