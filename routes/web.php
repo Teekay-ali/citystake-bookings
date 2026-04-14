@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\StaffQueryController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\FinancialController;
+use App\Http\Controllers\Admin\TaskController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -235,6 +236,17 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/financials/manual', [FinancialController::class, 'storeManual'])->name('financials.manual');
     Route::post('/financials/pay/{type}/{id}', [FinancialController::class, 'payExpense'])->name('financials.pay');
     Route::get('/financials/export', [FinancialController::class, 'export'])->name('financials.export');
+
+    // Tasks
+    Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/tasks/create', [TaskController::class, 'create'])->name('tasks.create');
+    Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+    Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    Route::get('/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
+    Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+    Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status');
+    Route::post('/tasks/{task}/subtasks/{subtask}/toggle', [TaskController::class, 'toggleSubtask'])->name('tasks.subtask.toggle');
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
 
 });
 

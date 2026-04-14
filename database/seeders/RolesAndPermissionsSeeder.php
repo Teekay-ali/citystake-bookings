@@ -66,6 +66,10 @@ class RolesAndPermissionsSeeder extends Seeder
             // Finance
             'view-financials',
             'manage-financials',
+
+            // Tasks
+            'manage-tasks',
+            'view-tasks',
         ];
 
         foreach ($permissions as $permission) {
@@ -89,6 +93,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'manage-staff-queries',
                 'view-analytics',
                 'view-financials',
+                'manage-tasks', 'view-tasks',
             ],
 
             'accountant' => [
@@ -101,6 +106,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-analytics',
                 'view-financials',
                 'manage-financials',
+                'view-tasks',
             ],
 
             'ceo' => [
@@ -112,6 +118,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-stock',
                 'view-analytics',
                 'view-financials',
+                'manage-tasks', 'view-tasks',
             ],
 
             'head-of-procurement' => [
@@ -120,6 +127,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'submit-complaints', 'submit-maintenance',
                 'purchase-procurement',
                 'view-stock', 'log-stock-usage',
+                'view-tasks',
             ],
 
             'receptionist' => [
@@ -128,12 +136,14 @@ class RolesAndPermissionsSeeder extends Seeder
                 'request-late-checkout',
                 'submit-complaints', 'submit-maintenance',
                 'view-stock', 'log-stock-usage',
+                'view-tasks',
             ],
 
             'staff' => [
                 'view-bookings',
                 'submit-complaints', 'submit-maintenance',
                 'view-stock', 'log-stock-usage',
+                'view-tasks',
             ],
         ];
 
