@@ -62,6 +62,10 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Analytics
             'view-analytics',
+
+            // Finance
+            'view-financials',
+            'manage-financials',
         ];
 
         foreach ($permissions as $permission) {
@@ -84,6 +88,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-stock', 'manage-stock', 'log-stock-usage',
                 'manage-staff-queries',
                 'view-analytics',
+                'view-financials',
             ],
 
             'accountant' => [
@@ -94,6 +99,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'approve-procurement-accountant',
                 'view-stock', 'log-stock-usage',
                 'view-analytics',
+                'view-financials',
+                'manage-financials',
             ],
 
             'ceo' => [
@@ -104,6 +111,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'approve-procurement-ceo',
                 'view-stock',
                 'view-analytics',
+                'view-financials',
             ],
 
             'head-of-procurement' => [

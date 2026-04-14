@@ -78,7 +78,7 @@ const navGroups = [
         label: 'Finance & Analytics',
         items: [
             { label: 'Occupancy',  icon: BarChart3,   route: 'manage.analytics.occupancy', match: 'manage.analytics.*',  permission: 'view-analytics' },
-            { label: 'Financials', icon: DollarSign,  route: 'manage.financials.index',    match: 'manage.financials.*', soon: true },
+            { label: 'Financials', icon: DollarSign,  route: 'manage.financials.index',    match: 'manage.financials.*', permission: 'view-financials' },
         ]
     },
     {

@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\ProcurementController;
 use App\Http\Controllers\Admin\StaffQueryController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\FinancialController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -228,6 +229,13 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     Route::post('/staff/{staff}/assign-role', [RoleController::class, 'assignRole'])->name('staff.assign-role');
     Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('roles.update-permissions');
+
+    // Financial Reports
+    Route::get('/financials', [FinancialController::class, 'index'])->name('financials.index');
+    Route::post('/financials/manual', [FinancialController::class, 'storeManual'])->name('financials.manual');
+    Route::post('/financials/pay/{type}/{id}', [FinancialController::class, 'payExpense'])->name('financials.pay');
+    Route::get('/financials/export', [FinancialController::class, 'export'])->name('financials.export');
+
 });
 
 require __DIR__.'/auth.php';

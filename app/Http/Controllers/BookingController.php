@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\FinancialTransaction;
 use App\Services\PaystackService;
 
 use App\Models\Booking;
@@ -232,6 +233,21 @@ class BookingController extends Controller
                     'status' => 'confirmed',
                     'paystack_reference' => $reference,
                     'paid_at' => now(),
+                ]);
+
+
+                FinancialTransaction::create([
+                    'building_id'      => $booking->building_id,
+                    'recorded_by'      => $booking->user_id ?? 1, // system
+                    'type'             => 'income',
+                    'category'         => 'booking',
+                    'reference_type'   => \App\Models\Booking::class,
+                    'reference_id'     => $booking->id,
+                    'description'      => "Booking {$booking->booking_reference} — {$booking->guest_name}",
+                    'amount'           => $booking->total_amount,
+                    'payment_method'   => 'paystack',
+                    'payment_reference'=> $reference,
+                    'transaction_date' => now()->toDateString(),
                 ]);
 
                 // Send confirmation email to guest

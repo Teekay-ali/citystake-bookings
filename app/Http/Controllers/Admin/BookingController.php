@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\FinancialTransaction;
 use App\Traits\ScopedByBuilding;
 use App\Services\DiscountService;
 use App\Http\Controllers\Controller;
@@ -203,6 +204,20 @@ class BookingController extends Controller
                 'paid_at' => now(),
             ]);
 
+            FinancialTransaction::create([
+                'building_id'      => $booking->building_id,
+                'recorded_by'      => auth()->id(),
+                'type'             => 'income',
+                'category'         => 'booking',
+                'reference_type'   => Booking::class,
+                'reference_id'     => $booking->id,
+                'description'      => "Walk-in booking {$booking->booking_reference} — {$booking->guest_name}",
+                'amount'           => $booking->total_amount,
+                'payment_method'   => $validated['payment_method'],
+                'payment_reference'=> $validated['payment_reference'] ?? null,
+                'transaction_date' => now()->toDateString(),
+            ]);
+
             // Send confirmation email to guest
             Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
 
@@ -315,6 +330,19 @@ class BookingController extends Controller
         $booking->update([
             'late_checkout_settled_at' => now(),
             'late_checkout_status'     => 'settled',
+        ]);
+
+        FinancialTransaction::create([
+            'building_id'      => $booking->building_id,
+            'recorded_by'      => auth()->id(),
+            'type'             => 'income',
+            'category'         => 'late_checkout',
+            'reference_type'   => Booking::class,
+            'reference_id'     => $booking->id,
+            'description'      => "Late checkout fee — {$booking->guest_name} ({$booking->booking_reference})",
+            'amount'           => $booking->late_checkout_fee,
+            'payment_method'   => 'cash',
+            'transaction_date' => now()->toDateString(),
         ]);
 
         return back()->with('success', 'Late checkout fee marked as settled.');
