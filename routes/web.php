@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\MaintenanceReportController;
 use App\Http\Controllers\Admin\ProcurementController;
 use App\Http\Controllers\Admin\StaffQueryController;
 use App\Http\Controllers\Admin\StockController;
+use App\Http\Controllers\Admin\RoleController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -221,6 +222,12 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/stock/{stock}/edit', [StockController::class, 'edit'])->name('stock.edit');
     Route::put('/stock/{stock}', [StockController::class, 'update'])->name('stock.update');
 
+    // Roles
+    Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+    Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    Route::post('/staff/{staff}/assign-role', [RoleController::class, 'assignRole'])->name('staff.assign-role');
+    Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('roles.update-permissions');
 });
 
 require __DIR__.'/auth.php';

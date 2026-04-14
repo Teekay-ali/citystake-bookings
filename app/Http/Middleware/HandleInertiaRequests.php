@@ -39,6 +39,7 @@ class HandleInertiaRequests extends Middleware
                     'is_admin'          => $request->user()->is_admin,
                     'is_staff'          => $request->user()?->is_staff ?? false,
                     'roles'             => $request->user()->getRoleNames(),
+                    'permissions'       => $request->user()->getAllPermissions()->pluck('name'),
                     'buildings'         => $request->user()->hasGlobalAccess()
                         ? null
                         : $request->user()->buildings()->pluck('buildings.id'),

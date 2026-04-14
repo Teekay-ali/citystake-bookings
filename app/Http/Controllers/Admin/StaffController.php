@@ -34,6 +34,8 @@ class StaffController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless(auth()->user()->can('manage-staff'), 403);
+
         $validated = $request->validate([
             'name'         => 'required|string|max:255',
             'email'        => 'required|email|unique:users,email',
@@ -81,6 +83,7 @@ class StaffController extends Controller
 
     public function update(Request $request, User $staff)
     {
+        abort_unless(auth()->user()->can('manage-staff'), 403);
 
         if ($staff->is_admin) {
             abort(403, 'Admin accounts cannot be edited here.');
@@ -114,6 +117,8 @@ class StaffController extends Controller
 
     public function toggleActive(User $staff)
     {
+        abort_unless(auth()->user()->can('manage-staff'), 403);
+
         // Prevent deactivating yourself
         if ($staff->id === auth()->id()) {
             return back()->with('error', 'You cannot deactivate your own account.');

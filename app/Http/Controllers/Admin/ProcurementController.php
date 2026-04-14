@@ -157,25 +157,25 @@ class ProcurementController extends Controller
             return back()->with('success', 'Request rejected.');
         }
 
-        if ($procurement->canAccountantApprove() && $user->hasRole(['accountant', 'super-admin'])) {
+        if ($procurement->canAccountantApprove() && $user->can('approve-procurement-accountant')) {
             $procurement->update([
                 'status'                 => 'accountant_approved',
                 'accountant_approved_by' => $user->id,
                 'accountant_approved_at' => now(),
             ]);
-        } elseif ($procurement->canCeoApprove() && $user->hasRole(['ceo', 'super-admin'])) {
+        } elseif ($procurement->canCeoApprove() && $user->can('approve-procurement-ceo')) {
             $procurement->update([
                 'status'          => 'ceo_approved',
                 'ceo_approved_by' => $user->id,
                 'ceo_approved_at' => now(),
             ]);
-        } elseif ($procurement->canMarkPurchased() && $user->hasRole(['head-of-procurement', 'super-admin'])) {
+        } elseif ($procurement->canMarkPurchased() && $user->can('purchase-procurement')) {
             $procurement->update([
                 'status'       => 'purchased',
                 'purchased_by' => $user->id,
                 'purchased_at' => now(),
             ]);
-        } elseif ($procurement->canConfirmReceipt() && $user->hasRole(['manager', 'super-admin'])) {
+        } elseif ($procurement->canConfirmReceipt() && $user->can('confirm-procurement-receipt')) {
             $procurement->update([
                 'status'               => 'completed',
                 'receipt_confirmed_by' => $user->id,

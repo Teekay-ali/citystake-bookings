@@ -7,7 +7,7 @@ import {
     Users, Grid3x3, Clock, Menu, X, LogOut,
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
-    ChevronLeft, ChevronRight, FileText
+    ChevronLeft, ChevronRight, FileText, ShieldCheck
 } from 'lucide-vue-next'
 
 const toast = useToast()
@@ -51,43 +51,44 @@ const navGroups = [
     {
         label: 'Bookings',
         items: [
-            { label: 'All Bookings', icon: CalendarDays, route: 'manage.bookings.index', match: 'manage.bookings.*' },
-            { label: 'Availability', icon: Grid3x3, route: 'manage.availability.index', match: 'manage.availability.*' },
-            { label: 'Late Checkouts', icon: Clock, route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', badge: pendingCount },
-            { label: 'Calendar', icon: CalendarDays, route: 'manage.bookings.calendar', match: 'manage.bookings.calendar' },
+            { label: 'All Bookings',   icon: CalendarDays, route: 'manage.bookings.index',              match: 'manage.bookings.*',                   permission: 'view-bookings' },
+            { label: 'Availability',   icon: Grid3x3,      route: 'manage.availability.index',          match: 'manage.availability.*',               permission: 'manage-availability' },
+            { label: 'Late Checkouts', icon: Clock,        route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'view-bookings', badge: pendingCount },
+            { label: 'Calendar',       icon: CalendarDays, route: 'manage.bookings.calendar',           match: 'manage.bookings.calendar',            permission: 'view-bookings' },
         ]
     },
     {
         label: 'Properties',
         items: [
-            { label: 'Properties', icon: Building2, route: 'manage.properties.index', match: 'manage.properties.*', roles: ['super-admin', 'manager'] },
-            { label: 'Blocked Dates', icon: Ban, route: 'manage.blocked-dates.index', match: 'manage.blocked-dates.*', roles: ['super-admin', 'manager'] },
+            { label: 'Properties',    icon: Building2, route: 'manage.properties.index',    match: 'manage.properties.*',    permission: 'manage-properties' },
+            { label: 'Blocked Dates', icon: Ban,       route: 'manage.blocked-dates.index', match: 'manage.blocked-dates.*', permission: 'manage-blocked-dates' },
         ]
     },
     {
         label: 'Operations',
         items: [
-            { label: 'Procurement', icon: ShoppingCart, route: 'manage.procurement.index', match: 'manage.procurement.*', roles: ['super-admin', 'manager', 'accountant', 'ceo', 'head-of-procurement'] },
-            { label: 'Complaints', icon: AlertTriangle, route: 'manage.complaints.index', match: 'manage.complaints.*' },
-            { label: 'Maintenance', icon: Wrench, route: 'manage.maintenance.index', match: 'manage.maintenance.*' },
-            { label: 'Stock', icon: Package, route: 'manage.stock.index', match: 'manage.stock.*' },
-            { label: 'Vendors', icon: BookOpen, route: 'manage.vendors.index', match: 'manage.vendors.*', roles: ['super-admin', 'manager', 'accountant', 'head-of-procurement'] },
+            { label: 'Procurement', icon: ShoppingCart, route: 'manage.procurement.index', match: 'manage.procurement.*', permission: 'submit-procurement' },
+            { label: 'Complaints',  icon: AlertTriangle, route: 'manage.complaints.index', match: 'manage.complaints.*',  permission: 'submit-complaints' },
+            { label: 'Maintenance', icon: Wrench,        route: 'manage.maintenance.index', match: 'manage.maintenance.*', permission: 'submit-maintenance' },
+            { label: 'Stock',       icon: Package,       route: 'manage.stock.index',       match: 'manage.stock.*',       permission: 'view-stock' },
+            { label: 'Vendors',     icon: BookOpen,      route: 'manage.vendors.index',     match: 'manage.vendors.*',     permission: 'view-vendors' },
         ]
     },
     {
         label: 'Finance & Analytics',
         items: [
-            { label: 'Occupancy', icon: BarChart3, route: 'manage.analytics.occupancy', match: 'manage.analytics.*', roles: ['super-admin', 'manager', 'ceo', 'accountant'] },
-            { label: 'Financials', icon: DollarSign, route: 'manage.financials.index', match: 'manage.financials.*', soon: true },
+            { label: 'Occupancy',  icon: BarChart3,   route: 'manage.analytics.occupancy', match: 'manage.analytics.*',  permission: 'view-analytics' },
+            { label: 'Financials', icon: DollarSign,  route: 'manage.financials.index',    match: 'manage.financials.*', soon: true },
         ]
     },
     {
         label: 'Team',
         items: [
-            { label: 'Staff', icon: Users, route: 'manage.staff.index', match: 'manage.staff.*', roles: ['super-admin', 'manager'] },
-            { label: 'Staff Queries', icon: FileText, route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', roles: ['super-admin', 'manager'] },
-            { label: 'Tasks', icon: CheckSquare, route: 'manage.tasks.index', match: 'manage.tasks.*', soon: true },
-            { label: 'Messages', icon: MessageSquare, route: 'manage.messages.index', match: 'manage.messages.*', soon: true },
+            { label: 'Staff',         icon: Users,       route: 'manage.staff.index',         match: 'manage.staff.*',         permission: 'manage-staff' },
+            { label: 'Staff Queries', icon: FileText,    route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', permission: 'manage-staff-queries' },
+            { label: 'Roles',         icon: ShieldCheck, route: 'manage.roles.index',         match: 'manage.roles.*',         permission: 'manage-roles' },
+            { label: 'Tasks',         icon: CheckSquare, route: 'manage.tasks.index',         match: 'manage.tasks.*',         soon: true },
+            { label: 'Messages',      icon: MessageSquare, route: 'manage.messages.index',    match: 'manage.messages.*',      soon: true },
         ]
     },
 ]
@@ -110,11 +111,11 @@ const roleLabels = {
     'staff': 'Staff',
 }
 
-const userRoles = computed(() => user.value?.roles ?? [])
+const userPermissions = computed(() => page.props.auth.user?.permissions ?? [])
 
 function canSeeItem(item) {
-    if (!item.roles) return true // no restriction — visible to all
-    return userRoles.value.some(role => item.roles.includes(role))
+    if (!item.permission) return true
+    return userPermissions.value.includes(item.permission)
 }
 
 </script>

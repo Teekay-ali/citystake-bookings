@@ -76,6 +76,8 @@ class BlockedDateController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless(auth()->user()->can('manage-blocked-dates'), 403);
+
         $validated = $request->validate([
             'unit_id' => 'required|exists:units,id',
             'blocked_from' => 'required|date',
@@ -128,6 +130,8 @@ class BlockedDateController extends Controller
 
     public function destroy(BlockedDate $blockedDate)
     {
+        abort_unless(auth()->user()->can('manage-blocked-dates'), 403);
+
         $blockedDate->delete();
 
         return redirect()->route('manage.blocked-dates.index')

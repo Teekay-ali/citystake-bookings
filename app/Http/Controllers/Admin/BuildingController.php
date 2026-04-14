@@ -39,6 +39,8 @@ class BuildingController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless(auth()->user()->can('manage-properties'), 403);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
@@ -65,6 +67,8 @@ class BuildingController extends Controller
 
     public function update(Request $request, Building $building)
     {
+        abort_unless(auth()->user()->can('manage-properties'), 403);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
@@ -84,6 +88,8 @@ class BuildingController extends Controller
 
     public function destroy(Building $building)
     {
+        abort_unless(auth()->user()->can('manage-properties'), 403);
+
         // Check if building has bookings
         if ($building->bookings()->exists()) {
             return redirect()->back()

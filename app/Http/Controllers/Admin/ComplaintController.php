@@ -116,6 +116,8 @@ class ComplaintController extends Controller
 
     public function resolve(Request $request, Complaint $complaint)
     {
+        abort_unless(auth()->user()->can('manage-complaints'), 403);
+
         $this->authorizeBuilding($complaint);
 
         $validated = $request->validate([

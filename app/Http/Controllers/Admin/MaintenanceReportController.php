@@ -152,13 +152,13 @@ class MaintenanceReportController extends Controller
         }
 
         // Approve — advance the workflow
-        if ($maintenance->canManagerApprove() && $user->hasRole(['manager', 'super-admin'])) {
+        if ($maintenance->canManagerApprove() && $user->can('approve-maintenance-manager')) {
             $maintenance->update([
                 'status'              => 'manager_approved',
                 'manager_approved_by' => $user->id,
                 'manager_approved_at' => now(),
             ]);
-        } elseif ($maintenance->canAccountantApprove() && $user->hasRole(['accountant', 'super-admin'])) {
+        } elseif ($maintenance->canAccountantApprove() && $user->can('approve-maintenance-accountant')) {
             $validated2 = $request->validate(['actual_cost' => 'required|numeric|min:0']);
             $maintenance->update([
                 'status'                 => 'accountant_approved',
@@ -166,13 +166,13 @@ class MaintenanceReportController extends Controller
                 'accountant_approved_at' => now(),
                 'actual_cost'            => $validated2['actual_cost'],
             ]);
-        } elseif ($maintenance->canCeoApprove() && $user->hasRole(['ceo', 'super-admin'])) {
+        } elseif ($maintenance->canCeoApprove() && $user->can('approve-maintenance-ceo')) {
             $maintenance->update([
                 'status'          => 'ceo_approved',
                 'ceo_approved_by' => $user->id,
                 'ceo_approved_at' => now(),
             ]);
-        } elseif ($maintenance->canMakePayment() && $user->hasRole(['accountant', 'super-admin'])) {
+        } elseif ($maintenance->canMakePayment() && $user->can('pay-maintenance')) {
             $maintenance->update([
                 'status'          => 'completed',
                 'payment_made_by' => $user->id,

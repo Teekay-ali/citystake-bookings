@@ -88,6 +88,8 @@ class BookingController extends Controller
 
     public function create()
     {
+        abort_unless(auth()->user()->can('create-bookings'), 403);
+
         $buildings = $this->accessibleBuildings()
             ->with(['unitTypes:id,building_id,name,bedroom_type,base_price_per_night,cleaning_fee,service_charge_percent,max_guests'])
             ->select('id', 'name')
@@ -100,6 +102,8 @@ class BookingController extends Controller
 
     public function storeAdminBooking(Request $request)
     {
+        abort_unless(auth()->user()->can('create-bookings'), 403);
+
         $validated = $request->validate([
             'building_id' => 'required|exists:buildings,id',
             'unit_type_id' => 'required|exists:unit_types,id',
@@ -232,6 +236,8 @@ class BookingController extends Controller
 
     public function checkIn(Request $request, Booking $booking)
     {
+        abort_unless(auth()->user()->can('confirm-checkin'), 403);
+
         if (!$booking->canCheckIn()) {
             return back()->with('error', 'This booking cannot be checked in at this time.');
         }
@@ -273,6 +279,8 @@ class BookingController extends Controller
 
     public function approveLateCheckout(Request $request, Booking $booking)
     {
+        abort_unless(auth()->user()->can('approve-late-checkout'), 403);
+
         if (!$booking->canApproveLateCheckout()) {
             return back()->with('error', 'This late checkout request cannot be approved.');
         }

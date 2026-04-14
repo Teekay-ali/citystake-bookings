@@ -202,9 +202,7 @@ class StockController extends Controller
 
     private function authorizeManager(): void
     {
-        if (!auth()->user()->hasRole(['manager', 'super-admin'])) {
-            abort(403);
-        }
+        abort_unless(auth()->user()->can('manage-stock'), 403);
     }
 
     private function authorizeBuilding(StockItem $stock): void

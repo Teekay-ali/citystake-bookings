@@ -18,6 +18,8 @@ class OccupancyAnalyticsController extends Controller
 
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->can('view-analytics'), 403);
+
         $year       = $request->input('year', now()->year);
         $month      = $request->input('month', now()->month);
         $buildingId = $request->input('building_id');

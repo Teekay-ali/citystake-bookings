@@ -14,6 +14,8 @@ class AvailabilityController extends Controller
 {
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->can('manage-availability'), 403);
+
         $date = $request->date ? Carbon::parse($request->date) : Carbon::today();
 
         $buildingsQuery = Building::with([

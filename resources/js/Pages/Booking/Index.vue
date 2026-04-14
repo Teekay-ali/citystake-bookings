@@ -105,7 +105,7 @@ const getStatusBadge = (booking) => {
                     <!-- Buttons -->
                     <div class="flex items-center gap-3">
                         <Link
-                            :href="route('admin.bookings.calendar')"
+                            :href="route('manage.bookings.calendar')"
                             class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full transition-all flex items-center shadow-lg"
                         >
                             <Calendar class="w-5 h-5 mr-2" />
@@ -121,7 +121,7 @@ const getStatusBadge = (booking) => {
                         </button>
 
                         <Link
-                            :href="route('admin.bookings.create')"
+                            :href="route('manage.bookings.create')"
                             class="px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all flex items-center shadow-lg"
                         >
                             <Plus class="w-5 h-5 mr-2" />

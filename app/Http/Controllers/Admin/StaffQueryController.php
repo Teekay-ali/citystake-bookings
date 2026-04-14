@@ -16,9 +16,7 @@ class StaffQueryController extends Controller
         $user = auth()->user();
 
         // Only managers and super admins
-        if (!$user->hasRole(['manager', 'super-admin'])) {
-            abort(403);
-        }
+        abort_unless($user->can('manage-staff-queries'), 403);
 
         $query = StaffQuery::with(['staff', 'issuedBy', 'building'])
             ->latest();
@@ -75,9 +73,7 @@ class StaffQueryController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->hasRole(['manager', 'super-admin'])) {
-            abort(403);
-        }
+        abort_unless($user->can('manage-staff-queries'), 403);
 
         $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
             $q->whereIn('id', $user->accessibleBuildingIds());
@@ -103,9 +99,7 @@ class StaffQueryController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->hasRole(['manager', 'super-admin'])) {
-            abort(403);
-        }
+        abort_unless($user->can('manage-staff-queries'), 403);
 
         $validated = $request->validate([
             'building_id' => 'required|exists:buildings,id',
@@ -166,9 +160,7 @@ class StaffQueryController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->hasRole(['manager', 'super-admin'])) {
-            abort(403);
-        }
+        abort_unless($user->can('manage-staff-queries'), 403);
 
         if (!$user->hasGlobalAccess() &&
             !in_array($staffQuery->building_id, $user->accessibleBuildingIds())) {
