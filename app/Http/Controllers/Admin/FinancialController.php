@@ -110,8 +110,6 @@ class FinancialController extends Controller
 
     public function payExpense(Request $request, string $type, int $id)
     {
-        abort_unless(auth()->user()->can('manage-financials') ||
-            auth()->user()->can('approve-procurement-accountant'), 403);
 
         $validated = $request->validate([
             'payment_method'   => 'required|in:cash,bank_transfer,pos,paystack,other',

@@ -41,10 +41,10 @@ class ProcurementController extends Controller
             'buildings' => $buildings,
             'filters'   => $request->only(['building_id', 'status']),
             'counts'    => [
-                'pending'             => ProcurementRequest::where('status', 'pending')->count(),
-                'accountant_approved' => ProcurementRequest::where('status', 'accountant_approved')->count(),
-                'ceo_approved'        => ProcurementRequest::where('status', 'ceo_approved')->count(),
-                'purchased'           => ProcurementRequest::where('status', 'purchased')->count(),
+                'pending'             => ProcurementRequest::scopedToUser($user)->where('status', 'pending')->count(),
+                'accountant_approved' => ProcurementRequest::scopedToUser($user)->where('status', 'accountant_approved')->count(),
+                'ceo_approved'        => ProcurementRequest::scopedToUser($user)->where('status', 'ceo_approved')->count(),
+                'purchased'           => ProcurementRequest::scopedToUser($user)->where('status', 'purchased')->count(),
             ],
         ]);
     }

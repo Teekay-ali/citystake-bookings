@@ -63,8 +63,8 @@ class StaffQueryController extends Controller
             'types'        => StaffQuery::types(),
             'filters'      => $request->only(['building_id', 'status', 'type', 'staff_id']),
             'counts'       => [
-                'open'      => StaffQuery::where('status', 'open')->count(),
-                'responded' => StaffQuery::where('status', 'responded')->count(),
+                'open'      => StaffQuery::scopedToUser($user)->where('status', 'open')->count(),
+                'responded' => StaffQuery::scopedToUser($user)->where('status', 'responded')->count(),
             ],
         ]);
     }
@@ -120,7 +120,7 @@ class StaffQueryController extends Controller
 
     public function show(StaffQuery $staffQuery)
     {
-        $this->authorize($staffQuery);
+        $this->authorizeBuilding($staffQuery);
 
         $staffQuery->load(['staff', 'issuedBy', 'building']);
 
@@ -132,7 +132,7 @@ class StaffQueryController extends Controller
 
     public function resolve(Request $request, StaffQuery $staffQuery)
     {
-        $this->authorize($staffQuery);
+        $this->authorizeBuilding($staffQuery);
 
         $validated = $request->validate([
             'resolution' => 'required|string|max:1000',
@@ -149,14 +149,14 @@ class StaffQueryController extends Controller
 
     public function destroy(StaffQuery $staffQuery)
     {
-        $this->authorize($staffQuery);
+        $this->authorizeBuilding($staffQuery);
         $staffQuery->delete();
 
         return redirect()->route('manage.staff-queries.index')
             ->with('success', 'Query deleted.');
     }
 
-    private function authorize(StaffQuery $staffQuery): void
+    private function authorizeBuilding(StaffQuery $staffQuery): void
     {
         $user = auth()->user();
 

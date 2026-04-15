@@ -373,8 +373,8 @@ class BookingController extends Controller
             'requests' => $requests,
             'filters'  => ['status' => $request->status],
             'counts'   => [
-                'pending'  => Booking::where('late_checkout_status', 'pending')->count(),
-                'approved' => Booking::where('late_checkout_status', 'approved')->count(),
+                'pending'  => Booking::scopedToUser($user)->where('late_checkout_status', 'pending')->count(),
+                'approved' => Booking::scopedToUser($user)->where('late_checkout_status', 'approved')->count(),
             ],
         ]);
     }

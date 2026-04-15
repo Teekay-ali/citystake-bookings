@@ -47,10 +47,10 @@ class MaintenanceReportController extends Controller
             'issueTypes' => MaintenanceReport::issueTypes(),
             'filters'    => $request->only(['building_id', 'status', 'issue_type']),
             'counts'     => [
-                'pending'             => MaintenanceReport::where('status', 'pending')->count(),
-                'manager_approved'    => MaintenanceReport::where('status', 'manager_approved')->count(),
-                'accountant_approved' => MaintenanceReport::where('status', 'accountant_approved')->count(),
-                'ceo_approved'        => MaintenanceReport::where('status', 'ceo_approved')->count(),
+                'pending'             => MaintenanceReport::scopedToUser($user)->where('status', 'pending')->count(),
+                'manager_approved'    => MaintenanceReport::scopedToUser($user)->where('status', 'manager_approved')->count(),
+                'accountant_approved' => MaintenanceReport::scopedToUser($user)->where('status', 'accountant_approved')->count(),
+                'ceo_approved'        => MaintenanceReport::scopedToUser($user)->where('status', 'ceo_approved')->count(),
             ],
         ]);
     }

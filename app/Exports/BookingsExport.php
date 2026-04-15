@@ -14,16 +14,24 @@ use Illuminate\Http\Request;
 
 class BookingsExport implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
 {
-    protected $request;
 
-    public function __construct(Request $request)
+    protected $request;
+    protected ?array $accessibleBuildingIds;
+
+    public function __construct(Request $request, ?array $accessibleBuildingIds = null)
     {
         $this->request = $request;
+        $this->accessibleBuildingIds = $accessibleBuildingIds;
     }
 
     public function query()
     {
         $query = Booking::with(['building', 'unitType', 'unit', 'user']);
+
+        // Scope to accessible buildings
+        if ($this->accessibleBuildingIds !== null) {
+            $query->whereIn('building_id', $this->accessibleBuildingIds);
+        }
 
         // Apply filters
         if ($this->request->filled('status')) {

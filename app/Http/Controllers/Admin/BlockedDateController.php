@@ -87,7 +87,15 @@ class BlockedDateController extends Controller
         ]);
 
         // Check for overlapping bookings
-        $unit = Unit::findOrFail($validated['unit_id']);
+        $unit = Unit::with('unitType')->findOrFail($validated['unit_id']);
+
+        $user = auth()->user();
+        if (!$user->hasGlobalAccess()) {
+            $buildingId = $unit->unitType->building_id;
+            if (!in_array($buildingId, $user->accessibleBuildingIds())) {
+                abort(403, 'You do not have access to this unit.');
+            }
+        }
 
         $hasBookings = $unit->bookings()
             ->where('status', '!=', 'cancelled')

@@ -121,7 +121,8 @@ class UnitType extends Model
                     });
             })
             ->whereDoesntHave('blockedDates', function ($query) use ($checkIn, $checkOut) {
-                $query->whereBetween('blocked_date', [$checkIn, $checkOut]);
+                $query->where('blocked_from', '<=', $checkOut)
+                    ->where('blocked_to', '>=', $checkIn);
             })
             ->count();
     }

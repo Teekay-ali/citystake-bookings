@@ -45,9 +45,9 @@ class ComplaintController extends Controller
             'complaints' => $complaints,
             'buildings'  => $buildings,
             'filters'    => $request->only(['building_id', 'status', 'severity']),
-            'counts'     => [
-                'open'        => Complaint::where('status', 'open')->count(),
-                'in_progress' => Complaint::where('status', 'in_progress')->count(),
+            'counts' => [
+                'open'        => Complaint::scopedToUser($user)->where('status', 'open')->count(),
+                'in_progress' => Complaint::scopedToUser($user)->where('status', 'in_progress')->count(),
             ],
         ]);
     }

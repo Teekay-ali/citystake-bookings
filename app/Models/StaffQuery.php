@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasBuildingScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StaffQuery extends Model
 {
-    use HasFactory;
+    use HasFactory, HasBuildingScope;
 
     protected $fillable = [
         'building_id',
