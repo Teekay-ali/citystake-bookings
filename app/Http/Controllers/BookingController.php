@@ -174,7 +174,7 @@ class BookingController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'Unable to create booking: ' . $e->getMessage())
+                ->with('error', 'Unable to complete your booking. Please try again or contact support.')
                 ->withInput();
         }
     }
