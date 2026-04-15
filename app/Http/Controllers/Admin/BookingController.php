@@ -233,7 +233,7 @@ class BookingController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'Unable to create booking. Please try again.')
+                ->with('error', 'Unable to create booking. Please try again or contact support.')
                 ->withInput();
         }
     }

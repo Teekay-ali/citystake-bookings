@@ -92,11 +92,27 @@ class RoleController extends Controller
             'role' => 'required|exists:roles,name',
         ]);
 
-        if ($staff->hasRole('super-admin') && !auth()->user()->hasRole('super-admin')) {
+        $currentUser = auth()->user();
+
+        // Only super-admins can touch super-admin accounts
+        if ($staff->hasRole('super-admin') && !$currentUser->hasRole('super-admin')) {
             return back()->with('error', 'You cannot change a Super Admin\'s role.');
         }
 
+        // Only super-admins can assign the super-admin role
+        if ($validated['role'] === 'super-admin' && !$currentUser->hasRole('super-admin')) {
+            return back()->with('error', 'You cannot assign the Super Admin role.');
+        }
+
+        // Prevent self role-change (except super-admin managing themselves)
+        if ($staff->id === $currentUser->id && !$currentUser->hasRole('super-admin')) {
+            return back()->with('error', 'You cannot change your own role.');
+        }
+
         $staff->syncRoles([$validated['role']]);
+
+        // Clear permission cache so changes take effect immediately
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         return back()->with('success', "{$staff->name}'s role updated.");
     }
