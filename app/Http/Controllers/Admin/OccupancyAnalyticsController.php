@@ -20,8 +20,14 @@ class OccupancyAnalyticsController extends Controller
     {
         abort_unless(auth()->user()->can('view-analytics'), 403);
 
-        $year       = $request->input('year', now()->year);
-        $month      = $request->input('month', now()->month);
+        $request->validate([
+            'year'        => 'nullable|integer|digits:4|min:2020|max:' . (now()->year + 1),
+            'month'       => 'nullable|integer|min:1|max:12',
+            'building_id' => 'nullable|integer|exists:buildings,id',
+        ]);
+
+        $year       = (int) $request->input('year', now()->year);
+        $month      = (int) $request->input('month', now()->month);
         $buildingId = $request->input('building_id');
 
         $user        = auth()->user();

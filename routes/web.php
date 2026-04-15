@@ -67,7 +67,7 @@ Route::post('/contact', function (\Illuminate\Http\Request $request) {
     );
 
     return redirect()->back()->with('success', 'Thank you for contacting us! We\'ll get back to you soon.');
-})->name('contact.store');
+})->middleware('throttle:5,1')->name('contact.store');
 
 
 Route::get('/terms', function () {

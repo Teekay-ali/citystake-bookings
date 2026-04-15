@@ -46,6 +46,15 @@ class FinancialController extends Controller
             ->latest()
             ->get();
 
+        // Add this block before the existing period/year/month lines:
+        $request->validate([
+            'year'    => 'nullable|integer|digits:4|min:2020|max:' . (now()->year + 1),
+            'month'   => 'nullable|integer|min:1|max:12',
+            'quarter' => 'nullable|integer|min:1|max:4',
+            'date'    => 'nullable|date',
+            'period'  => 'nullable|in:daily,monthly,quarterly,yearly',
+        ]);
+
         // Transaction ledger
         $period     = $request->input('period', 'monthly');
         $year       = $request->input('year', now()->year);
