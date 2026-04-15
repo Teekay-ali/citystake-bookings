@@ -305,11 +305,15 @@ class BookingController extends Controller
 
         // Calculate refund per Terms page policy
         if ($booking->isPaid() && $booking->paystack_reference) {
+
+            // Use base amount — exclude any late checkout fee that was added
+            $baseAmount = $booking->total_amount - ($booking->late_checkout_fee ?? 0);
+
             if ($daysUntilCheckIn > 7) {
-                $refundAmount = $booking->total_amount; // Full refund
+                $refundAmount = $baseAmount; // Full refund
                 $refundNote   = 'Full refund applied.';
             } elseif ($daysUntilCheckIn >= 3) {
-                $refundAmount = $booking->total_amount * 0.5; // 50% refund
+                $refundAmount = $baseAmount * 0.5;
                 $refundNote   = '50% refund applied.';
             }
             // < 3 days: no refund
@@ -317,9 +321,16 @@ class BookingController extends Controller
 
         DB::transaction(function () use ($booking, $refundAmount, $refundNote) {
             $booking->update([
-                'status'             => 'cancelled',
-                'cancelled_at'       => now(),
-                'payment_status'     => $refundAmount > 0 ? 'refunded' : $booking->payment_status,
+                'status'                  => 'cancelled',
+                'cancelled_at'            => now(),
+                'payment_status'          => $refundAmount > 0 ? 'refunded' : $booking->payment_status,
+                // Reset late checkout state — fee is void on cancellation
+                'late_checkout_requested' => false,
+                'late_checkout_status'    => null,
+                'late_checkout_fee'       => null,
+                'late_checkout_approved_by'  => null,
+                'late_checkout_approved_at'  => null,
+                'late_checkout_settled_at'   => null,
             ]);
 
             AuditLog::log('booking.cancelled', $booking,

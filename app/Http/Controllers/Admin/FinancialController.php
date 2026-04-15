@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Building;
 use App\Models\FinancialTransaction;
 use App\Models\MaintenanceReport;
@@ -169,6 +170,17 @@ class FinancialController extends Controller
             'transaction_date'  => $validated['transaction_date'],
             'notes'             => $validated['notes'] ?? null,
         ]);
+
+        AuditLog::log('expense.paid', null,
+            null,
+            [
+                'type'             => $type,
+                'record_id'        => $id,
+                'amount'           => $validated['amount'],
+                'payment_method'   => $validated['payment_method'],
+                'transaction_date' => $validated['transaction_date'],
+            ]
+        );
 
         return back()->with('success', 'Payment recorded successfully.');
     }

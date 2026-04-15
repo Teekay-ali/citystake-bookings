@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -110,6 +111,11 @@ class RoleController extends Controller
         }
 
         $staff->syncRoles([$validated['role']]);
+
+        AuditLog::log('role.assigned', $staff,
+            ['role' => $staff->getRoleNames()->first()],
+            ['role' => $validated['role']]
+        );
 
         // Clear permission cache so changes take effect immediately
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
