@@ -93,7 +93,7 @@ const maxTrendRate = computed(() => {
     <ManageLayout>
         <Head title="Occupancy Analytics - Admin" />
 
-        <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
+        <div class="bg-white dark:bg-gray-950 min-h-screen py-8">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-8">

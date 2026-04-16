@@ -56,6 +56,9 @@ class HandleInertiaRequests extends Middleware
             'lateCheckoutPendingCount' => auth()->check()
                 ? Booking::where('late_checkout_status', 'pending')->count()
                 : 0,
+            'unreadNotifications' => auth()->check() && request()->routeIs('manage.*')
+                ? auth()->user()->unreadNotifications()->count()
+                : 0,
         ]);
     }
 

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Notifications\ComplaintSubmittedNotification;
+use App\Services\NotificationService;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\Complaint;
@@ -94,6 +97,9 @@ class ComplaintController extends Controller
             'severity'     => $validated['severity'],
             'photos'       => $photoPaths ?: null,
         ]);
+
+        $recipients = NotificationService::getUsersByRoles(['manager', 'ceo'], $complaint->building_id);
+        Notification::send($recipients, new ComplaintSubmittedNotification($complaint));
 
         return redirect()->route('manage.complaints.index')
             ->with('success', 'Complaint submitted successfully.');

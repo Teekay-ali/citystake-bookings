@@ -9,6 +9,8 @@ import {
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
     ChevronLeft, ChevronRight, FileText, ShieldCheck
 } from 'lucide-vue-next'
+// In the <script setup> imports section, add:
+import NotificationBell from '@/Components/NotificationBell.vue'
 
 const toast = useToast()
 
@@ -228,8 +230,7 @@ function canSeeItem(item) {
             </nav>
 
             <!-- User footer -->
-            <div class="border-t border-gray-200 dark:border-gray-800 p-2 shrink-0">
-                <div :class="collapsed ? 'flex-col items-center' : 'items-center gap-3 px-2'"
+            <div class="border-t border-gray-200 dark:border-gray-800 p-2 shrink-0 overflow-visible relative">                <div :class="collapsed ? 'flex-col items-center' : 'items-center gap-3 px-2'"
                      class="flex py-2">
 
                     <!-- Avatar -->
@@ -249,6 +250,7 @@ function canSeeItem(item) {
 
                     <!-- Actions -->
                     <div :class="collapsed ? 'flex-col mt-2' : ''" class="flex items-center gap-1">
+                        <NotificationBell dropdown-direction="up" />
                         <button @click="toggleDark"
                                 :title="isDark ? 'Light mode' : 'Dark mode'"
                                 class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
@@ -261,6 +263,7 @@ function canSeeItem(item) {
                             <LogOut class="w-4 h-4" />
                         </Link>
                     </div>
+
                 </div>
             </div>
         </aside>
@@ -279,7 +282,7 @@ function canSeeItem(item) {
                 <Link :href="route('home')" class="font-semibold text-gray-900 dark:text-white text-sm">
                     CityStake
                 </Link>
-                <div class="w-9" />
+                <NotificationBell />
             </header>
 
             <!-- Page slot -->

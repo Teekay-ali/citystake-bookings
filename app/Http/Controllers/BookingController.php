@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Notifications\NewBookingNotification;
+use App\Notifications\BookingCancelledNotification;
+use App\Services\NotificationService;
+use Illuminate\Support\Facades\Notification;
 use App\Models\AuditLog;
 use App\Models\FinancialTransaction;
 use App\Services\PaystackService;
@@ -257,6 +261,9 @@ class BookingController extends Controller
                 $adminEmail = config('mail.admin_email', 'admin@citystake.com');
                 Mail::to($adminEmail)->send(new AdminNewBooking($booking));
 
+                $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
+                Notification::send($recipients, new NewBookingNotification($booking));
+
                 return redirect()->route('bookings.confirmation', $booking->id)
                     ->with('success', '🎉 Payment successful! Your booking is confirmed.');
             } else {
@@ -354,6 +361,10 @@ class BookingController extends Controller
             }
 
             Mail::to($booking->guest_email)->send(new BookingCancelled($booking));
+
+            $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
+            Notification::send($recipients, new BookingCancelledNotification($booking));
+
         });
 
         $message = 'Booking cancelled successfully.';

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Services\NotificationService;
+use App\Notifications\MaintenanceStatusNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\MaintenanceReport;
@@ -158,6 +161,14 @@ class MaintenanceReportController extends Controller
                 'manager_approved_by' => $user->id,
                 'manager_approved_at' => now(),
             ]);
+
+            $recipients = NotificationService::getUsersByRoles(['accountant'], $report->building_id);
+            Notification::send($recipients, new MaintenanceStatusNotification(
+                $report,
+                'Maintenance Awaiting Accountant Approval',
+                "Maintenance report \"{$report->title}\" approved by manager - needs your cost approval."
+            ));
+
         } elseif ($maintenance->canAccountantApprove() && $user->can('approve-maintenance-accountant')) {
             $validated2 = $request->validate(['actual_cost' => 'required|numeric|min:0']);
             $maintenance->update([
@@ -166,12 +177,28 @@ class MaintenanceReportController extends Controller
                 'accountant_approved_at' => now(),
                 'actual_cost'            => $validated2['actual_cost'],
             ]);
+
+            $recipients = NotificationService::getUsersByRoles(['ceo'], $report->building_id);
+            Notification::send($recipients, new MaintenanceStatusNotification(
+                $report,
+                'Maintenance Awaiting CEO Approval',
+                "Maintenance report \"{$report->title}\" needs your final approval."
+            ));
+
         } elseif ($maintenance->canCeoApprove() && $user->can('approve-maintenance-ceo')) {
             $maintenance->update([
                 'status'          => 'ceo_approved',
                 'ceo_approved_by' => $user->id,
                 'ceo_approved_at' => now(),
             ]);
+
+            $recipients = NotificationService::getUsersByRoles(['accountant'], $report->building_id);
+            Notification::send($recipients, new MaintenanceStatusNotification(
+                $report,
+                'Maintenance Ready for Payment',
+                "CEO approved \"{$report->title}\". Please process payment."
+            ));
+
         } elseif ($maintenance->canMakePayment() && $user->can('pay-maintenance')) {
             $maintenance->update([
                 'status'          => 'completed',

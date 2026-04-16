@@ -139,7 +139,7 @@ const exportBookings = () => {
 
 <template>
     <ManageLayout>
-        <Head title="All Bookings - Admin" />
+        <Head title="All Bookings - Manage Bookingss" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-8">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Notifications\ProcurementStatusNotification;
+use App\Services\NotificationService;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\ProcurementRequest;
@@ -163,18 +166,42 @@ class ProcurementController extends Controller
                 'accountant_approved_by' => $user->id,
                 'accountant_approved_at' => now(),
             ]);
+
+            $recipients = NotificationService::getUsersByRoles(['ceo'], $procurement->building_id);
+            Notification::send($recipients, new ProcurementStatusNotification(
+                $procurement,
+                'Procurement Awaiting CEO Approval',
+                "Procurement request \"{$procurement->title}\" has been approved by the accountant and needs your sign-off."
+            ));
+
         } elseif ($procurement->canCeoApprove() && $user->can('approve-procurement-ceo')) {
             $procurement->update([
                 'status'          => 'ceo_approved',
                 'ceo_approved_by' => $user->id,
                 'ceo_approved_at' => now(),
             ]);
+
+            $recipients = NotificationService::getUsersByRoles(['head-of-procurement', 'accountant'], $procurement->building_id);
+            Notification::send($recipients, new ProcurementStatusNotification(
+                $procurement,
+                'Procurement Approved — Ready to Purchase',
+                "CEO has approved \"{$procurement->title}\". Proceed with purchase."
+            ));
+
         } elseif ($procurement->canMarkPurchased() && $user->can('purchase-procurement')) {
             $procurement->update([
                 'status'       => 'purchased',
                 'purchased_by' => $user->id,
                 'purchased_at' => now(),
             ]);
+
+            $recipients = NotificationService::getUsersByRoles(['manager'], $procurement->building_id);
+            Notification::send($recipients, new ProcurementStatusNotification(
+                $procurement,
+                'Procurement Purchased',
+                "\"{$procurement->title}\" has been purchased and is awaiting receipt confirmation."
+            ));
+
         } elseif ($procurement->canConfirmReceipt() && $user->can('confirm-procurement-receipt')) {
             $procurement->update([
                 'status'               => 'completed',

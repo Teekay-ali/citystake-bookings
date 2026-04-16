@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Notifications\NewBookingNotification;
+use App\Notifications\LateCheckoutRequestedNotification;
+use App\Services\NotificationService;
+use Illuminate\Support\Facades\Notification;
 use App\Models\FinancialTransaction;
 use App\Traits\ScopedByBuilding;
 use App\Services\DiscountService;
@@ -221,6 +225,9 @@ class BookingController extends Controller
             // Send confirmation email to guest
             Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
 
+            $recipients = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
+            Notification::send($recipients, new NewBookingNotification($booking));
+
             return redirect()->route('manage.bookings.show', $booking->id)
                 ->with('success', 'Booking created successfully!');
 
@@ -288,6 +295,9 @@ class BookingController extends Controller
             'late_checkout_status'    => 'pending',
             'late_checkout_fee'       => $fee,
         ]);
+
+        $recipients = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
+        Notification::send($recipients, new LateCheckoutRequestedNotification($booking));
 
         return back()->with('success', 'Late checkout requested. Awaiting manager approval.');
     }

@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\FinancialController;
 use App\Http\Controllers\Admin\TaskController;
+use App\Http\Controllers\Admin\NotificationController;
 
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -67,7 +68,7 @@ Route::post('/contact', function (\Illuminate\Http\Request $request) {
     );
 
     return redirect()->back()->with('success', 'Thank you for contacting us! We\'ll get back to you soon.');
-})->middleware('throttle:5,1')->name('contact.store');
+})->middleware('throttle:3,1')->name('contact.store');
 
 
 Route::get('/terms', function () {
@@ -108,7 +109,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/bookings/{bookingReference}/payment', [BookingController::class, 'payment'])->name('bookings.payment');
     Route::get('/bookings/{bookingReference}/verify', [BookingController::class, 'verifyPayment'])->name('bookings.verify');
     Route::get('/bookings/{booking}/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
-    Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
 
     // My Bookings
     Route::get('/my-bookings', [BookingController::class, 'index'])->name('bookings.index');
@@ -129,10 +129,10 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
 
     // Bookings
     Route::get('/bookings/late-checkout-requests', [AdminBookingController::class, 'lateCheckoutRequests'])->name('bookings.late-checkout.index');
-    Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/create', [AdminBookingController::class, 'create'])->name('bookings.create');
     Route::get('/bookings/calendar', [App\Http\Controllers\Admin\BookingCalendarController::class, 'index'])->name('bookings.calendar');
     Route::get('/bookings/export', [BookingExportController::class, 'export'])->name('bookings.export');
+    Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
@@ -247,6 +247,12 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status');
     Route::post('/tasks/{task}/subtasks/{subtask}/toggle', [TaskController::class, 'toggleSubtask'])->name('tasks.subtask.toggle');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
 });
 

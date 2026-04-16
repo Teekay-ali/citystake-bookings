@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Notifications\TaskAssignedNotification;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
 use App\Models\Task;
@@ -138,6 +139,14 @@ class TaskController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        if ($task->assigned_to) {
+            $assignee = \App\Models\User::find($task->assigned_to);
+            // Don't notify yourself
+            if ($assignee && $assignee->id !== auth()->id()) {
+                $assignee->notify(new TaskAssignedNotification($task));
+            }
+        }
+
         foreach ($validated['subtasks'] ?? [] as $subtask) {
             $task->subtasks()->create(['title' => $subtask['title']]);
         }
@@ -205,6 +214,14 @@ class TaskController extends Controller
         }
 
         $task->update($validated);
+
+        if ($task->assigned_to) {
+            $assignee = \App\Models\User::find($task->assigned_to);
+            // Don't notify yourself
+            if ($assignee && $assignee->id !== auth()->id()) {
+                $assignee->notify(new TaskAssignedNotification($task));
+            }
+        }
 
         return back()->with('success', 'Task updated.');
     }
