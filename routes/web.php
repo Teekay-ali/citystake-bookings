@@ -23,7 +23,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\FinancialController;
 use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\NotificationController;
-
+use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsStaff;
 use Illuminate\Support\Facades\Route;
@@ -91,11 +91,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         $user = auth()->user();
 
-        if ($user->is_admin || $user->is_staff) {
+        if (!$user->is_admin && !$user->is_staff) {
+            return redirect()->route('home');
+        }
+
+        if ($user->hasRole(['super-admin', 'ceo'])) {
             return redirect()->route('manage.dashboard');
         }
 
-        return redirect()->route('home');
+        return redirect()->route('manage.home');
     })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -122,6 +126,9 @@ Route::middleware('auth')->group(function () {
 
 // Admin routes
 Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('manage.')->group(function () {
+
+    Route::get('/home', [AdminHomeController::class, 'index'])->name('home');
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Availability Board

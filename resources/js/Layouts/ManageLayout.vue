@@ -43,11 +43,23 @@ function toggleDark() {
     localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
 }
 
-const navGroups = [
+const dashboardRoute = computed(() => {
+    const roles = user.value?.roles ?? []
+    return roles.includes('super-admin') || roles.includes('ceo')
+        ? 'manage.dashboard'
+        : 'manage.home'
+})
+
+const navGroups = computed(() => [
     {
         label: 'Overview',
         items: [
-            { label: 'Dashboard', icon: LayoutDashboard, route: 'manage.dashboard', match: 'manage.dashboard' },
+            {
+                label: 'Dashboard',
+                icon: LayoutDashboard,
+                route: dashboardRoute.value,
+                match: 'manage.dashboard|manage.home',
+            },
         ]
     },
     {
@@ -93,11 +105,11 @@ const navGroups = [
             { label: 'Messages',      icon: MessageSquare, route: 'manage.messages.index',    match: 'manage.messages.*',      soon: true },
         ]
     },
-]
+])
 
 function isActive(match) {
     try {
-        return route().current(match)
+        return match.split('|').some(m => route().current(m.trim()))
     } catch {
         return false
     }
