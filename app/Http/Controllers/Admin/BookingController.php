@@ -25,6 +25,8 @@ class BookingController extends Controller
 
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->can('view-bookings'), 403);
+
         $user  = auth()->user();
         $query = Booking::with(['building', 'unitType', 'unit', 'user']);
 
@@ -247,6 +249,8 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
+        abort_unless(auth()->user()->can('view-bookings'), 403);
+
         $booking->load(['building', 'unitType', 'unit', 'user', 'checkedInBy', 'lateCheckoutApprovedBy']);
 
         return Inertia::render('Admin/Bookings/Show', [

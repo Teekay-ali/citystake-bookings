@@ -33,10 +33,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-vendors',
 
             // Complaints
+            'view-complaints',
             'submit-complaints',
             'manage-complaints',
 
             // Maintenance
+            'view-maintenance',
             'submit-maintenance',
             'approve-maintenance-manager',
             'approve-maintenance-accountant',
@@ -44,6 +46,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'pay-maintenance',
 
             // Procurement
+            'view-procurement',
             'submit-procurement',
             'approve-procurement-accountant',
             'approve-procurement-ceo',
@@ -94,6 +97,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-analytics',
                 'view-financials',
                 'manage-tasks', 'view-tasks',
+                'view-procurement',
+                'view-maintenance',
+                'view-complaints',
             ],
 
             'accountant' => [
@@ -107,6 +113,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-financials',
                 'manage-financials',
                 'view-tasks',
+                'view-procurement',
+                'view-maintenance',
+                'view-complaints',
             ],
 
             'ceo' => [
@@ -119,6 +128,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-analytics',
                 'view-financials',
                 'manage-tasks', 'view-tasks',
+                'view-procurement',
+                'view-maintenance',
+                'view-complaints',
             ],
 
             'head-of-procurement' => [
@@ -128,6 +140,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'purchase-procurement',
                 'view-stock', 'log-stock-usage',
                 'view-tasks',
+                'view-procurement',
+                'view-maintenance',
+                'view-complaints',
             ],
 
             'receptionist' => [
@@ -137,6 +152,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'submit-complaints', 'submit-maintenance',
                 'view-stock', 'log-stock-usage',
                 'view-tasks',
+                'view-maintenance',
+                'view-complaints',
             ],
 
             'staff' => [
@@ -144,6 +161,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'submit-complaints', 'submit-maintenance',
                 'view-stock', 'log-stock-usage',
                 'view-tasks',
+                'view-maintenance',
+                'view-complaints',
             ],
         ];
 

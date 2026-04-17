@@ -16,6 +16,8 @@ class ComplaintController extends Controller
 {
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->can('view-complaints'), 403);
+
         $user = auth()->user();
 
         $query = Complaint::with(['building', 'submittedBy'])
@@ -107,6 +109,8 @@ class ComplaintController extends Controller
 
     public function show(Complaint $complaint)
     {
+        abort_unless(auth()->user()->can('view-complaints'), 403);
+
         $this->authorizeBuilding($complaint);
 
         $complaint->load(['building', 'submittedBy', 'resolvedBy']);

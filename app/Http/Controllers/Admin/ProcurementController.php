@@ -16,6 +16,8 @@ class ProcurementController extends Controller
 {
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->can('view-procurement'), 403);
+
         $user = auth()->user();
 
         $query = ProcurementRequest::with(['building', 'submittedBy', 'vendor', 'items'])
@@ -54,6 +56,8 @@ class ProcurementController extends Controller
 
     public function create()
     {
+        abort_unless(auth()->user()->can('submit-procurement'), 403);
+
         $user = auth()->user();
 
         $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
@@ -122,6 +126,8 @@ class ProcurementController extends Controller
 
     public function show(ProcurementRequest $procurement)
     {
+        abort_unless(auth()->user()->can('view-procurement'), 403);
+
         $this->authorizeBuilding($procurement);
 
         $procurement->load([

@@ -13,6 +13,8 @@ class StockController extends Controller
 {
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->can('view-stock'), 403);
+
         $user = auth()->user();
 
         $query = StockItem::with(['building', 'createdBy'])
@@ -115,6 +117,8 @@ class StockController extends Controller
 
     public function show(StockItem $stock)
     {
+        abort_unless(auth()->user()->can('view-stock'), 403);
+
         $this->authorizeBuilding($stock);
 
         $stock->load(['building', 'createdBy']);

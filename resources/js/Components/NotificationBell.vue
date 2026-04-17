@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { Bell } from 'lucide-vue-next'
 
@@ -26,6 +26,22 @@ const props = defineProps({
         default: 'down' // 'up' or 'down'
     }
 })
+
+const userPermissions = computed(() => page.props.auth.user?.permissions ?? [])
+
+const permissionMap = {
+    'procurement': 'view-procurement',
+    'maintenance': 'view-maintenance',
+    'complaint':   'view-complaints',
+    'booking':     'view-bookings',
+    'task':        'view-tasks',
+}
+
+function canAccessNotification(notification) {
+    const required = permissionMap[notification.data?.icon]
+    if (!required) return true
+    return userPermissions.value.includes(required)
+}
 async function fetchNotifications() {
     loading.value = true
     try {
@@ -64,7 +80,11 @@ async function markRead(notification) {
         unreadCount.value = Math.max(0, unreadCount.value - 1)
     }
     open.value = false
-    window.location.href = notification.data.url
+
+    // Only navigate if user has permission
+    if (canAccessNotification(notification)) {
+        window.location.href = notification.data.url
+    }
 }
 
 async function markAllRead() {

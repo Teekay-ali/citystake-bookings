@@ -17,6 +17,8 @@ class MaintenanceReportController extends Controller
 {
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->can('view-maintenance'), 403);
+
         $user = auth()->user();
 
         $query = MaintenanceReport::with(['building', 'submittedBy', 'vendor'])
@@ -112,6 +114,8 @@ class MaintenanceReportController extends Controller
 
     public function show(MaintenanceReport $maintenance)
     {
+        abort_unless(auth()->user()->can('view-maintenance'), 403);
+
         $this->authorizeBuilding($maintenance);
 
         $maintenance->load([

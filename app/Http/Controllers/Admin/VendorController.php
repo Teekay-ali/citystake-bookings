@@ -11,6 +11,8 @@ class VendorController extends Controller
 {
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->can('view-vendors'), 403);
+
         $query = Vendor::with('createdBy')
             ->latest();
 
