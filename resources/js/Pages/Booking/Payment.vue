@@ -192,7 +192,7 @@ const payWithMonnify = () => {
                     <AlertTriangle class="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
                     <div>
                         <p class="text-sm font-medium text-red-700 dark:text-red-400">Your booking reservation has expired</p>
-                        <p class="text-sm text-red-600 dark:text-red-500 mt-0.5">This hold was released after 30 minutes. Please start a new booking — subject to availability.</p>
+                        <p class="text-sm text-red-600 dark:text-red-500 mt-0.5">This hold was released after 30 minutes. Please start a new booking - subject to availability.</p>
                     </div>
                 </div>
 
@@ -318,6 +318,7 @@ const payWithMonnify = () => {
                 <div class="flex gap-3 mb-6">
                     <button
                         @click="selectedGateway = 'paystack'"
+                        :disabled="isProcessing || isExpired"
                         :class="[
                             'flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2',
                             selectedGateway === 'paystack'
@@ -331,6 +332,7 @@ const payWithMonnify = () => {
 
                     <button
                         @click="selectedGateway = 'monnify'"
+                        :disabled="isProcessing || isExpired"
                         :class="[
                             'flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2',
                             selectedGateway === 'monnify'

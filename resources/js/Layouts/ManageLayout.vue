@@ -11,16 +11,24 @@ import {
 } from 'lucide-vue-next'
 // In the <script setup> imports section, add:
 import NotificationBell from '@/Components/NotificationBell.vue'
+import { useDarkMode } from '@/Composables/useDarkMode'
 
 const toast = useToast()
+const { isDark, toggle: toggleDark } = useDarkMode()
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
 const pendingCount = computed(() => page.props.lateCheckoutPendingCount ?? 0)
 
 const sidebarOpen = ref(false)       // mobile drawer
-const collapsed = ref(false)          // desktop collapsed state
-const isDark = ref(document.documentElement.classList.contains('dark'))
+const collapsed = ref(localStorage.getItem('sidebar-collapsed') === 'true')
+
+
+function toggleCollapsed() {
+    collapsed.value = !collapsed.value
+    localStorage.setItem('sidebar-collapsed', collapsed.value)
+}
+
 
 onMounted(() => {
     const flash = page.props.flash
@@ -36,12 +44,6 @@ watch(() => page.props.flash, (flash) => {
     if (flash?.info) toast.info(flash.info)
     if (flash?.warning) toast.warning(flash.warning)
 }, { deep: true })
-
-function toggleDark() {
-    isDark.value = !isDark.value
-    document.documentElement.classList.toggle('dark', isDark.value)
-    localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
-}
 
 const dashboardRoute = computed(() => {
     const roles = user.value?.roles ?? []
@@ -65,7 +67,7 @@ const navGroups = computed(() => [
     {
         label: 'Bookings',
         items: [
-            { label: 'All Bookings',   icon: CalendarDays, route: 'manage.bookings.index',              match: 'manage.bookings.*',                   permission: 'view-bookings' },
+            { label: 'All Bookings', icon: CalendarDays, route: 'manage.bookings.index', match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
             { label: 'Availability',   icon: Grid3x3,      route: 'manage.availability.index',          match: 'manage.availability.*',               permission: 'manage-availability' },
             { label: 'Late Checkouts', icon: Clock,        route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'view-bookings', badge: pendingCount },
             { label: 'Calendar',       icon: CalendarDays, route: 'manage.bookings.calendar',           match: 'manage.bookings.calendar',            permission: 'view-bookings' },
@@ -155,14 +157,15 @@ function canSeeItem(item) {
             :class="[
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 collapsed ? 'lg:w-16' : 'lg:w-64',
-                'fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 flex flex-col transition-all duration-300 lg:translate-x-0'
+                'fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 z-50 flex flex-col transition-all duration-300 lg:translate-x-0'
             ]">
 
             <!-- Logo row -->
             <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
                 <Link v-if="!collapsed" :href="route('home')" class="flex items-center gap-2 min-w-0">
-                    <div class="w-7 h-7 bg-gray-900 dark:bg-white rounded-lg flex items-center justify-center shrink-0">
-                        <span class="text-white dark:text-gray-900 text-xs font-bold">CS</span>
+                    <!-- Logo div -->
+                    <div class="w-7 h-7 bg-gradient-to-br from-gray-800 to-gray-950 dark:from-white dark:to-gray-200 rounded-lg flex items-center justify-center shrink-0 shadow-sm">
+                        <span class="text-white dark:text-gray-900 text-xs font-bold tracking-tight">CS</span>
                     </div>
                     <span class="font-semibold text-gray-900 dark:text-white text-sm truncate">CityStake</span>
                 </Link>
@@ -176,7 +179,7 @@ function canSeeItem(item) {
                         class="lg:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <X class="w-5 h-5" />
                 </button>
-                <button @click="collapsed = !collapsed"
+                <button @click="toggleCollapsed()"
                         class="hidden lg:flex p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <ChevronLeft v-if="!collapsed" class="w-4 h-4" />
                     <ChevronRight v-else class="w-4 h-4" />
@@ -219,8 +222,8 @@ function canSeeItem(item) {
                                       @click="sidebarOpen = false"
                                       :class="[
                                         isActive(item.match)
-                                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white',
+                                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border-l-2 border-gray-900 dark:border-white'
+                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
                                         collapsed ? 'justify-center px-0' : 'px-3'
                                     ]"
                                       class="flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-all">
