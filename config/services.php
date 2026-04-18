@@ -40,4 +40,14 @@ return [
         'secret_key' => env('PAYSTACK_SECRET_KEY'),
     ],
 
+    'monnify' => [
+        'api_key'       => env('MONNIFY_API_KEY'),
+        'secret_key'    => env('MONNIFY_SECRET_KEY'),
+        'contract_code' => env('MONNIFY_CONTRACT_CODE'),
+        'mode'          => env('MONNIFY_MODE', 'test'), // 'test' or 'live'
+        'base_url'      => env('MONNIFY_MODE', 'test') === 'live'
+            ? 'https://api.monnify.com'
+            : 'https://sandbox.monnify.com',
+    ],
+
 ];

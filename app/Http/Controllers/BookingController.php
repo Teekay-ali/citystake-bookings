@@ -8,6 +8,7 @@ use App\Services\NotificationService;
 use Illuminate\Support\Facades\Notification;
 use App\Models\AuditLog;
 use App\Models\FinancialTransaction;
+use App\Services\MonnifyService;
 use App\Services\PaystackService;
 
 use App\Models\Booking;
@@ -204,11 +205,16 @@ class BookingController extends Controller
         ]);
 
         $paystackService = new PaystackService();
+        $monnifyService  = new MonnifyService();
 
         return Inertia::render('Booking/Payment', [
-            'booking' => $booking,
-            'paystackPublicKey' => $paystackService->getPublicKey(),
+            'booking'             => $booking,
+            'paystackPublicKey'   => $paystackService->getPublicKey(),
+            'monnifyApiKey'       => $monnifyService->getApiKey(),
+            'monnifyContractCode' => $monnifyService->getContractCode(),
+            'monnifyTestMode'     => $monnifyService->isTestMode(),
         ]);
+
     }
 
     public function verifyPayment(Request $request, $bookingReference)
@@ -279,6 +285,82 @@ class BookingController extends Controller
 
             return redirect()->route('bookings.payment', $bookingReference)
                 ->with('error', 'An error occurred while verifying payment.');
+        }
+    }
+
+    public function verifyMonnifyPayment(Request $request, string $bookingReference)
+    {
+        $booking = Booking::where('booking_reference', $bookingReference)->firstOrFail();
+
+        if ($booking->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Monnify returns the paymentReference in the SDK callback
+        $paymentReference = $request->query('paymentReference');
+
+        if (! $paymentReference) {
+            return redirect()->route('bookings.payment', $bookingReference)
+                ->with('error', 'Payment reference not found');
+        }
+
+        try {
+            $monnifyService = new MonnifyService();
+            $responseBody   = $monnifyService->verifyTransaction($paymentReference);
+
+            if (($responseBody['paymentStatus'] ?? '') === 'PAID') {
+
+                $booking->update([
+                    'payment_status'     => 'paid',
+                    'status'             => 'confirmed',
+                    'payment_method'     => 'monnify',
+                    'monnify_reference'  => $responseBody['transactionReference'] ?? $paymentReference,
+                    'paid_at'            => now(),
+                ]);
+
+                FinancialTransaction::create([
+                    'building_id'       => $booking->building_id,
+                    'recorded_by'       => $booking->user_id ?? 1,
+                    'type'              => 'income',
+                    'category'          => 'booking',
+                    'reference_type'    => \App\Models\Booking::class,
+                    'reference_id'      => $booking->id,
+                    'description'       => "Booking {$booking->booking_reference} — {$booking->guest_name}",
+                    'amount'            => $booking->total_amount,
+                    'payment_method'    => 'monnify',
+                    'payment_reference' => $paymentReference,
+                    'transaction_date'  => now()->toDateString(),
+                ]);
+
+                Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
+
+                $adminEmail = config('mail.admin_email', 'admin@citystake.com');
+                Mail::to($adminEmail)->send(new AdminNewBooking($booking));
+
+                $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
+                Notification::send($recipients, new NewBookingNotification($booking));
+
+                return redirect()->route('bookings.confirmation', $booking->id)
+                    ->with('success', '🎉 Payment successful! Your booking is confirmed.');
+
+            } else {
+                Log::warning('Monnify payment not PAID', [
+                    'paymentReference' => $paymentReference,
+                    'status'           => $responseBody['paymentStatus'] ?? 'unknown',
+                ]);
+
+                return redirect()->route('bookings.payment', $bookingReference)
+                    ->with('error', 'Payment not completed. Status: ' . ($responseBody['paymentStatus'] ?? 'unknown'));
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Monnify payment verification failed', [
+                'paymentReference' => $paymentReference,
+                'error'            => $e->getMessage(),
+            ]);
+
+            return redirect()->route('bookings.payment', $bookingReference)
+                ->with('error', 'An error occurred while verifying payment. Please contact support.');
         }
     }
 

@@ -16,14 +16,23 @@ import {
 const props = defineProps({
     booking: Object,
     paystackPublicKey: String,
+    monnifyApiKey: String,
+    monnifyContractCode: String,
+    monnifyTestMode: Boolean,
 });
+
+const selectedGateway = ref('paystack'); // default
+const monnifyLoaded = ref(false);
 
 const isProcessing = ref(false);
 const paystackLoaded = ref(false);
 const toast = useToast();
 
+
+
 // Load Paystack script
 onMounted(() => {
+    // Load Paystack
     if (!window.PaystackPop) {
         const script = document.createElement('script');
         script.src = 'https://js.paystack.co/v1/inline.js';
@@ -36,6 +45,17 @@ onMounted(() => {
         document.head.appendChild(script);
     } else {
         paystackLoaded.value = true;
+    }
+
+    // Load Monnify
+    if (!window.MonnifySDK) {
+        const script = document.createElement('script');
+        script.src = 'https://sdk.monnify.com/plugin/monnify.js';
+        script.onload = () => { monnifyLoaded.value = true; };
+        script.onerror = () => { toast.error('Failed to load Monnify. Please refresh.'); };
+        document.head.appendChild(script);
+    } else {
+        monnifyLoaded.value = true;
     }
 });
 
@@ -90,6 +110,42 @@ const payWithPaystack = () => {
 
     handler.openIframe();
 };
+
+const payWithMonnify = () => {
+    if (!monnifyLoaded.value) {
+        toast.warning('Monnify is still loading, please wait...');
+        return;
+    }
+
+    isProcessing.value = true;
+    let paymentCompleted = false; // ADD THIS FLAG
+
+    window.MonnifySDK.initialize({
+        amount: props.booking.total_amount,
+        currency: 'NGN',
+        reference: props.booking.payment_reference,
+        customerFullName: props.booking.guest_name,
+        customerEmail: props.booking.guest_email,
+        customerMobileNumber: props.booking.guest_phone ?? '',
+        apiKey: props.monnifyApiKey,
+        contractCode: props.monnifyContractCode,
+        paymentDescription: `Booking ${props.booking.booking_reference} — CityStake`,
+        isTestMode: props.monnifyTestMode,
+        onComplete: (response) => {
+            paymentCompleted = true; // MARK AS COMPLETE BEFORE REDIRECT
+            window.location.href = route('bookings.verify-monnify', {
+                bookingReference: props.booking.booking_reference,
+                paymentReference: response.paymentReference,
+            });
+        },
+        onClose: (data) => {
+            if (paymentCompleted) return; // SUPPRESS THE WARNING IF PAYMENT SUCCEEDED
+            isProcessing.value = false;
+            toast.warning('Payment cancelled. Complete payment to confirm your booking.');
+        },
+    });
+};
+
 </script>
 
 <template>
@@ -201,14 +257,42 @@ const payWithPaystack = () => {
                     </div>
                 </div>
 
+                <!-- Gateway Selection -->
+                <div class="flex gap-3 mb-6">
+                    <button
+                        @click="selectedGateway = 'paystack'"
+                        :class="[
+                            'flex-1 py-3 px-4 rounded-2xl border-2 transition-all text-sm font-medium',
+                            selectedGateway === 'paystack'
+                                ? 'border-green-600 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+                        ]"
+                    >
+                        Paystack
+                    </button>
+                    <button
+                        @click="selectedGateway = 'monnify'"
+                        :class="[
+                            'flex-1 py-3 px-4 rounded-2xl border-2 transition-all text-sm font-medium',
+                            selectedGateway === 'monnify'
+                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+                        ]"
+                    >
+                        Monnify
+                    </button>
+                </div>
+
                 <!-- Payment Button -->
                 <button
-                    @click="payWithPaystack"
+                    @click="selectedGateway === 'paystack' ? payWithPaystack() : payWithMonnify()"
                     :disabled="isProcessing"
                     class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-medium py-4 px-6 rounded-full transition-all disabled:cursor-not-allowed flex items-center justify-center group mb-6"
                 >
                     <Shield v-if="!isProcessing" class="w-5 h-5 mr-2" />
-                    <span v-if="!isProcessing">Pay Securely with Paystack</span>
+                    <span v-if="!isProcessing">
+                        Pay Securely with {{ selectedGateway === 'paystack' ? 'Paystack' : 'Monnify' }}
+                    </span>
                     <span v-else>Processing...</span>
                 </button>
 
@@ -216,9 +300,11 @@ const payWithPaystack = () => {
                 <div class="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-6 text-center">
                     <div class="flex items-center justify-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                         <Shield class="w-4 h-4" />
-                        <span>Secured by Paystack • Your payment information is encrypted</span>
+                        <span v-if="selectedGateway === 'paystack'">Secured by Paystack • Your payment information is encrypted</span>
+                        <span v-else>Secured by Monnify • Card, bank transfer & USSD supported</span>
                     </div>
                 </div>
+
             </div>
         </div>
     </AppLayout>
