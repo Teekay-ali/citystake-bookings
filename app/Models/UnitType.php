@@ -89,42 +89,32 @@ class UnitType extends Model
             ->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
                 $query->where('status', '!=', 'cancelled')
                     ->where(function ($q) use ($checkIn, $checkOut) {
-                        $q->whereBetween('check_in', [$checkIn, $checkOut])
-                            ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                            ->orWhere(function ($q2) use ($checkIn, $checkOut) {
-                                $q2->where('check_in', '<=', $checkIn)
-                                    ->where('check_out', '>=', $checkOut);
-                            });
+                        $q->where('check_in', '<', $checkOut)
+                            ->where('check_out', '>', $checkIn);
                     });
             })
             ->whereDoesntHave('blockedDates', function ($query) use ($checkIn, $checkOut) {
-                $query->where('blocked_from', '<=', $checkOut)
-                    ->where('blocked_to', '>=', $checkIn);
+                $query->where('blocked_from', '<', $checkOut)
+                    ->where('blocked_to', '>', $checkIn);
             })
             ->first();
     }
 
-    // Get count of available units (excluding cancelled bookings)
     public function getAvailableUnitsCount(string $checkIn, string $checkOut): int
     {
         return $this->units()
             ->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
-                // ONLY check confirmed and pending bookings, NOT cancelled
-                $query->whereIn('status', ['confirmed', 'pending'])
+                $query->where('status', '!=', 'cancelled')
                     ->where(function ($q) use ($checkIn, $checkOut) {
-                        $q->whereBetween('check_in', [$checkIn, $checkOut])
-                            ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                            ->orWhere(function ($subQ) use ($checkIn, $checkOut) {
-                                $subQ->where('check_in', '<=', $checkIn)
-                                    ->where('check_out', '>=', $checkOut);
-                            });
+                        $q->where('check_in', '<', $checkOut)
+                            ->where('check_out', '>', $checkIn);
                     });
             })
             ->whereDoesntHave('blockedDates', function ($query) use ($checkIn, $checkOut) {
-                $query->where('blocked_from', '<=', $checkOut)
-                    ->where('blocked_to', '>=', $checkIn);
+                $query->where('blocked_from', '<', $checkOut)
+                    ->where('blocked_to', '>', $checkIn);
             })
             ->count();
     }
-
+    
 }
