@@ -3,8 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Models\Booking;
+use App\Mail\BookingExpired;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class ExpireUnpaidBookings extends Command
 {
@@ -44,6 +46,16 @@ class ExpireUnpaidBookings extends Command
                 'guest_email'       => $booking->guest_email,
                 'created_at'        => $booking->created_at,
             ]);
+
+            try {
+                $booking->load(['building', 'unitType', 'unit']);
+                Mail::to($booking->guest_email)->send(new BookingExpired($booking));
+            } catch (\Exception $e) {
+                Log::error('Failed to send booking expiry email', [
+                    'booking_reference' => $booking->booking_reference,
+                    'error'             => $e->getMessage(),
+                ]);
+            }
         }
 
         $this->info("Expired {$count} unpaid booking(s).");
