@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 
 // Send booking reminders daily at 9 AM
 Schedule::command('bookings:send-reminders')->dailyAt('09:00');
+
+Schedule::command('bookings:expire-unpaid')->everyFifteenMinutes();

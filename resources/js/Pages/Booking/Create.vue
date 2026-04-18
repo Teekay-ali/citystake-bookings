@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
 import { Calendar, Users, MapPin, User, Mail, Phone, MessageSquare, Receipt, CheckCircle } from 'lucide-vue-next';
 
@@ -12,12 +12,14 @@ const props = defineProps({
 
 const toast = useToast();
 
+const user = usePage().props.auth.user;
+
 const form = useForm({
     check_in: props.bookingData.check_in,
     check_out: props.bookingData.check_out,
     guests: props.bookingData.guests,
-    guest_name: '',
-    guest_email: '',
+    guest_name: user?.name ?? '',
+    guest_email: user?.email ?? '',
     guest_phone: '',
     special_requests: '',
 });

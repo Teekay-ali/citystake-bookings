@@ -94,38 +94,20 @@ const canCancel = computed(() => {
 });
 
 const getStatusBadge = computed(() => {
-    if (props.booking.status === 'cancelled') {
-        return {
-            icon: XCircle,
-            text: 'Cancelled',
-            class: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-2 border-red-200 dark:border-red-800'
-        };
-    } else if (props.booking.payment_status === 'pending') {
-        return {
-            icon: AlertCircle,
-            text: 'Payment Pending',
-            class: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-2 border-yellow-200 dark:border-yellow-800'
-        };
-    } else if (props.booking.check_out < new Date().toISOString()) {
-        return {
-            icon: CheckCircle,
-            text: 'Completed',
-            class: 'bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border-2 border-gray-200 dark:border-gray-800'
-        };
-    } else if (props.booking.check_in <= new Date().toISOString() && props.booking.check_out >= new Date().toISOString()) {
-        return {
-            icon: Clock,
-            text: 'Active Stay',
-            class: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-2 border-blue-200 dark:border-blue-800'
-        };
-    } else {
-        return {
-            icon: CheckCircle,
-            text: 'Confirmed',
-            class: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800'
-        };
-    }
+    return resolveStatusBadge(props.booking.display_status);
 });
+
+function resolveStatusBadge(displayStatus) {
+    const map = {
+        cancelled:       { icon: XCircle,      text: 'Cancelled',        class: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-2 border-red-200 dark:border-red-800' },
+        payment_pending: { icon: AlertCircle,   text: 'Payment Pending',  class: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-2 border-yellow-200 dark:border-yellow-800' },
+        active:          { icon: Clock,         text: 'Active Stay',      class: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-2 border-blue-200 dark:border-blue-800' },
+        checked_in:      { icon: Clock,         text: 'Checked In',       class: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-2 border-blue-200 dark:border-blue-800' },
+        completed:       { icon: CheckCircle,   text: 'Completed',        class: 'bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border-2 border-gray-200 dark:border-gray-800' },
+        confirmed:       { icon: CheckCircle,   text: 'Confirmed',        class: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800' },
+    };
+    return map[displayStatus] ?? map['confirmed'];
+}
 
 const daysUntilCheckIn = computed(() => {
     const today = new Date();

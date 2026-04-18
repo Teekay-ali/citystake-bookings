@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        // Exclude Paystack webhook from CSRF verification
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/paystack',
+        ]);
+
         // Register middleware alias
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,

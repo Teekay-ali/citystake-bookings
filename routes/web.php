@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\FinancialController;
 use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
+use App\Http\Controllers\Webhooks\PaystackWebhookController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsStaff;
 use Illuminate\Support\Facades\Route;
@@ -84,6 +85,10 @@ Route::get('/properties/{building:slug}/{unitType:slug}', [UnitTypeController::c
 Route::post('/properties/{building:slug}/{unitType:slug}/check-availability', [UnitTypeController::class, 'checkAvailability'])
     ->name('properties.check-availability');
 
+// Paystack webhook — outside auth, CSRF excluded via bootstrap/app.php
+Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])
+    ->name('webhooks.paystack');
+
 // Authenticated routes
 Route::middleware('auth')->group(function () {
 
@@ -123,8 +128,6 @@ Route::middleware('auth')->group(function () {
     // View booking details
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
 });
-
-
 
 // Admin routes
 Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('manage.')->group(function () {

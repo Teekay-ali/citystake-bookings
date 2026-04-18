@@ -13,6 +13,8 @@ class Booking extends Model
 {
     use HasFactory, SoftDeletes, HasBuildingScope;
 
+    protected $appends = ['display_status'];
+
     protected $fillable = [
         'booking_reference',
         'building_id',
@@ -204,4 +206,24 @@ class Booking extends Model
             ->where('check_out', '>=', now())
             ->where('status', 'confirmed');
     }
+
+    /**
+     * Derived display status that accounts for active stays and completions
+     * based on dates, but only for confirmed/checked_in bookings.
+     * Cancelled and pending always take precedence.
+     */
+    public function getDisplayStatusAttribute(): string
+    {
+        if ($this->status === 'cancelled') return 'cancelled';
+        if ($this->status === 'checked_in') return 'checked_in';
+        if ($this->payment_status === 'pending') return 'payment_pending';
+
+        $today = now()->startOfDay();
+
+        if ($this->check_out->lt($today)) return 'completed';
+        if ($this->check_in->lte($today) && $this->check_out->gte($today)) return 'active';
+
+        return 'confirmed'; // upcoming
+    }
+
 }
