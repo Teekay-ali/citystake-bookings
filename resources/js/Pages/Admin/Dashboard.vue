@@ -12,9 +12,11 @@ import {
     Clock,
     BarChart3,
     ArrowRight,
-    AlertCircle
+    AlertCircle, Eye, EyeOff
 } from 'lucide-vue-next';
 import { computed } from 'vue';
+import { useFinancialVisibility } from '@/Composables/useFinancialVisibility';
+
 
 const props = defineProps({
     stats: Object,
@@ -26,6 +28,8 @@ const props = defineProps({
     recentBookings: Array,
     upcomingCheckIns: Array,
 });
+
+const { financialsVisible, toggle } = useFinancialVisibility();
 
 const formatPrice = (price) => {
     return new Intl.NumberFormat('en-NG', {
@@ -66,6 +70,15 @@ const maxRevenue = computed(() => {
                         </p>
                     </div>
 
+                    <button
+                        @click="toggle"
+                        class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-full transition-colors"
+                    >
+                        <EyeOff v-if="financialsVisible" class="w-4 h-4" />
+                        <Eye v-else class="w-4 h-4" />
+                        {{ financialsVisible ? 'Hide figures' : 'Show figures' }}
+                    </button>
+
                     <!-- Quick Actions -->
                     <div class="flex items-center gap-3">
                         <Link
@@ -101,7 +114,7 @@ const maxRevenue = computed(() => {
                             </div>
                         </div>
                         <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
-                            {{ formatPrice(revenue.total) }}
+                            {{ financialsVisible ? formatPrice(revenue.total) : '₦ ••••••' }}
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">
                             Total Revenue (All Time)
@@ -120,7 +133,7 @@ const maxRevenue = computed(() => {
                             </div>
                         </div>
                         <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
-                            {{ formatPrice(revenue.this_month) }}
+                            {{ financialsVisible ? formatPrice(revenue.this_month) : '₦ ••••••' }}
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">
                             This Month's Revenue
@@ -135,7 +148,7 @@ const maxRevenue = computed(() => {
                             </div>
                         </div>
                         <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
-                            {{ formatPrice(revenue.this_year) }}
+                            {{ financialsVisible ? formatPrice(revenue.this_year) : '₦ ••••••' }}
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">
                             Year to Date Revenue
@@ -222,7 +235,7 @@ const maxRevenue = computed(() => {
                                     </div>
                                 </div>
                                 <div class="w-32 text-right text-sm font-medium text-gray-900 dark:text-white">
-                                    {{ formatPrice(month.total) }}
+                                    {{ financialsVisible ? formatPrice(month.total) : '₦ ••••••' }}
                                 </div>
                             </div>
                         </div>
@@ -244,7 +257,7 @@ const maxRevenue = computed(() => {
                                     </span>
                                 </div>
                                 <span class="text-sm font-medium text-gray-900 dark:text-white">
-                                    {{ formatPrice(property.total) }}
+                                    {{ financialsVisible ? formatPrice(property.total) : '₦ ••••••' }}
                                 </span>
                             </div>
                         </div>
@@ -347,7 +360,7 @@ const maxRevenue = computed(() => {
                                         </p>
                                     </div>
                                     <span class="text-xs font-medium text-gray-900 dark:text-white">
-                                        {{ formatPrice(booking.total_amount) }}
+                                        {{ financialsVisible ? formatPrice(booking.total_amount) : '₦ ••••••' }}
                                     </span>
                                 </div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">

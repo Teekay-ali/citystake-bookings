@@ -4,9 +4,10 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import {
     TrendingUp, TrendingDown, Download, FileText,
-    AlertCircle, Plus, X
+    AlertCircle, Plus, X, Eye, EyeOff
 } from 'lucide-vue-next'
 import { usePage } from '@inertiajs/vue3'
+import { useFinancialVisibility } from '@/Composables/useFinancialVisibility';
 
 const props = defineProps({
     pendingMaintenance: Array,
@@ -19,6 +20,8 @@ const props = defineProps({
     filters:            Object,
     dateRange:          Object,
 })
+
+const { financialsVisible, toggle } = useFinancialVisibility();
 
 const user = computed(() => usePage().props.auth.user)
 
@@ -155,6 +158,14 @@ const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-8
                         {{ formatDate(dateRange.start) }} — {{ formatDate(dateRange.end) }}
                     </p>
                 </div>
+                <button
+                    @click="toggle"
+                    class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-full transition-colors"
+                >
+                    <EyeOff v-if="financialsVisible" class="w-4 h-4" />
+                    <Eye v-else class="w-4 h-4" />
+                    {{ financialsVisible ? 'Hide figures' : 'Show figures' }}
+                </button>
                 <div class="flex items-center gap-2">
                     <button @click="showManual = true"
                             class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all">
@@ -257,17 +268,17 @@ const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-8
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-2xl p-5">
                     <p class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Total Income</p>
-                    <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{{ formatAmount(summary.total_income) }}</p>
+                    <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{{ financialsVisible ? formatAmount(summary.total_income) : '₦ ••••••' }}</p>
                 </div>
                 <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-2xl p-5">
                     <p class="text-xs text-red-600 dark:text-red-400 mb-1">Total Expenses</p>
-                    <p class="text-2xl font-bold text-red-700 dark:text-red-400">{{ formatAmount(summary.total_expenses) }}</p>
+                    <p class="text-2xl font-bold text-red-700 dark:text-red-400">{{ financialsVisible ? formatAmount(summary.total_expenses) : '₦ ••••••' }}</p>
                 </div>
                 <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-5 bg-white dark:bg-gray-900">
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Net Profit</p>
                     <p class="text-2xl font-bold"
                        :class="summary.net_profit >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'">
-                        {{ summary.net_profit < 0 ? '-' : '' }}{{ formatAmount(Math.abs(summary.net_profit)) }}
+                        {{ summary.net_profit < 0 ? '-' : '' }}{{ financialsVisible ? formatAmount(Math.abs(summary.net_profit)) : '₦ ••••••' }}
                     </p>
                     <div class="flex items-center gap-1 mt-1">
                         <TrendingUp v-if="summary.net_profit >= 0" class="w-3.5 h-3.5 text-emerald-500" />
@@ -354,7 +365,7 @@ const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-8
                                         ? 'text-emerald-600 dark:text-emerald-400'
                                         : 'text-red-600 dark:text-red-400'"
                                    class="text-sm font-semibold">
-                                    {{ t.type === 'expense' ? '-' : '+' }}{{ formatAmount(t.amount) }}
+                                    {{ t.type === 'expense' ? '-' : '+' }}{{ financialsVisible ? formatAmount(t.amount) : '₦ ••••••' }}
                                 </p>
                                 <p class="text-xs text-gray-400">{{ t.recorded_by?.name }}</p>
                             </div>

@@ -12,6 +12,8 @@ import {
     CheckCircle,
     Receipt
 } from 'lucide-vue-next';
+import paystackLogo from '@/assets/paystack.svg';
+import monnifyLogo from '@/assets/moniepoint.svg';
 
 const props = defineProps({
     booking: Object,
@@ -20,6 +22,7 @@ const props = defineProps({
     monnifyContractCode: String,
     monnifyTestMode: Boolean,
 });
+
 
 const selectedGateway = ref('paystack'); // default
 const monnifyLoaded = ref(false);
@@ -262,24 +265,28 @@ const payWithMonnify = () => {
                     <button
                         @click="selectedGateway = 'paystack'"
                         :class="[
-                            'flex-1 py-3 px-4 rounded-2xl border-2 transition-all text-sm font-medium',
+                            'flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2',
                             selectedGateway === 'paystack'
-                                ? 'border-green-600 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                : 'border-gray-200 dark:border-gray-700'
                         ]"
                     >
-                        Paystack
+                        <!-- Paystack logo -->
+                        <img :src="paystackLogo" class="h-6 w-auto" alt="Paystack" />
                     </button>
+
                     <button
                         @click="selectedGateway = 'monnify'"
                         :class="[
-                            'flex-1 py-3 px-4 rounded-2xl border-2 transition-all text-sm font-medium',
+                            'flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2',
                             selectedGateway === 'monnify'
-                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                : 'border-gray-200 dark:border-gray-700'
                         ]"
                     >
-                        Monnify
+                        <!-- Monnify logo -->
+                        <img :src="monnifyLogo" class="h-6 w-auto" alt="Monnify" />
+
                     </button>
                 </div>
 
@@ -301,7 +308,7 @@ const payWithMonnify = () => {
                     <div class="flex items-center justify-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                         <Shield class="w-4 h-4" />
                         <span v-if="selectedGateway === 'paystack'">Secured by Paystack • Your payment information is encrypted</span>
-                        <span v-else>Secured by Monnify • Card, bank transfer & USSD supported</span>
+                        <span v-else>Secured by Monnify • Card, Bank Transfer & USSD supported</span>
                     </div>
                 </div>
 
