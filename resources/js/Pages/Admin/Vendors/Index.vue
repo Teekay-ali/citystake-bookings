@@ -59,8 +59,8 @@ const categoryColors = {
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Vendors & Contractors</h1>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Directory of all service providers</p>
+                    <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">Vendors & Contractors</h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-400">Directory of all service providers</p>
                 </div>
                 <Link :href="route('manage.vendors.create')"
                       class="flex items-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all">

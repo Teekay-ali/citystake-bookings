@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\StockItem;
+use App\Models\StockLog;
 use App\Notifications\ProcurementStatusNotification;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Notification;
@@ -209,6 +211,43 @@ class ProcurementController extends Controller
             ));
 
         } elseif ($procurement->canConfirmReceipt() && $user->can('confirm-procurement-receipt')) {
+            $procurement->load('items');
+
+            foreach ($procurement->items as $item) {
+                $stockItem = StockItem::whereRaw('LOWER(name) = ?', [strtolower($item->name)])
+                    ->where('building_id', $procurement->building_id)
+                    ->first();
+
+                if ($stockItem) {
+                    $quantityBefore = $stockItem->quantity;
+                    $quantityAfter  = $quantityBefore + $item->quantity;
+                    $stockItem->update(['quantity' => $quantityAfter]);
+                } else {
+                    $stockItem = StockItem::create([
+                        'building_id'         => $procurement->building_id,
+                        'name'                => $item->name,
+                        'category'            => null,
+                        'unit'                => 'unit',
+                        'quantity'            => $item->quantity,
+                        'low_stock_threshold' => 5,
+                        'notes'               => 'Auto-created from procurement #' . $procurement->reference,
+                        'created_by'          => $user->id,
+                    ]);
+                    $quantityBefore = 0;
+                    $quantityAfter  = $item->quantity;
+                }
+
+                StockLog::create([
+                    'stock_item_id'   => $stockItem->id,
+                    'logged_by'       => $user->id,
+                    'type'            => 'restock',
+                    'quantity'        => $item->quantity,
+                    'quantity_before' => $quantityBefore,
+                    'quantity_after'  => $quantityAfter,
+                    'reason'          => 'Received via procurement: ' . $procurement->reference,
+                ]);
+            }
+
             $procurement->update([
                 'status'               => 'completed',
                 'receipt_confirmed_by' => $user->id,

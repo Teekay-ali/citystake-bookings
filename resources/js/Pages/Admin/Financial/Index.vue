@@ -153,7 +153,7 @@ const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-8
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Financials</h1>
+                    <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">Financials</h1>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {{ formatDate(dateRange.start) }} — {{ formatDate(dateRange.end) }}
                     </p>

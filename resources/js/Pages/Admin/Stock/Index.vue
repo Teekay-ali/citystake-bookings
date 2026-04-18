@@ -34,8 +34,8 @@ watch([buildingId, category, lowStock], () => {
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Stock Keeping</h1>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Inventory management and usage tracking</p>
+                    <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">Stock Keeping</h1>
+                    <p class="text-lg text-gray-600 dark:text-gray-400">Inventory management and usage tracking</p>
                 </div>
                 <Link :href="route('manage.stock.create')"
                       class="flex items-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all">
