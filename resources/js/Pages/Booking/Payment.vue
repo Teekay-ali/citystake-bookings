@@ -10,7 +10,9 @@ import {
     CreditCard,
     Shield,
     CheckCircle,
-    Receipt
+    Receipt,
+    Clock,
+    AlertTriangle,
 } from 'lucide-vue-next';
 import paystackLogo from '@/assets/paystack.svg';
 import monnifyLogo from '@/assets/moniepoint.svg';
@@ -27,14 +29,42 @@ const props = defineProps({
 const selectedGateway = ref('paystack'); // default
 const monnifyLoaded = ref(false);
 
+// Countdown — 30 min hold window from booking creation
+const HOLD_MINUTES = 30;
+const timeRemaining = ref('');
+const isExpired = ref(false);
+let countdownInterval = null;
+
+const updateCountdown = () => {
+    const createdAt = new Date(props.booking.created_at);
+    const expiresAt = new Date(createdAt.getTime() + HOLD_MINUTES * 60 * 1000);
+    const now = new Date();
+    const diff = expiresAt - now;
+
+    if (diff <= 0) {
+        isExpired.value = true;
+        timeRemaining.value = '00:00';
+        clearInterval(countdownInterval);
+        return;
+    }
+
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    timeRemaining.value = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
 const isProcessing = ref(false);
 const paystackLoaded = ref(false);
+
 const toast = useToast();
-
-
 
 // Load Paystack script
 onMounted(() => {
+
+    // Start countdown
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
+
     // Load Paystack
     if (!window.PaystackPop) {
         const script = document.createElement('script');
@@ -157,6 +187,30 @@ const payWithMonnify = () => {
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
             <div class="max-w-4xl mx-auto px-6 lg:px-8">
+                <!-- Expired Banner -->
+                <div v-if="isExpired" class="mb-8 flex items-start gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl px-5 py-4">
+                    <AlertTriangle class="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+                    <div>
+                        <p class="text-sm font-medium text-red-700 dark:text-red-400">Your booking reservation has expired</p>
+                        <p class="text-sm text-red-600 dark:text-red-500 mt-0.5">This hold was released after 30 minutes. Please start a new booking — subject to availability.</p>
+                    </div>
+                </div>
+
+                <!-- Countdown Banner -->
+                <div v-else class="mb-8 flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-5 py-4">
+                    <div class="flex items-center gap-3">
+                        <Clock class="w-5 h-5 text-amber-500 shrink-0" />
+                        <p class="text-sm text-amber-700 dark:text-amber-400">Complete payment to secure your booking</p>
+                    </div>
+                    <span
+                        :class="[
+                            'text-sm font-mono font-semibold tabular-nums',
+                            parseInt(timeRemaining) < 5 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'
+                        ]"
+                                    >
+                        {{ timeRemaining }}
+                    </span>
+                </div>
                 <!-- Header -->
                 <div class="text-center mb-12">
                     <div class="w-20 h-20 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center mx-auto mb-6">
@@ -293,7 +347,7 @@ const payWithMonnify = () => {
                 <!-- Payment Button -->
                 <button
                     @click="selectedGateway === 'paystack' ? payWithPaystack() : payWithMonnify()"
-                    :disabled="isProcessing"
+                    :disabled="isProcessing || isExpired"
                     class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-medium py-4 px-6 rounded-full transition-all disabled:cursor-not-allowed flex items-center justify-center group mb-6"
                 >
                     <Shield v-if="!isProcessing" class="w-5 h-5 mr-2" />
