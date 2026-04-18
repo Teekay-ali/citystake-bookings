@@ -238,6 +238,22 @@ class BookingController extends Controller
             $response = $paystackService->verifyTransaction($reference);
 
             if ($response['status'] && $response['data']['status'] === 'success') {
+
+                // Verify the amount paid matches what we expect (Paystack amounts are in kobo)
+                $amountPaid = $response['data']['amount'] ?? 0;
+                $amountExpected = (int) round($booking->total_amount * 100);
+
+                if ($amountPaid < $amountExpected) {
+                    \Log::warning('Paystack amount mismatch', [
+                        'booking_reference' => $booking->booking_reference,
+                        'expected_kobo'     => $amountExpected,
+                        'paid_kobo'         => $amountPaid,
+                    ]);
+
+                    return redirect()->route('bookings.payment', $bookingReference)
+                        ->with('error', 'Payment amount mismatch. Please contact support.');
+                }
+
                 $booking->update([
                     'payment_status' => 'paid',
                     'status' => 'confirmed',
