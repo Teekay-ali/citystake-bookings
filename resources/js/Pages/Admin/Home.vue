@@ -74,14 +74,14 @@ function formatDate(d) {
     <ManageLayout>
         <Head title="Home" />
 
-        <div class="p-6 lg:p-8 max-w-5xl">
+        <div class="p-6 lg:p-8">
 
             <!-- Greeting -->
             <div class="mb-8">
-                <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+                <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">
                     {{ greeting }}, {{ user.name.split(' ')[0] }} 👋
                 </h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <p class="text-lg text-gray-600 dark:text-gray-400">
                     {{ roleLabels[user.role] ?? user.role }}
                     <span v-if="user.building">· {{ user.building }}</span>
                     · {{ new Date().toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}

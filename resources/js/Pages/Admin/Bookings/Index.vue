@@ -9,7 +9,7 @@ import {
     MapPin,
     Users,
     DollarSign,
-    ChevronRight,
+    ChevronRight, ChevronLeft,
     Plus,
     Download,
     FileSpreadsheet,
@@ -369,23 +369,37 @@ const exportBookings = () => {
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="bookings.links.length > 3" class="flex justify-center items-center space-x-2 mt-8">
-                    <component
-                        v-for="(link, index) in bookings.links"
-                        :key="index"
-                        :is="link.url ? 'button' : 'span'"
-                        @click="link.url && router.visit(link.url)"
-                        v-html="link.label"
-                        :class="[
-                            'min-w-[40px] h-10 flex items-center justify-center rounded-full text-sm font-medium transition-all',
-                            link.active
-                                ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                                : link.url
-                                ? 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800'
-                                : 'text-gray-400 cursor-not-allowed'
-                        ]"
-                        :disabled="!link.url"
-                    />
+                <!-- Pagination -->
+                <div v-if="bookings.last_page > 1" class="flex justify-center items-center gap-1 mt-8">
+                    <!-- Prev -->
+                    <button @click="bookings.prev_page_url && router.visit(bookings.prev_page_url)"
+                            :disabled="!bookings.prev_page_url"
+                            class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <ChevronLeft class="w-4 h-4" />
+                    </button>
+
+                    <!-- Page numbers -->
+                    <template v-for="link in bookings.links.slice(1, -1)" :key="link.label">
+                        <button v-if="link.label !== '...'"
+                                @click="link.url && router.visit(link.url)"
+                                :disabled="!link.url"
+                                :class="[
+                    'w-9 h-9 flex items-center justify-center rounded-full text-sm font-medium transition-all',
+                    link.active
+                        ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                        : 'border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
+                ]">
+                            {{ link.label }}
+                        </button>
+                        <span v-else class="w-9 h-9 flex items-center justify-center text-sm text-gray-400">…</span>
+                    </template>
+
+                    <!-- Next -->
+                    <button @click="bookings.next_page_url && router.visit(bookings.next_page_url)"
+                            :disabled="!bookings.next_page_url"
+                            class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <ChevronRight class="w-4 h-4" />
+                    </button>
                 </div>
             </div>
         </div>

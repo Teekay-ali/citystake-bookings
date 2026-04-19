@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import { useToast } from 'vue-toastification'
 import {
@@ -9,7 +9,6 @@ import {
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
     ChevronLeft, ChevronRight, FileText, ShieldCheck
 } from 'lucide-vue-next'
-// In the <script setup> imports section, add:
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
 
@@ -21,7 +20,11 @@ const user = computed(() => page.props.auth.user)
 const pendingCount = computed(() => page.props.lateCheckoutPendingCount ?? 0)
 
 const sidebarOpen = ref(false)       // mobile drawer
-const collapsed = ref(localStorage.getItem('sidebar-collapsed') === 'true')
+const collapsed = ref(
+    typeof window !== 'undefined'
+        ? localStorage.getItem('sidebar-collapsed') === 'true'
+        : false
+)
 
 
 function toggleCollapsed() {
@@ -29,21 +32,12 @@ function toggleCollapsed() {
     localStorage.setItem('sidebar-collapsed', collapsed.value)
 }
 
-
-onMounted(() => {
-    const flash = page.props.flash
-    if (flash?.success) toast.success(flash.success)
-    if (flash?.error) toast.error(flash.error)
-    if (flash?.info) toast.info(flash.info)
-    if (flash?.warning) toast.warning(flash.warning)
-})
-
 watch(() => page.props.flash, (flash) => {
     if (flash?.success) toast.success(flash.success)
     if (flash?.error) toast.error(flash.error)
     if (flash?.info) toast.info(flash.info)
     if (flash?.warning) toast.warning(flash.warning)
-}, { deep: true })
+}, { deep: true, immediate: true })
 
 const dashboardRoute = computed(() => {
     const roles = user.value?.roles ?? []
@@ -179,8 +173,11 @@ function canSeeItem(item) {
                         class="lg:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <X class="w-5 h-5" />
                 </button>
-                <button @click="toggleCollapsed()"
-                        class="hidden lg:flex p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <button
+                    @click="toggleCollapsed()"
+                    :aria-expanded="!collapsed"
+                    aria-label="Toggle sidebar"
+                    class="hidden lg:flex p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <ChevronLeft v-if="!collapsed" class="w-4 h-4" />
                     <ChevronRight v-else class="w-4 h-4" />
                 </button>
@@ -226,7 +223,7 @@ function canSeeItem(item) {
                                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
                                         collapsed ? 'justify-center px-0' : 'px-3'
                                     ]"
-                                      class="flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-all">
+                                      class="relative flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-all">
                                     <component :is="item.icon" class="w-4 h-4 shrink-0" />
                                     <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
                                     <span v-if="!collapsed && item.badge && item.badge > 0"
@@ -245,7 +242,8 @@ function canSeeItem(item) {
             </nav>
 
             <!-- User footer -->
-            <div class="border-t border-gray-200 dark:border-gray-800 p-2 shrink-0 overflow-visible relative">                <div :class="collapsed ? 'flex-col items-center' : 'items-center gap-3 px-2'"
+            <div class="border-t border-gray-200 dark:border-gray-800 p-2 shrink-0 overflow-visible relative">
+                <div :class="collapsed ? 'flex-col items-center' : 'items-center gap-3 px-2'"
                      class="flex py-2">
 
                     <!-- Avatar -->
@@ -274,6 +272,7 @@ function canSeeItem(item) {
                         </button>
                         <Link :href="route('logout')" method="post" as="button"
                               title="Sign out"
+                              aria-label="Sign out"
                               class="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
                             <LogOut class="w-4 h-4" />
                         </Link>

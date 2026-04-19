@@ -1,10 +1,10 @@
 <script setup>
 import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import {
-    Plus,
+    Plus, ChevronDown,
     Building2,
     Edit,
     Trash2,
@@ -57,6 +57,15 @@ const filteredBuildings = computed(() => {
 
     return filtered;
 });
+
+const expandedBuildings = ref({});
+const toggleBuilding = (id) => {
+    expandedBuildings.value[id] = !expandedBuildings.value[id];
+};
+// Default all to expanded on load
+watch(() => props.buildings, (buildings) => {
+    buildings.forEach(b => { expandedBuildings.value[b.id] = true; });
+}, { immediate: true });
 
 const openDeleteModal = (building) => {
     itemToDelete.value = building;
@@ -132,13 +141,13 @@ const formatPrice = (price) => {
 
                 <!-- Stats Cards -->
                 <div v-if="buildings.length > 0" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-800">
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
                         <div class="flex items-center justify-between mb-3">
                             <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                                 <Building2 class="w-6 h-6 text-blue-600 dark:text-blue-400" />
                             </div>
                         </div>
-                        <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-1">
+                        <div class="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                             {{ totalProperties }}
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -146,13 +155,13 @@ const formatPrice = (price) => {
                         </div>
                     </div>
 
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-6 rounded-2xl border border-green-200 dark:border-green-800">
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-xl border border-green-200 dark:border-green-800">
                         <div class="flex items-center justify-between mb-3">
                             <div class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                                 <Home class="w-6 h-6 text-green-600 dark:text-green-400" />
                             </div>
                         </div>
-                        <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-1">
+                        <div class="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                             {{ totalUnitTypes }}
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -160,13 +169,13 @@ const formatPrice = (price) => {
                         </div>
                     </div>
 
-                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-6 rounded-2xl border border-purple-200 dark:border-purple-800">
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-4 rounded-xl border border-purple-200 dark:border-purple-800">
                         <div class="flex items-center justify-between mb-3">
                             <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                                 <Bed class="w-6 h-6 text-purple-600 dark:text-purple-400" />
                             </div>
                         </div>
-                        <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-1">
+                        <div class="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                             {{ totalUnits }}
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -174,13 +183,13 @@ const formatPrice = (price) => {
                         </div>
                     </div>
 
-                    <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 p-6 rounded-2xl border border-orange-200 dark:border-orange-800">
+                    <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 p-4 rounded-xl border border-orange-200 dark:border-orange-800">
                         <div class="flex items-center justify-between mb-3">
                             <div class="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                                 <MapPin class="w-6 h-6 text-orange-600 dark:text-orange-400" />
                             </div>
                         </div>
-                        <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-1">
+                        <div class="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                             {{ totalLocations }}
                         </div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -232,7 +241,7 @@ const formatPrice = (price) => {
                             <div class="flex gap-6">
                                 <!-- Property Image -->
                                 <div class="flex-shrink-0">
-                                    <div class="w-32 h-32 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 ring-2 ring-gray-100 dark:ring-gray-800">
+                                    <div class="w-14 h-14 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800 ring-2 ring-gray-100 dark:ring-gray-800">
                                         <img
                                             v-if="building.images && building.images.length > 0"
                                             :src="building.images[0].url"
@@ -240,7 +249,7 @@ const formatPrice = (price) => {
                                             class="w-full h-full object-cover"
                                         />
                                         <div v-else class="w-full h-full flex items-center justify-center">
-                                            <Building2 class="w-12 h-12 text-gray-400" />
+                                            <Building2 class="w-6 h-6 text-gray-400" />
                                         </div>
                                     </div>
                                 </div>
@@ -250,7 +259,7 @@ const formatPrice = (price) => {
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1">
                                             <div class="flex items-center gap-3 mb-2">
-                                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
+                                                <h2 class="text-base font-semibold text-gray-900 dark:text-white">
                                                     {{ building.name }}
                                                 </h2>
                                                 <span
@@ -287,6 +296,7 @@ const formatPrice = (price) => {
                                         </div>
 
                                         <!-- Building Actions -->
+                                        <!-- Building Actions -->
                                         <div class="flex items-center gap-2">
                                             <Link
                                                 :href="route('manage.properties.edit', building.id)"
@@ -302,14 +312,22 @@ const formatPrice = (price) => {
                                             >
                                                 <Trash2 class="w-5 h-5" />
                                             </button>
-                                        </div>
-                                    </div>
+
+                                            <!-- Chevron toggle -->
+                                            <button
+                                                @click="toggleBuilding(building.id)"
+                                                class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                                                title="Toggle unit types"
+                                            >
+                                                <ChevronDown class="w-4 h-4 transition-transform" :class="{ 'rotate-180': expandedBuildings[building.id] }" />
+                                            </button>
+                                        </div>                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Unit Types -->
-                        <div class="p-6">
+                        <div v-if="expandedBuildings[building.id]" class="p-6">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                     <Bed class="w-5 h-5 text-gray-400" />
@@ -331,7 +349,7 @@ const formatPrice = (price) => {
                                     class="group flex items-center gap-4 p-4 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl hover:border-gray-300 dark:hover:border-gray-700 transition-all"
                                 >
                                     <!-- Unit Type Image -->
-                                    <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 flex-shrink-0 ring-2 ring-gray-100 dark:ring-gray-900">
+                                    <div class="w-10 h-10 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-900 flex-shrink-0 ring-2 ring-gray-100 dark:ring-gray-900">
                                         <img
                                             v-if="unitType.images && unitType.images.length > 0"
                                             :src="unitType.images[0].url"
@@ -339,7 +357,7 @@ const formatPrice = (price) => {
                                             class="w-full h-full object-cover"
                                         />
                                         <div v-else class="w-full h-full flex items-center justify-center">
-                                            <Bed class="w-8 h-8 text-gray-400" />
+                                            <Bed class="w-5 h-5 text-gray-400" />
                                         </div>
                                     </div>
 
