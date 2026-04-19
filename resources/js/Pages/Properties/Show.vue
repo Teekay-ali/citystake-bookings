@@ -239,7 +239,7 @@ const proceedToBooking = () => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :hide-footer="true">
         <Head :title="`${unitType.name} - ${building.name}`" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen">

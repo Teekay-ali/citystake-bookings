@@ -119,7 +119,7 @@ const daysUntilCheckIn = computed(() => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :hide-footer="true">
         <Head title="Booking Details" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">

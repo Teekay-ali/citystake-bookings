@@ -65,7 +65,7 @@ const getStatusBadge = (booking) => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :hide-footer="true">
         <Head title="My Bookings" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-8">

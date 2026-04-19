@@ -48,7 +48,7 @@ watch([bedroomFilter, guestsFilter, buildingFilter, sortBy], () => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :hide-footer="true">
         <Head title="Browse Properties" />
 
         <div class="min-h-screen bg-white dark:bg-gray-950">
