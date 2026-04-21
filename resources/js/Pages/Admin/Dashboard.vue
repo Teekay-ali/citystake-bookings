@@ -1,22 +1,15 @@
 <script setup>
-import ManageLayout from '@/Layouts/ManageLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import ManageLayout from '@/Layouts/ManageLayout.vue'
+import { Head, Link } from '@inertiajs/vue3'
 import {
-    TrendingUp,
-    TrendingDown,
-    DollarSign,
-    Calendar,
-    Building2,
-    Users,
-    CheckCircle,
-    Clock,
-    BarChart3,
-    ArrowRight,
-    AlertCircle, Eye, EyeOff
-} from 'lucide-vue-next';
-import { computed } from 'vue';
-import { useFinancialVisibility } from '@/Composables/useFinancialVisibility';
+    TrendingUp, TrendingDown, DollarSign, Calendar,
+    Building2, Users, CheckCircle, Clock, BarChart3,
+    ArrowRight, AlertCircle, Eye, EyeOff, Plus
+} from 'lucide-vue-next'
+import { computed } from 'vue'
+import { useFinancialVisibility } from '@/Composables/useFinancialVisibility'
 
+defineOptions({ layout: ManageLayout })
 
 const props = defineProps({
     stats: Object,
@@ -27,390 +20,380 @@ const props = defineProps({
     statusBreakdown: Object,
     recentBookings: Array,
     upcomingCheckIns: Array,
-});
+})
 
-const { financialsVisible, toggle } = useFinancialVisibility();
+const { financialsVisible, toggle } = useFinancialVisibility()
 
 const formatPrice = (price) => {
+    if (!financialsVisible.value) return '₦ ••••••'
+    const num = price || 0
+    if (num >= 1_000_000) return `₦${(num / 1_000_000).toFixed(1)}M`
+    if (num >= 1_000) return `₦${(num / 1_000).toFixed(0)}K`
     return new Intl.NumberFormat('en-NG', {
-        style: 'currency',
-        currency: 'NGN',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(price || 0);
-};
+        style: 'currency', currency: 'NGN',
+        minimumFractionDigits: 0, maximumFractionDigits: 0,
+    }).format(num)
+}
+
+const formatPriceFull = (price) => {
+    if (!financialsVisible.value) return '₦ ••••••'
+    return new Intl.NumberFormat('en-NG', {
+        style: 'currency', currency: 'NGN',
+        minimumFractionDigits: 0, maximumFractionDigits: 0,
+    }).format(price || 0)
+}
 
 const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-    });
-};
+        day: '2-digit', month: 'short', year: 'numeric'
+    })
+}
 
-// Calculate max for chart scaling
+const formatDateShort = (date) => {
+    return new Date(date).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short'
+    })
+}
+
+const todayGreeting = computed(() => {
+    const h = new Date().getHours()
+    if (h < 12) return 'Good morning'
+    if (h < 17) return 'Good afternoon'
+    return 'Good evening'
+})
+
+const todayDate = computed(() => {
+    return new Date().toLocaleDateString('en-GB', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    })
+})
+
 const maxRevenue = computed(() => {
-    return Math.max(...props.monthlyRevenue.map(m => m.total), 0);
-});
+    return Math.max(...(props.monthlyRevenue?.map(m => m.total) ?? [0]), 1)
+})
+
+const maxPropertyRevenue = computed(() => {
+    return Math.max(...(props.revenueByProperty?.map(p => p.total) ?? [0]), 1)
+})
+
+const totalStatusCount = computed(() => {
+    const b = props.statusBreakdown
+    return (b?.confirmed ?? 0) + (b?.pending ?? 0) + (b?.completed ?? 0) + (b?.cancelled ?? 0)
+})
+
+const statusItems = computed(() => [
+    { label: 'Confirmed', key: 'confirmed', color: '#16a34a' },
+    { label: 'Pending',   key: 'pending',   color: '#d97706' },
+    { label: 'Completed', key: 'completed', color: '#6b7280' },
+    { label: 'Cancelled', key: 'cancelled', color: '#dc2626' },
+])
+
+// Merge check-ins and late checkouts into one attention feed
+const attentionItems = computed(() => {
+    const items = []
+
+    // Today's check-ins
+    const today = new Date().toDateString()
+    ;(props.upcomingCheckIns ?? []).forEach(b => {
+        const isToday = new Date(b.check_in).toDateString() === today
+        items.push({
+            id: b.id,
+            name: b.guest_name,
+            sub: `${b.building?.name ?? ''} · ${b.nights} night${b.nights !== 1 ? 's' : ''}`,
+            type: isToday ? 'checkin' : 'upcoming',
+            date: formatDateShort(b.check_in),
+            href: route('manage.bookings.show', b.id),
+        })
+    })
+
+    return items.slice(0, 8)
+})
+
+const initials = (name) => {
+    return (name ?? '').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+}
 </script>
 
 <template>
-    <ManageLayout>
-        <Head title="Admin Dashboard" />
+    <Head title="Dashboard" />
 
-        <div class="bg-white dark:bg-gray-950 min-h-screen py-8">            <div class="max-w-7xl mx-auto px-6 lg:px-8">
-                <!-- Header -->
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                    <div>
-                        <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-3">
-                            Dashboard
-                        </h1>
-                        <p class="text-lg text-gray-600 dark:text-gray-400">
-                            Overview of your property bookings and revenue
-                        </p>
-                    </div>
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto space-y-6">
 
+            <!-- ── Header ── -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">
+                        {{ todayGreeting }}
+                    </h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        {{ todayDate }} · Here's what's happening
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
                     <button
                         @click="toggle"
-                        class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-full transition-colors"
-                    >
-                        <EyeOff v-if="financialsVisible" class="w-4 h-4" />
-                        <Eye v-else class="w-4 h-4" />
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        <EyeOff v-if="financialsVisible" class="w-3.5 h-3.5" />
+                        <Eye v-else class="w-3.5 h-3.5" />
                         {{ financialsVisible ? 'Hide figures' : 'Show figures' }}
                     </button>
+                    <Link
+                        :href="route('manage.bookings.calendar')"
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        <Calendar class="w-3.5 h-3.5" />
+                        Calendar
+                    </Link>
+                    <Link
+                        :href="route('manage.bookings.create')"
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                        <Plus class="w-3.5 h-3.5" />
+                        New Booking
+                    </Link>
+                </div>
+            </div>
 
-                    <!-- Quick Actions -->
-                    <div class="flex items-center gap-3">
-                        <Link
-                            :href="route('manage.analytics.occupancy')"
-                            class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-full transition-all flex items-center shadow-lg"
-                        >
-                            <BarChart3 class="w-5 h-5 mr-2" />
-                            Occupancy Analytics
+            <!-- ── KPI Strip ── -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
+                <!-- Hero: This month revenue -->
+                <div class="bg-gray-900 dark:bg-white rounded-xl p-5 col-span-1">
+                    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">This month</p>
+                    <p class="text-2xl font-semibold text-white dark:text-gray-900 tracking-tight mb-1">
+                        {{ formatPrice(revenue?.this_month) }}
+                    </p>
+                    <div v-if="revenue?.growth_percentage !== null" class="flex items-center gap-1 text-xs">
+                        <component
+                            :is="revenue?.growth_percentage >= 0 ? TrendingUp : TrendingDown"
+                            class="w-3 h-3"
+                            :class="revenue?.growth_percentage >= 0 ? 'text-green-400 dark:text-green-600' : 'text-red-400 dark:text-red-600'" />
+                        <span :class="revenue?.growth_percentage >= 0 ? 'text-green-400 dark:text-green-600' : 'text-red-400 dark:text-red-600'">
+                            {{ Math.abs(revenue?.growth_percentage) }}%
+                        </span>
+                        <span class="text-gray-500 dark:text-gray-400">vs last month</span>
+                    </div>
+                </div>
+
+                <!-- Total bookings -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Total bookings</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">
+                        {{ stats?.total_bookings ?? 0 }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ stats?.active_bookings ?? 0 }} active now
+                    </p>
+                </div>
+
+                <!-- Properties -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Properties</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">
+                        {{ stats?.total_properties ?? 0 }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Total units</p>
+                </div>
+
+                <!-- Users -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Users</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">
+                        {{ stats?.total_users ?? 0 }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Registered guests</p>
+                </div>
+            </div>
+
+            <!-- ── Main grid ── -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+
+                <!-- Revenue trend -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-5">
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">Revenue trend</p>
+                        <Link :href="route('manage.analytics.occupancy')"
+                              class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1">
+                            Analytics <ArrowRight class="w-3 h-3" />
                         </Link>
-                        <Link
-                            :href="route('manage.bookings.calendar')"
-                            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full transition-all flex items-center shadow-lg"
-                        >
-                            <Calendar class="w-5 h-5 mr-2" />
-                            Calendar View
-                        </Link>
-                        <Link
-                            :href="route('manage.bookings.index')"
-                            class="px-6 py-3 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-full transition-all flex items-center"
-                        >
-                            All Bookings
-                        </Link>
                     </div>
+                    <!-- Bar chart -->
+                    <div class="flex items-end gap-1.5 h-24 mb-3">
+                        <div v-for="month in monthlyRevenue" :key="month.month"
+                             class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                            <div class="w-full rounded-t-sm transition-all"
+                                 :class="month === monthlyRevenue[monthlyRevenue.length - 1]
+                                     ? 'bg-gray-900 dark:bg-white'
+                                     : 'bg-gray-200 dark:bg-gray-700'"
+                                 :style="{ height: ((month.total / maxRevenue) * 100) + '%', minHeight: '4px' }">
+                            </div>
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ month.month }}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">Last 6 months · NGN</p>
                 </div>
 
-                <!-- Revenue Cards -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                    <!-- Total Revenue -->
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-5 sm:p-8 rounded-2xl border border-blue-200 dark:border-blue-800">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                <DollarSign class="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                            </div>
-                        </div>
-                        <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
-                            {{ financialsVisible ? formatPrice(revenue.total) : '₦ ••••••' }}
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            Total Revenue (All Time)
-                        </div>
-                    </div>
-
-                    <!-- This Month Revenue -->
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-5 sm:p-8 rounded-2xl border border-green-200 dark:border-green-800">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                <Calendar class="w-6 h-6 text-green-600 dark:text-green-400" />
-                            </div>
-                            <div v-if="revenue.growth_percentage !== null" class="flex items-center gap-1 text-sm font-medium" :class="revenue.growth_percentage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-                                <component :is="revenue.growth_percentage >= 0 ? TrendingUp : TrendingDown" class="w-4 h-4" />
-                                {{ Math.abs(revenue.growth_percentage) }}%
-                            </div>
-                        </div>
-                        <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
-                            {{ financialsVisible ? formatPrice(revenue.this_month) : '₦ ••••••' }}
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            This Month's Revenue
-                        </div>
-                    </div>
-
-                    <!-- This Year Revenue -->
-                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-5 sm:p-8 rounded-2xl border border-purple-200 dark:border-purple-800">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                                <TrendingUp class="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                            </div>
-                        </div>
-                        <div class="text-3xl font-semibold text-gray-900 dark:text-white mb-2">
-                            {{ financialsVisible ? formatPrice(revenue.this_year) : '₦ ••••••' }}
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            Year to Date Revenue
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                <Calendar class="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                            </div>
-                        </div>
-                        <div class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                            {{ stats.total_bookings }}
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            Total Bookings
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-                                <CheckCircle class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                        </div>
-                        <div class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                            {{ stats.active_bookings }}
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            Active Bookings
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
-                                <Building2 class="w-5 h-5 text-green-600 dark:text-green-400" />
-                            </div>
-                        </div>
-                        <div class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                            {{ stats.total_properties }}
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            Properties
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
-                                <Users class="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                            </div>
-                        </div>
-                        <div class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                            {{ stats.total_users }}
-                        </div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">
-                            Total Users
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                    <!-- Monthly Revenue Chart -->
-                    <div class="bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
-                            Revenue Trend (Last 6 Months)
-                        </h3>
-                        <div class="space-y-4">
-                            <div v-for="month in monthlyRevenue" :key="month.month" class="flex items-center gap-4">
-                                <div class="w-20 text-sm text-gray-600 dark:text-gray-400">
-                                    {{ month.month }}
-                                </div>
-                                <div class="flex-1">
-                                    <div class="h-8 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-                                        <div
-                                            class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg transition-all"
-                                            :style="{ width: maxRevenue > 0 ? (month.total / maxRevenue * 100) + '%' : '0%' }"
-                                        ></div>
-                                    </div>
-                                </div>
-                                <div class="w-32 text-right text-sm font-medium text-gray-900 dark:text-white">
-                                    {{ financialsVisible ? formatPrice(month.total) : '₦ ••••••' }}
+                <!-- Booking + payment status -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Booking status</p>
+                    <div class="space-y-3 mb-5">
+                        <div v-for="s in statusItems" :key="s.key" class="flex items-center gap-3">
+                            <div class="w-1.5 h-1.5 rounded-full flex-shrink-0" :style="{ background: s.color }"></div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 w-20">{{ s.label }}</span>
+                            <div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all"
+                                     :style="{
+                                         width: totalStatusCount > 0 ? ((statusBreakdown?.[s.key] ?? 0) / totalStatusCount * 100) + '%' : '0%',
+                                         background: s.color
+                                     }">
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Revenue by Property -->
-                    <div class="bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
-                            Top Properties by Revenue
-                        </h3>
-                        <div class="space-y-4">
-                            <div v-for="(property, index) in revenueByProperty" :key="index" class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-400">
-                                        {{ index + 1 }}
-                                    </div>
-                                    <span class="text-sm text-gray-900 dark:text-white">
-                                        {{ property.property }}
-                                    </span>
-                                </div>
-                                <span class="text-sm font-medium text-gray-900 dark:text-white">
-                                    {{ financialsVisible ? formatPrice(property.total) : '₦ ••••••' }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Payment & Status Breakdown -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                    <!-- Payment Status -->
-                    <div class="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
-                            Payment Status
-                        </h3>
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                                <div class="flex items-center gap-3">
-                                    <CheckCircle class="w-5 h-5 text-green-600 dark:text-green-400" />
-                                    <span class="text-sm font-medium text-gray-900 dark:text-white">Paid</span>
-                                </div>
-                                <span class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    {{ paymentBreakdown.paid }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
-                                <div class="flex items-center gap-3">
-                                    <Clock class="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                                    <span class="text-sm font-medium text-gray-900 dark:text-white">Pending</span>
-                                </div>
-                                <span class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    {{ paymentBreakdown.pending }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Booking Status -->
-                    <div class="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
-                            Booking Status
-                        </h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl text-center">
-                                <div class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                                    {{ statusBreakdown.confirmed }}
-                                </div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">Confirmed</div>
-                            </div>
-                            <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl text-center">
-                                <div class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                                    {{ statusBreakdown.pending }}
-                                </div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">Pending</div>
-                            </div>
-                            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
-                                <div class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                                    {{ statusBreakdown.completed }}
-                                </div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">Completed</div>
-                            </div>
-                            <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl text-center">
-                                <div class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                                    {{ statusBreakdown.cancelled }}
-                                </div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">Cancelled</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Bookings & Upcoming Check-ins -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Recent Bookings -->
-                    <div class="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-xl font-medium text-gray-900 dark:text-white">
-                                Recent Bookings
-                            </h3>
-                            <Link
-                                :href="route('manage.bookings.index')"
-                                class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1"
-                            >
-                                View all
-                                <ArrowRight class="w-4 h-4" />
-                            </Link>
-                        </div>
-                        <div class="space-y-4">
-                            <Link
-                                v-for="booking in recentBookings"
-                                :key="booking.id"
-                                :href="route('manage.bookings.show', booking.id)"
-                                class="block p-4 bg-gray-50 dark:bg-gray-950 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-                            >
-                                <div class="flex items-start justify-between mb-2">
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ booking.guest_name }}
-                                        </p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                                            {{ booking.building?.name }} - {{ booking.unit_type?.name }}
-                                        </p>
-                                    </div>
-                                    <span class="text-xs font-medium text-gray-900 dark:text-white">
-                                        {{ financialsVisible ? formatPrice(booking.total_amount) : '₦ ••••••' }}
-                                    </span>
-                                </div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    {{ formatDate(booking.check_in) }} - {{ formatDate(booking.check_out) }}
-                                </p>
-                            </Link>
-                        </div>
-                    </div>
-
-                    <!-- Upcoming Check-ins -->
-                    <div class="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-xl font-medium text-gray-900 dark:text-white">
-                                Upcoming Check-ins
-                            </h3>
-                            <span class="text-sm text-gray-600 dark:text-gray-400">
-                                Next 7 days
+                            <span class="text-xs font-semibold text-gray-900 dark:text-white w-6 text-right">
+                                {{ statusBreakdown?.[s.key] ?? 0 }}
                             </span>
                         </div>
-                        <div class="space-y-4">
-                            <div
-                                v-for="booking in upcomingCheckIns"
-                                :key="booking.id"
-                                class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800"
-                            >
-                                <div class="flex items-start justify-between mb-2">
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ booking.guest_name }}
-                                        </p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                                            {{ booking.building?.name }} - {{ booking.unit_type?.name }}
-                                        </p>
-                                    </div>
-                                    <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
-                                        {{ booking.nights }} nights
-                                    </span>
-                                </div>
-                                <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                                    Check-in: {{ formatDate(booking.check_in) }}
-                                </p>
-                            </div>
+                    </div>
 
-                            <div v-if="upcomingCheckIns.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
-                                No upcoming check-ins in the next 7 days
+                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+                        <p class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Payment</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                                <p class="text-[10px] text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">Paid</p>
+                                <p class="text-lg font-semibold text-green-700 dark:text-green-300">{{ paymentBreakdown?.paid ?? 0 }}</p>
+                            </div>
+                            <div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                                <p class="text-[10px] text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Pending</p>
+                                <p class="text-lg font-semibold text-amber-700 dark:text-amber-300">{{ paymentBreakdown?.pending ?? 0 }}</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Needs attention -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">Needs attention</p>
+                        <Link :href="route('manage.bookings.index')"
+                              class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1">
+                            All bookings <ArrowRight class="w-3 h-3" />
+                        </Link>
+                    </div>
+
+                    <!-- Late checkouts alert -->
+                    <Link v-if="stats?.late_checkouts > 0"
+                          :href="route('manage.bookings.late-checkout.index')"
+                          class="flex items-center gap-2.5 p-2.5 bg-red-50 dark:bg-red-900/20 rounded-lg mb-3 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                        <AlertCircle class="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <span class="text-xs font-medium text-red-700 dark:text-red-400">
+                            {{ stats?.late_checkouts }} late checkout{{ stats?.late_checkouts !== 1 ? 's' : '' }} pending
+                        </span>
+                        <ArrowRight class="w-3 h-3 text-red-400 ml-auto flex-shrink-0" />
+                    </Link>
+
+                    <!-- Today's check-ins -->
+                    <p class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                        Upcoming check-ins
+                    </p>
+                    <div v-if="upcomingCheckIns?.length > 0" class="space-y-1">
+                        <Link v-for="booking in upcomingCheckIns.slice(0, 5)" :key="booking.id"
+                              :href="route('manage.bookings.show', booking.id)"
+                              class="flex items-center gap-2.5 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0 hover:opacity-70 transition-opacity">
+                            <div class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 text-[10px] font-semibold text-gray-600 dark:text-gray-400">
+                                {{ initials(booking.guest_name) }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-medium text-gray-900 dark:text-white truncate">{{ booking.guest_name }}</p>
+                                <p class="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                                    {{ booking.building?.name }} · {{ booking.unit_type?.name }}
+                                </p>
+                            </div>
+                            <span class="text-[10px] font-medium text-blue-600 dark:text-blue-400 flex-shrink-0">
+                                {{ formatDateShort(booking.check_in) }}
+                            </span>
+                        </Link>
+                    </div>
+                    <p v-else class="text-xs text-gray-400 dark:text-gray-500 py-3">
+                        No check-ins in the next 7 days
+                    </p>
+                </div>
+            </div>
+
+            <!-- ── Bottom grid ── -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+
+                <!-- Top properties -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">Top properties</p>
+                        <Link :href="route('manage.properties.index')"
+                              class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1">
+                            View all <ArrowRight class="w-3 h-3" />
+                        </Link>
+                    </div>
+                    <div class="space-y-0">
+                        <div v-for="(property, index) in revenueByProperty" :key="index"
+                             class="flex items-center gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                            <span class="text-xs text-gray-400 dark:text-gray-500 w-4 flex-shrink-0">{{ index + 1 }}</span>
+                            <span class="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{{ property.property }}</span>
+                            <div class="w-16 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex-shrink-0">
+                                <div class="h-full bg-gray-400 dark:bg-gray-500 rounded-full"
+                                     :style="{ width: ((property.total / maxPropertyRevenue) * 100) + '%' }">
+                                </div>
+                            </div>
+                            <span class="text-xs font-semibold text-gray-900 dark:text-white flex-shrink-0">
+                                {{ formatPrice(property.total) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue overview + recent bookings -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">Recent bookings</p>
+                        <Link :href="route('manage.bookings.index')"
+                              class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1">
+                            View all <ArrowRight class="w-3 h-3" />
+                        </Link>
+                    </div>
+
+                    <!-- YTD + All time pills -->
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                            <p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Year to date</p>
+                            <p class="text-base font-semibold text-gray-900 dark:text-white tracking-tight">
+                                {{ formatPrice(revenue?.this_year) }}
+                            </p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                            <p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">All time</p>
+                            <p class="text-base font-semibold text-gray-900 dark:text-white tracking-tight">
+                                {{ formatPrice(revenue?.total) }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Recent bookings list -->
+                    <div class="space-y-0">
+                        <Link v-for="booking in recentBookings?.slice(0, 4)" :key="booking.id"
+                              :href="route('manage.bookings.show', booking.id)"
+                              class="flex items-center gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0 hover:opacity-70 transition-opacity">
+                            <div class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 text-[10px] font-semibold text-gray-600 dark:text-gray-400">
+                                {{ initials(booking.guest_name) }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-medium text-gray-900 dark:text-white truncate">{{ booking.guest_name }}</p>
+                                <p class="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                                    {{ formatDateShort(booking.check_in) }} – {{ formatDateShort(booking.check_out) }}
+                                </p>
+                            </div>
+                            <span class="text-xs font-semibold text-gray-900 dark:text-white flex-shrink-0">
+                                {{ formatPriceFull(booking.total_amount) }}
+                            </span>
+                        </Link>
                     </div>
                 </div>
             </div>
+
         </div>
-    </ManageLayout>
+    </div>
 </template>

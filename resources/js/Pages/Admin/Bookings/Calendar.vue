@@ -7,6 +7,8 @@ import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
+defineOptions({ layout: ManageLayout })
+
 const props = defineProps({
     bookings: Array,
     buildings: Array,
@@ -82,34 +84,29 @@ function getPaymentBadge(status) {
 </script>
 
 <template>
-    <ManageLayout>
         <Head title="Booking Calendar - Admin" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-8">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <!-- Header -->
-                <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center justify-between mb-6">
                     <div>
-                        <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">
+                        <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">
                             Booking Calendar
                         </h1>
-                        <p class="text-lg text-gray-600 dark:text-gray-400">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                             Visual overview of all bookings
                         </p>
                     </div>
-
-                    <div class="flex items-center gap-3">
-                        <Link
-                            :href="route('manage.bookings.index')"
-                            class="px-6 py-3 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-full transition-all"
-                        >
-                            View List
-                        </Link>
-                    </div>
+                    <Link
+                        :href="route('manage.bookings.index')"
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        View List
+                    </Link>
                 </div>
 
                 <!-- Filters -->
-                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 mb-8">
+                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mb-8">
                     <div class="flex items-center gap-4">
                         <Filter class="w-5 h-5 text-gray-400" />
                         <select
@@ -145,7 +142,7 @@ function getPaymentBadge(status) {
                 </div>
 
                 <!-- Calendar -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 calendar-container">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 calendar-container">
                     <FullCalendar :options="calendarOptions" />
                 </div>
 
@@ -283,7 +280,6 @@ function getPaymentBadge(status) {
                 </Transition>
             </div>
         </div>
-    </ManageLayout>
 </template>
 
 <style>

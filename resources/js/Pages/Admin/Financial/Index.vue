@@ -9,6 +9,8 @@ import {
 import { usePage } from '@inertiajs/vue3'
 import { useFinancialVisibility } from '@/Composables/useFinancialVisibility';
 
+defineOptions({ layout: ManageLayout })
+
 const props = defineProps({
     pendingMaintenance: Array,
     pendingProcurement: Array,
@@ -145,40 +147,37 @@ const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-8
 </script>
 
 <template>
-    <ManageLayout>
         <Head title="Financials" />
 
         <div class="p-6 lg:p-8">
 
             <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                 <div>
-                    <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">Financials</h1>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Financials</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                         {{ formatDate(dateRange.start) }} — {{ formatDate(dateRange.end) }}
                     </p>
                 </div>
-                <button
-                    @click="toggle"
-                    class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-full transition-colors"
-                >
-                    <EyeOff v-if="financialsVisible" class="w-4 h-4" />
-                    <Eye v-else class="w-4 h-4" />
-                    {{ financialsVisible ? 'Hide figures' : 'Show figures' }}
-                </button>
                 <div class="flex items-center gap-2">
-                    <button @click="showManual = true"
-                            class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-sm font-medium hover:opacity-90 transition-all">
-                        <Plus class="w-4 h-4" />
-                        Log Transaction
+                    <button @click="toggle"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        <EyeOff v-if="financialsVisible" class="w-3.5 h-3.5" />
+                        <Eye v-else class="w-3.5 h-3.5" />
+                        {{ financialsVisible ? 'Hide figures' : 'Show figures' }}
                     </button>
                     <button @click="exportReport('csv')"
-                            class="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all">
-                        <Download class="w-4 h-4" /> CSV
+                            class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        <Download class="w-3.5 h-3.5" /> CSV
                     </button>
                     <button @click="exportReport('pdf')"
-                            class="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all">
-                        <FileText class="w-4 h-4" /> PDF
+                            class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        <FileText class="w-3.5 h-3.5" /> PDF
+                    </button>
+                    <button @click="showManual = true"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                        <Plus class="w-3.5 h-3.5" />
+                        Log Transaction
                     </button>
                 </div>
             </div>
@@ -266,15 +265,15 @@ const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-8
 
             <!-- ── Summary cards ── -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-2xl p-5">
+                <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-5">
                     <p class="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Total Income</p>
                     <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{{ financialsVisible ? formatAmount(summary.total_income) : '₦ ••••••' }}</p>
                 </div>
-                <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-2xl p-5">
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl p-5">
                     <p class="text-xs text-red-600 dark:text-red-400 mb-1">Total Expenses</p>
                     <p class="text-2xl font-bold text-red-700 dark:text-red-400">{{ financialsVisible ? formatAmount(summary.total_expenses) : '₦ ••••••' }}</p>
                 </div>
-                <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-5 bg-white dark:bg-gray-900">
+                <div class="border border-gray-200 dark:border-gray-800 rounded-xl p-5 bg-white dark:bg-gray-900">
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Net Profit</p>
                     <p class="text-2xl font-bold"
                        :class="summary.net_profit >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'">
@@ -289,7 +288,7 @@ const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-8
                         </span>
                     </div>
                 </div>
-                <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-2xl p-5 cursor-pointer"
+                <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-xl p-5 cursor-pointer"
                      @click="router.get(route('manage.financials.index'))">
                     <p class="text-xs text-amber-600 dark:text-amber-400 mb-1">Pending Payments</p>
                     <p class="text-2xl font-bold text-amber-700 dark:text-amber-400">{{ summary.pending_count }}</p>
@@ -559,6 +558,4 @@ const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-8
                 </div>
             </div>
         </Transition>
-
-    </ManageLayout>
 </template>
