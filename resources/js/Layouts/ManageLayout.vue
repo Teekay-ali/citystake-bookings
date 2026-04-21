@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Link, usePage } from '@inertiajs/vue3'
+import { Link, usePage, router } from '@inertiajs/vue3'
 import { useToast } from 'vue-toastification'
 import {
     LayoutDashboard, CalendarDays, Building2, Ban, BarChart3,
@@ -11,6 +11,7 @@ import {
 } from 'lucide-vue-next'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
+import { useFloating, offset, shift, flip } from '@floating-ui/vue'
 
 const toast = useToast()
 const { isDark, toggle: toggleDark } = useDarkMode()
@@ -19,17 +20,50 @@ const page = usePage()
 const user = computed(() => page.props.auth.user)
 const pendingCount = computed(() => page.props.lateCheckoutPendingCount ?? 0)
 
-const sidebarOpen = ref(false)       // mobile drawer
+const sidebarOpen = ref(false)
 const collapsed = ref(
     typeof window !== 'undefined'
         ? localStorage.getItem('sidebar-collapsed') === 'true'
         : false
 )
 
-
 function toggleCollapsed() {
     collapsed.value = !collapsed.value
     localStorage.setItem('sidebar-collapsed', collapsed.value)
+}
+
+// Sidebar scroll persistence
+const navRef = ref(null)
+
+watch(navRef, (el) => {
+    if (el) el.scrollTop = parseInt(localStorage.getItem('sidebar-scroll') ?? '0')
+})
+
+function saveScroll() {
+    if (navRef.value) localStorage.setItem('sidebar-scroll', navRef.value.scrollTop)
+}
+
+// Tooltip state
+const hoveredItem = ref(null)
+
+// Floating UI — one shared floating ref, positioned per hovered anchor
+const tooltipAnchor = ref(null)
+const tooltipEl = ref(null)
+
+const { floatingStyles } = useFloating(tooltipAnchor, tooltipEl, {
+    placement: 'right',
+    middleware: [offset(8), shift(), flip()],
+})
+
+function onMouseEnter(item, el) {
+    if (!collapsed.value) return
+    hoveredItem.value = item.label
+    tooltipAnchor.value = el
+}
+
+function onMouseLeave() {
+    hoveredItem.value = null
+    tooltipAnchor.value = null
 }
 
 watch(() => page.props.flash, (flash) => {
@@ -127,11 +161,10 @@ function canSeeItem(item) {
     if (!item.permission) return true
     return userPermissions.value.includes(item.permission)
 }
-
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
+    <div class="min-h-screen bg-white dark:bg-gray-950 flex">
 
         <!-- Mobile backdrop -->
         <Transition
@@ -146,108 +179,144 @@ function canSeeItem(item) {
                  class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" />
         </Transition>
 
+        <!-- Floating tooltip — rendered once, anchored to hovered item -->
+        <Transition
+            enter-active-class="transition-opacity duration-100"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition-opacity duration-75"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0">
+            <div v-if="hoveredItem"
+                 ref="tooltipEl"
+                 :style="floatingStyles"
+                 class="fixed z-[9999] px-2.5 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-medium rounded-lg whitespace-nowrap pointer-events-none">
+                {{ hoveredItem }}
+            </div>
+        </Transition>
+
         <!-- ─── Sidebar ─────────────────────────────────────────────── -->
         <aside
             :class="[
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 collapsed ? 'lg:w-16' : 'lg:w-64',
-                'fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 z-50 flex flex-col transition-all duration-300 lg:translate-x-0'
+                'fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0'
             ]">
 
-            <!-- Logo row -->
-            <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
-                <Link v-if="!collapsed" :href="route('home')" class="flex items-center gap-2 min-w-0">
-                    <!-- Logo div -->
-                    <div class="w-7 h-7 bg-gradient-to-br from-gray-800 to-gray-950 dark:from-white dark:to-gray-200 rounded-lg flex items-center justify-center shrink-0 shadow-sm">
+            <!-- Logo row — always h-16, logo always centered when collapsed -->
+            <div class="h-16 flex items-center justify-between px-4 shrink-0">
+                <Link :href="route('home')"
+                      :class="collapsed ? 'mx-auto' : ''"
+                      class="flex items-center gap-2 min-w-0">
+                    <div class="w-7 h-7 bg-gray-900 dark:bg-white rounded-lg flex items-center justify-center shrink-0">
                         <span class="text-white dark:text-gray-900 text-xs font-bold tracking-tight">CS</span>
                     </div>
-                    <span class="font-semibold text-gray-900 dark:text-white text-sm truncate">CityStake</span>
-                </Link>
-                <Link v-else :href="route('home')"
-                      class="w-7 h-7 bg-gray-900 dark:bg-white rounded-lg flex items-center justify-center mx-auto">
-                    <span class="text-white dark:text-gray-900 text-xs font-bold">CS</span>
+                    <span v-if="!collapsed" class="font-semibold text-gray-900 dark:text-white text-sm truncate">CityStake</span>
                 </Link>
 
-                <!-- Close button mobile / collapse button desktop -->
+                <!-- Mobile close button -->
                 <button @click="sidebarOpen = false"
                         class="lg:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <X class="w-5 h-5" />
                 </button>
+
+                <!-- Desktop collapse button — only shown when expanded -->
+                <button v-if="!collapsed"
+                        @click="toggleCollapsed()"
+                        :aria-expanded="!collapsed"
+                        aria-label="Toggle sidebar"
+                        class="hidden lg:flex p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    <ChevronLeft class="w-4 h-4" />
+                </button>
+            </div>
+
+            <!-- Expand button — only shown when collapsed, sits below logo in its own row -->
+            <div v-if="collapsed"
+                 class="hidden lg:flex justify-center pb-2 shrink-0">
                 <button
                     @click="toggleCollapsed()"
-                    :aria-expanded="!collapsed"
-                    aria-label="Toggle sidebar"
-                    class="hidden lg:flex p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                    <ChevronLeft v-if="!collapsed" class="w-4 h-4" />
-                    <ChevronRight v-else class="w-4 h-4" />
+                    aria-label="Expand sidebar"
+                    class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    <ChevronRight class="w-4 h-4" />
                 </button>
             </div>
 
             <!-- Nav items -->
-            <nav class="flex-1 overflow-y-auto py-4 px-2">
+            <nav ref="navRef" @scroll="saveScroll" class="flex-1 overflow-y-auto py-4 px-2">
                 <template v-for="group in navGroups" :key="group.label">
                     <div v-if="group.items.some(item => canSeeItem(item) && !item.soon)" class="mb-4">
 
-                    <!-- Group label — hidden when collapsed -->
-                    <p v-if="!collapsed"
-                       class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 mb-1">
-                        {{ group.label }}
-                    </p>
-                    <!-- Divider when collapsed -->
-                    <div v-else class="border-t border-gray-100 dark:border-gray-800 mx-2 mb-2" />
+                        <!-- Group label — reduced weight so nav items lead visually -->
+                        <p v-if="!collapsed"
+                           class="text-xs font-medium text-gray-300 dark:text-gray-600 uppercase tracking-wider px-3 mb-1">
+                            {{ group.label }}
+                        </p>
+                        <!-- Divider when collapsed -->
+                        <div v-else class="border-t border-gray-100 dark:border-gray-800 mx-2 mb-2" />
 
-                    <div class="space-y-0.5">
-                        <template v-for="item in group.items" :key="item.label">
-                            <template v-if="canSeeItem(item)">
-                                <!-- Soon (disabled) -->
-                                <div v-if="item.soon"
-                                     :title="collapsed ? item.label : ''"
-                                     :class="collapsed ? 'justify-center px-0' : 'px-3'"
-                                     class="flex items-center gap-3 py-2 rounded-lg text-sm text-gray-300 dark:text-gray-600 cursor-not-allowed">
-                                    <component :is="item.icon" class="w-4 h-4 shrink-0" />
-                                    <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
-                                    <span v-if="!collapsed"
-                                          class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 px-1.5 py-0.5 rounded-full">
-                                        Soon
-                                    </span>
-                                </div>
+                        <div class="space-y-0.5">
+                            <template v-for="item in group.items" :key="item.label">
+                                <template v-if="canSeeItem(item)">
 
-                                <!-- Active nav link -->
-                                <Link v-else
-                                      :href="route(item.route)"
-                                      :title="collapsed ? item.label : ''"
-                                      @click="sidebarOpen = false"
-                                      :class="[
-                                        isActive(item.match)
-                                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border-l-2 border-gray-900 dark:border-white'
-                                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-                                        collapsed ? 'justify-center px-0' : 'px-3'
-                                    ]"
-                                      class="relative flex items-center gap-3 py-2 rounded-lg text-sm font-medium transition-all">
-                                    <component :is="item.icon" class="w-4 h-4 shrink-0" />
-                                    <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
-                                    <span v-if="!collapsed && item.badge && item.badge > 0"
-                                          class="bg-amber-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center">
-                                        {{ item.badge }}
-                                    </span>
-                                    <!-- Collapsed badge dot -->
-                                    <span v-if="collapsed && item.badge && item.badge > 0"
-                                          class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
-                                </Link>
+                                    <!-- Soon (disabled) -->
+                                    <div v-if="item.soon"
+                                         :class="collapsed ? 'justify-center px-0' : 'px-3'"
+                                         class="flex items-center gap-2.5 py-2 rounded-lg text-sm text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                         @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
+                                         @mouseleave="onMouseLeave">
+                                        <span class="w-6 h-6 flex items-center justify-center shrink-0">
+                                            <component :is="item.icon" class="w-4 h-4" />
+                                        </span>
+                                        <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
+                                        <span v-if="!collapsed"
+                                              class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 px-1.5 py-0.5 rounded-full">
+                                            Soon
+                                        </span>
+                                    </div>
+
+                                    <!-- Active nav link — filled icon box replaces left border -->
+                                    <Link v-else
+                                          :href="route(item.route)"
+                                          @click="sidebarOpen = false"
+                                          @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
+                                          @mouseleave="onMouseLeave"
+                                          :class="[
+                                              isActive(item.match)
+                                                  ? 'bg-gray-100 dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium'
+                                                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
+                                              collapsed ? 'justify-center px-0' : 'px-3'
+                                          ]"
+                                          class="relative flex items-center gap-2.5 py-2 rounded-lg text-sm transition-all">
+                                        <span :class="isActive(item.match)
+                                            ? 'w-6 h-6 bg-gray-900 dark:bg-white rounded-md flex items-center justify-center shrink-0'
+                                            : 'w-6 h-6 flex items-center justify-center shrink-0'">
+                                            <component :is="item.icon"
+                                                       :class="isActive(item.match) ? 'w-3.5 h-3.5 text-white dark:text-gray-900' : 'w-4 h-4'" />
+                                        </span>
+                                        <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
+                                        <span v-if="!collapsed && item.badge && item.badge > 0"
+                                              class="bg-amber-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center">
+                                            {{ item.badge }}
+                                        </span>
+                                        <!-- Collapsed badge dot -->
+                                        <span v-if="collapsed && item.badge && item.badge > 0"
+                                              class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                                    </Link>
+
+                                </template>
                             </template>
-                        </template>
+                        </div>
                     </div>
-                </div>
                 </template>
             </nav>
 
-            <!-- User footer -->
-            <div class="border-t border-gray-200 dark:border-gray-800 p-2 shrink-0 overflow-visible relative">
+            <!-- User footer — card container + square avatar -->
+            <div class="p-2 shrink-0 overflow-visible relative">
                 <div :class="collapsed ? 'flex-col items-center' : 'items-center gap-3 px-2'"
-                     class="flex py-2">
+                     class="flex py-2 bg-gray-100 dark:bg-gray-800/50 rounded-xl">
 
-                    <!-- Avatar -->
-                    <div class="w-8 h-8 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center shrink-0">
+                    <!-- Avatar — rounded square -->
+                    <div class="w-8 h-8 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center shrink-0">
                         <span class="text-white dark:text-gray-900 text-xs font-medium">
                             {{ user?.name?.charAt(0)?.toUpperCase() }}
                         </span>
@@ -266,7 +335,7 @@ function canSeeItem(item) {
                         <NotificationBell dropdown-direction="up" />
                         <button @click="toggleDark"
                                 :title="isDark ? 'Light mode' : 'Dark mode'"
-                                class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                                class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
                             <Sun v-if="isDark" class="w-4 h-4" />
                             <Moon v-else class="w-4 h-4" />
                         </button>
@@ -288,7 +357,7 @@ function canSeeItem(item) {
             class="flex-1 flex flex-col min-w-0 transition-all duration-300">
 
             <!-- Mobile top bar -->
-            <header class="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 lg:hidden shrink-0 sticky top-0 z-30">
+            <header class="h-16 bg-white dark:bg-gray-900 flex items-center justify-between px-4 lg:hidden shrink-0 sticky top-0 z-30">
                 <button @click="sidebarOpen = true"
                         class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <Menu class="w-5 h-5" />
