@@ -18,6 +18,7 @@ class BookingCalendarController extends Controller
         $buildings = $this->accessibleBuildings()->get();
 
         $user = auth()->user();
+
         $bookings = Booking::with(['building', 'unitType', 'unit'])
             ->when(!$user->hasGlobalAccess(), function ($query) use ($user) {
                 $query->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
@@ -36,6 +37,7 @@ class BookingCalendarController extends Controller
                     'backgroundColor' => $this->getBookingColor($booking),
                     'borderColor' => $this->getBookingColor($booking),
                     'extendedProps' => [
+                        'id' => $booking->id,
                         'booking_reference' => $booking->booking_reference,
                         'guest_name' => $booking->guest_name,
                         'property' => $booking->building->name,

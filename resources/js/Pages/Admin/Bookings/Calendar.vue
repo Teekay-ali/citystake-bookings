@@ -1,11 +1,15 @@
 <script setup>
-import ManageLayout from '@/Layouts/ManageLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
-import { Calendar, Filter, Eye, X } from 'lucide-vue-next';
-import FullCalendar from '@fullcalendar/vue3';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import ManageLayout from '@/Layouts/ManageLayout.vue'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { ref, computed, watch } from 'vue'
+import {
+    Filter, Eye, X, CalendarDays, Users, CheckCircle2,
+    Clock, XCircle, TrendingUp, LogIn, LogOut, ChevronRight,
+    AlertCircle, Building2
+} from 'lucide-vue-next'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
 
 defineOptions({ layout: ManageLayout })
 
@@ -13,373 +17,494 @@ const props = defineProps({
     bookings: Array,
     buildings: Array,
     filters: Object,
-});
+})
 
-const buildingFilter = ref(props.filters.building_id || '');
-const selectedEvent = ref(null);
-const showEventModal = ref(false);
+const buildingFilter = ref(props.filters.building_id || '')
+const selectedEvent  = ref(null)
+const showEventModal = ref(false)
+
+// ── Derived stats ────────────────────────────────────────────────────────────
+
+const today = new Date()
+today.setHours(0, 0, 0, 0)
+
+const todayStr = today.toISOString().split('T')[0]
+
+const stats = computed(() => {
+    const all       = props.bookings
+    const confirmed = all.filter(b => b.extendedProps.status === 'confirmed')
+    const pending   = all.filter(b => b.extendedProps.payment_status === 'pending')
+    const completed = all.filter(b => b.extendedProps.status === 'completed')
+
+    // Current month
+    const now        = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+    const thisMonth  = all.filter(b => b.start >= monthStart && b.start <= monthEnd)
+
+    const revenue = confirmed.reduce((sum, b) => sum + Number(b.extendedProps.total_amount || 0), 0)
+
+    return {
+        total:     all.length,
+        confirmed: confirmed.length,
+        pending:   pending.length,
+        completed: completed.length,
+        thisMonth: thisMonth.length,
+        revenue,
+    }
+})
+
+const todayArrivals = computed(() =>
+    props.bookings.filter(b => b.start === todayStr && b.extendedProps.status === 'confirmed')
+)
+
+const todayDepartures = computed(() => {
+    // FullCalendar end dates are exclusive (day after checkout), so subtract 1 day
+    return props.bookings.filter(b => {
+        if (!b.end) return false
+        const endDate = new Date(b.end)
+        endDate.setDate(endDate.getDate() - 1)
+        return endDate.toISOString().split('T')[0] === todayStr
+            && b.extendedProps.status === 'confirmed'
+    })
+})
+
+// ── Calendar config ──────────────────────────────────────────────────────────
 
 const calendarOptions = {
-    plugins: [dayGridPlugin, interactionPlugin],
+    plugins:     [dayGridPlugin, interactionPlugin],
     initialView: 'dayGridMonth',
     headerToolbar: {
-        left: 'prev,next today',
+        left:   'prev,next today',
         center: 'title',
-        right: 'dayGridMonth,dayGridWeek'
+        right:  'dayGridMonth,dayGridWeek',
     },
-    events: props.bookings,
-    eventClick: handleEventClick,
-    height: 'auto',
-    eventDisplay: 'block',
-    eventTimeFormat: {
-        hour: '2-digit',
-        minute: '2-digit',
-        meridiem: false
-    },
-};
+    events:           props.bookings,
+    eventClick:       handleEventClick,
+    height:           'auto',
+    eventDisplay:     'block',
+    eventTimeFormat:  { hour: '2-digit', minute: '2-digit', meridiem: false },
+    dayMaxEvents:     3,
+}
 
-watch(buildingFilter, (newValue) => {
-    router.get(route('manage.bookings.calendar'), {
-        building_id: newValue,
-    }, {
+watch(buildingFilter, (val) => {
+    router.get(route('manage.bookings.calendar'), { building_id: val }, {
         preserveState: true,
         replace: true,
-    });
-});
+    })
+})
 
 function handleEventClick(info) {
-    selectedEvent.value = info.event;
-    showEventModal.value = true;
+    selectedEvent.value  = info.event
+    showEventModal.value = true
 }
 
 function closeModal() {
-    showEventModal.value = false;
-    selectedEvent.value = null;
+    showEventModal.value = false
+    selectedEvent.value  = null
 }
 
-function formatPrice(price) {
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatPrice(n) {
     return new Intl.NumberFormat('en-NG', {
-        style: 'currency',
-        currency: 'NGN',
+        style:                 'currency',
+        currency:              'NGN',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-    }).format(price);
+    }).format(n)
+}
+
+function formatDate(d) {
+    return new Date(d).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+    })
 }
 
 function getStatusBadge(status) {
-    const badges = {
-        'confirmed': 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800',
-        'pending': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800',
-        'cancelled': 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800',
-        'completed': 'bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-800',
-    };
-    return badges[status] || badges['confirmed'];
+    const map = {
+        confirmed: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800',
+        pending:   'bg-amber-50  dark:bg-amber-900/20  text-amber-700  dark:text-amber-400  border border-amber-200  dark:border-amber-800',
+        cancelled: 'bg-red-50    dark:bg-red-900/20    text-red-700    dark:text-red-400    border border-red-200    dark:border-red-800',
+        completed: 'bg-gray-50   dark:bg-gray-900/20  text-gray-600   dark:text-gray-400   border border-gray-200   dark:border-gray-800',
+    }
+    return map[status] ?? map.confirmed
 }
 
 function getPaymentBadge(status) {
     return status === 'paid'
-        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
-        : 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800';
+        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+        : 'bg-amber-50  dark:bg-amber-900/20  text-amber-700  dark:text-amber-400  border border-amber-200  dark:border-amber-800'
 }
+
+function capitalise(s) {
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
+}
+
+// Is today the check-in date for a selected booking?
+const canCheckIn = computed(() => {
+    if (!selectedEvent.value) return false
+    return selectedEvent.value.startStr === todayStr
+        && selectedEvent.value.extendedProps.status === 'confirmed'
+})
 </script>
 
 <template>
-        <Head title="Booking Calendar - Admin" />
+    <Head title="Booking Calendar" />
 
-        <div class="bg-white dark:bg-gray-950 min-h-screen py-8">
-            <div class="max-w-7xl mx-auto px-6 lg:px-8">
-                <!-- Header -->
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">
-                            Booking Calendar
-                        </h1>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            Visual overview of all bookings
-                        </p>
+    <div class="bg-white dark:bg-gray-950 min-h-screen">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+
+            <!-- ── Header ───────────────────────────────────────────── -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">
+                        Booking Calendar
+                    </h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        Visual overview of all bookings
+                    </p>
+                </div>
+                <Link :href="route('manage.bookings.index')"
+                      class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                    View List
+                </Link>
+            </div>
+
+            <!-- ── Stat cards ────────────────────────────────────────── -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+
+                <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Confirmed</p>
+                        <CheckCircle2 class="w-4 h-4 text-emerald-500" />
                     </div>
-                    <Link
-                        :href="route('manage.bookings.index')"
-                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                        View List
-                    </Link>
+                    <p class="text-2xl font-semibold text-emerald-700 dark:text-emerald-300">{{ stats.confirmed }}</p>
+                    <p class="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-0.5">active bookings</p>
                 </div>
 
-                <!-- Filters -->
-                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mb-8">
-                    <div class="flex items-center gap-4">
-                        <Filter class="w-5 h-5 text-gray-400" />
-                        <select
-                            v-model="buildingFilter"
-                            class="px-4 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
-                        >
-                            <option value="">All Properties</option>
-                            <option v-for="building in buildings" :key="building.id" :value="building.id">
-                                {{ building.name }}
-                            </option>
-                        </select>
+                <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Pending</p>
+                        <AlertCircle class="w-4 h-4 text-amber-500" />
+                    </div>
+                    <p class="text-2xl font-semibold text-amber-700 dark:text-amber-300">{{ stats.pending }}</p>
+                    <p class="text-xs text-amber-600/70 dark:text-amber-400/70 mt-0.5">awaiting payment</p>
+                </div>
 
-                        <!-- Legend -->
-                        <div class="flex-1 flex items-center justify-end gap-6 text-sm">
-                            <div class="flex items-center gap-2">
-                                <div class="w-4 h-4 bg-green-500 rounded"></div>
-                                <span class="text-gray-600 dark:text-gray-400">Confirmed</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-4 h-4 bg-yellow-500 rounded"></div>
-                                <span class="text-gray-600 dark:text-gray-400">Pending Payment</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-4 h-4 bg-gray-500 rounded"></div>
-                                <span class="text-gray-600 dark:text-gray-400">Completed</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-4 h-4 bg-red-500 rounded"></div>
-                                <span class="text-gray-600 dark:text-gray-400">Cancelled</span>
-                            </div>
+                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">This Month</p>
+                        <CalendarDays class="w-4 h-4 text-gray-400" />
+                    </div>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.thisMonth }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">bookings</p>
+                </div>
+
+                <div class="bg-gray-900 dark:bg-white border border-gray-800 dark:border-gray-200 rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Revenue</p>
+                        <TrendingUp class="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <p class="text-lg font-semibold text-white dark:text-gray-900 leading-tight">
+                        {{ formatPrice(stats.revenue) }}
+                    </p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">confirmed total</p>
+                </div>
+
+            </div>
+
+            <!-- ── Today's snapshot + filter row ────────────────────── -->
+            <div class="flex flex-col lg:flex-row gap-4 mb-6">
+
+                <!-- Today's arrivals -->
+                <div class="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <LogIn class="w-4 h-4 text-emerald-500" />
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            Today's Arrivals
+                        </span>
+                        <span class="ml-auto text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+                            {{ todayArrivals.length }}
+                        </span>
+                    </div>
+                    <div v-if="todayArrivals.length" class="space-y-2">
+                        <div v-for="b in todayArrivals.slice(0, 3)" :key="b.id"
+                             class="flex items-center justify-between text-sm">
+                            <span class="text-gray-900 dark:text-white font-medium truncate max-w-[60%]">
+                                {{ b.extendedProps.guest_name }}
+                            </span>
+                            <span class="text-gray-500 dark:text-gray-400 text-xs">
+                                Unit {{ b.extendedProps.unit_number }}
+                            </span>
+                        </div>
+                        <p v-if="todayArrivals.length > 3" class="text-xs text-gray-400 dark:text-gray-500">
+                            +{{ todayArrivals.length - 3 }} more
+                        </p>
+                    </div>
+                    <p v-else class="text-sm text-gray-400 dark:text-gray-500">No arrivals today</p>
+                </div>
+
+                <!-- Today's departures -->
+                <div class="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <LogOut class="w-4 h-4 text-gray-400" />
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            Today's Departures
+                        </span>
+                        <span class="ml-auto text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full font-medium">
+                            {{ todayDepartures.length }}
+                        </span>
+                    </div>
+                    <div v-if="todayDepartures.length" class="space-y-2">
+                        <div v-for="b in todayDepartures.slice(0, 3)" :key="b.id"
+                             class="flex items-center justify-between text-sm">
+                            <span class="text-gray-900 dark:text-white font-medium truncate max-w-[60%]">
+                                {{ b.extendedProps.guest_name }}
+                            </span>
+                            <span class="text-gray-500 dark:text-gray-400 text-xs">
+                                Unit {{ b.extendedProps.unit_number }}
+                            </span>
+                        </div>
+                        <p v-if="todayDepartures.length > 3" class="text-xs text-gray-400 dark:text-gray-500">
+                            +{{ todayDepartures.length - 3 }} more
+                        </p>
+                    </div>
+                    <p v-else class="text-sm text-gray-400 dark:text-gray-500">No departures today</p>
+                </div>
+
+                <!-- Filter + legend -->
+                <div class="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <Filter class="w-4 h-4 text-gray-400" />
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">Filter</span>
+                    </div>
+                    <select v-model="buildingFilter"
+                            class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white mb-3">
+                        <option value="">All Properties</option>
+                        <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                    </select>
+                    <!-- Legend -->
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                            <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 shrink-0"></span> Confirmed
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                            <span class="w-2.5 h-2.5 rounded-sm bg-amber-500 shrink-0"></span> Pending
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                            <span class="w-2.5 h-2.5 rounded-sm bg-gray-500 shrink-0"></span> Completed
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                            <span class="w-2.5 h-2.5 rounded-sm bg-red-500 shrink-0"></span> Cancelled
                         </div>
                     </div>
                 </div>
 
-                <!-- Calendar -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 calendar-container">
-                    <FullCalendar :options="calendarOptions" />
-                </div>
-
-                <!-- Event Details Modal -->
-                <Transition
-                    enter-active-class="transition ease-out duration-200"
-                    enter-from-class="opacity-0"
-                    enter-to-class="opacity-100"
-                    leave-active-class="transition ease-in duration-150"
-                    leave-from-class="opacity-100"
-                    leave-to-class="opacity-0"
-                >
-                    <div
-                        v-if="showEventModal && selectedEvent"
-                        class="fixed inset-0 z-50 overflow-y-auto px-4 py-6 sm:px-0 flex items-center justify-center"
-                        @click="closeModal"
-                    >
-                        <!-- Backdrop -->
-                        <div class="fixed inset-0 bg-gray-900/75 dark:bg-gray-950/90 backdrop-blur-sm"></div>
-
-                        <!-- Modal -->
-                        <Transition
-                            enter-active-class="transition ease-out duration-200"
-                            enter-from-class="opacity-0 scale-95"
-                            enter-to-class="opacity-100 scale-100"
-                            leave-active-class="transition ease-in duration-150"
-                            leave-from-class="opacity-100 scale-100"
-                            leave-to-class="opacity-0 scale-95"
-                        >
-                            <div
-                                v-if="showEventModal && selectedEvent"
-                                class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 p-8 max-w-lg w-full mx-4"
-                                @click.stop
-                            >
-                                <!-- Close Button -->
-                                <button
-                                    @click="closeModal"
-                                    class="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                                >
-                                    <X class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                                </button>
-
-                                <!-- Header -->
-                                <div class="mb-6">
-                                    <h3 class="text-2xl font-medium text-gray-900 dark:text-white mb-2">
-                                        Booking Details
-                                    </h3>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 font-mono">
-                                        {{ selectedEvent.extendedProps.booking_reference }}
-                                    </p>
-                                </div>
-
-                                <!-- Details -->
-                                <div class="space-y-4 mb-6">
-                                    <div>
-                                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Guest</label>
-                                        <p class="text-lg font-medium text-gray-900 dark:text-white mt-1">
-                                            {{ selectedEvent.extendedProps.guest_name }}
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Property</label>
-                                        <p class="text-sm text-gray-900 dark:text-white mt-1">
-                                            {{ selectedEvent.extendedProps.property }}
-                                        </p>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                                            {{ selectedEvent.extendedProps.unit_type }} - Unit {{ selectedEvent.extendedProps.unit_number }}
-                                        </p>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check-in</label>
-                                            <p class="text-sm text-gray-900 dark:text-white mt-1">
-                                                {{ new Date(selectedEvent.start).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) }}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check-out</label>
-                                            <p class="text-sm text-gray-900 dark:text-white mt-1">
-                                                {{ new Date(selectedEvent.end).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) }}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Guests</label>
-                                            <p class="text-sm text-gray-900 dark:text-white mt-1">
-                                                {{ selectedEvent.extendedProps.guests }}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</label>
-                                            <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
-                                                {{ formatPrice(selectedEvent.extendedProps.total_amount) }}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div class="flex gap-4">
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</label>
-                                            <div class="mt-2">
-                                                <span :class="getStatusBadge(selectedEvent.extendedProps.status)" class="inline-flex px-3 py-1 rounded-full text-xs font-medium">
-                                                    {{ selectedEvent.extendedProps.status.charAt(0).toUpperCase() + selectedEvent.extendedProps.status.slice(1) }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment</label>
-                                            <div class="mt-2">
-                                                <span :class="getPaymentBadge(selectedEvent.extendedProps.payment_status)" class="inline-flex px-3 py-1 rounded-full text-xs font-medium">
-                                                    {{ selectedEvent.extendedProps.payment_status.charAt(0).toUpperCase() + selectedEvent.extendedProps.payment_status.slice(1) }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Actions -->
-                                <div class="flex gap-3">
-                                    <Link
-                                        :href="route('manage.bookings.show', selectedEvent.extendedProps.booking_reference)"
-                                        class="flex-1 px-6 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-xl transition-all flex items-center justify-center"
-                                    >
-                                        <Eye class="w-4 h-4 mr-2" />
-                                        View Full Details
-                                    </Link>
-                                </div>
-                            </div>
-                        </Transition>
-                    </div>
-                </Transition>
             </div>
+
+            <!-- ── Calendar ──────────────────────────────────────────── -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 calendar-container">
+                <FullCalendar :options="calendarOptions" />
+            </div>
+
         </div>
+    </div>
+
+    <!-- ── Event detail modal ────────────────────────────────────────── -->
+    <Transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0">
+
+        <div v-if="showEventModal && selectedEvent"
+             class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+             @click.self="closeModal">
+
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0 translate-y-4 sm:scale-95"
+                enter-to-class="opacity-100 translate-y-0 sm:scale-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0 translate-y-4 sm:scale-95">
+
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+
+                    <!-- Modal header — coloured by booking status -->
+                    <div class="px-5 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800 flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span :class="getStatusBadge(selectedEvent.extendedProps.status)"
+                                      class="text-xs font-medium px-2 py-0.5 rounded-full">
+                                    {{ capitalise(selectedEvent.extendedProps.status) }}
+                                </span>
+                                <span :class="getPaymentBadge(selectedEvent.extendedProps.payment_status)"
+                                      class="text-xs font-medium px-2 py-0.5 rounded-full">
+                                    {{ capitalise(selectedEvent.extendedProps.payment_status) }}
+                                </span>
+                            </div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate">
+                                {{ selectedEvent.extendedProps.guest_name }}
+                            </h3>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">
+                                {{ selectedEvent.extendedProps.booking_reference }}
+                            </p>
+                        </div>
+                        <button @click="closeModal"
+                                class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all shrink-0">
+                            <X class="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <!-- Modal body -->
+                    <div class="px-5 py-4 space-y-4">
+
+                        <!-- Property info -->
+                        <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                            <Building2 class="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ selectedEvent.extendedProps.property }}
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ selectedEvent.extendedProps.unit_type }} · Unit {{ selectedEvent.extendedProps.unit_number }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Dates + guests -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Check-in</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white leading-tight">
+                                    {{ formatDate(selectedEvent.start) }}
+                                </p>
+                            </div>
+                            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Check-out</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white leading-tight">
+                                    <!-- FullCalendar end is exclusive; subtract 1 day for display -->
+                                    {{ (() => { const d = new Date(selectedEvent.end); d.setDate(d.getDate() - 1); return formatDate(d) })() }}
+                                </p>
+                            </div>
+                            <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Guests</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-1">
+                                    <Users class="w-3.5 h-3.5 text-gray-400" />
+                                    {{ selectedEvent.extendedProps.guests }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Amount -->
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                            <span class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider">Total Amount</span>
+                            <span class="text-base font-semibold text-gray-900 dark:text-white">
+                                {{ formatPrice(selectedEvent.extendedProps.total_amount) }}
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <!-- Modal footer actions -->
+                    <div class="px-5 pb-5 flex gap-2">
+
+                        <!-- Check-in shortcut: only shows if today is check-in day -->
+                        <Link v-if="canCheckIn"
+                              :href="route('manage.bookings.check-in', selectedEvent.id)"
+                              method="post"
+                              as="button"
+                              class="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all flex items-center justify-center gap-2">
+                            <CheckCircle2 class="w-4 h-4" />
+                            Check In
+                        </Link>
+
+                        <!-- Always: view full details -->
+                        <Link :href="route('manage.bookings.show', selectedEvent.id)"
+                              class="flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium rounded-xl transition-all flex items-center justify-center gap-2">
+                            <Eye class="w-4 h-4" />
+                            View Details
+                        </Link>
+
+                    </div>
+
+                </div>
+            </Transition>
+        </div>
+    </Transition>
 </template>
 
 <style>
-/* FullCalendar Styling */
-.calendar-container :deep(.fc) {
-    font-family: inherit;
-}
+.calendar-container :deep(.fc) { font-family: inherit; }
 
-.calendar-container :deep(.fc-theme-standard .fc-scrollgrid) {
-    border-color: rgb(229 231 235 / var(--tw-border-opacity));
-}
-
-.dark .calendar-container :deep(.fc-theme-standard .fc-scrollgrid) {
-    border-color: rgb(31 41 55 / var(--tw-border-opacity));
-}
-
+.calendar-container :deep(.fc-theme-standard .fc-scrollgrid),
 .calendar-container :deep(.fc-theme-standard td),
 .calendar-container :deep(.fc-theme-standard th) {
-    border-color: rgb(229 231 235 / var(--tw-border-opacity));
+    border-color: rgb(229 231 235);
 }
-
+.dark .calendar-container :deep(.fc-theme-standard .fc-scrollgrid),
 .dark .calendar-container :deep(.fc-theme-standard td),
 .dark .calendar-container :deep(.fc-theme-standard th) {
-    border-color: rgb(31 41 55 / var(--tw-border-opacity));
-}
-
-.calendar-container :deep(.fc .fc-daygrid-day-number) {
-    color: rgb(17 24 39 / var(--tw-text-opacity));
-}
-
-.dark .calendar-container :deep(.fc .fc-daygrid-day-number) {
-    color: rgb(255 255 255 / var(--tw-text-opacity));
-}
-
-.calendar-container :deep(.fc .fc-col-header-cell-cushion) {
-    color: rgb(107 114 128 / var(--tw-text-opacity));
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-}
-
-.dark .calendar-container :deep(.fc .fc-col-header-cell-cushion) {
-    color: rgb(156 163 175 / var(--tw-text-opacity));
-}
-
-.calendar-container :deep(.fc .fc-button-primary) {
-    background-color: rgb(17 24 39);
-    border-color: rgb(17 24 39);
-    color: white;
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    border-radius: 0.75rem;
-}
-
-.dark .calendar-container :deep(.fc .fc-button-primary) {
-    background-color: white;
-    border-color: white;
-    color: rgb(17 24 39);
-}
-
-.calendar-container :deep(.fc .fc-button-primary:hover) {
-    background-color: rgb(31 41 55);
     border-color: rgb(31 41 55);
 }
 
-.dark .calendar-container :deep(.fc .fc-button-primary:hover) {
-    background-color: rgb(243 244 246);
-    border-color: rgb(243 244 246);
+.calendar-container :deep(.fc-col-header-cell-cushion),
+.calendar-container :deep(.fc-daygrid-day-number) {
+    color: rgb(107 114 128);
+    text-decoration: none;
+    font-size: 0.8rem;
+}
+.dark .calendar-container :deep(.fc-col-header-cell-cushion),
+.dark .calendar-container :deep(.fc-daygrid-day-number) {
+    color: rgb(156 163 175);
 }
 
-.calendar-container :deep(.fc .fc-button-primary:not(:disabled).fc-button-active) {
+.calendar-container :deep(.fc-daygrid-day.fc-day-today) {
+    background-color: rgb(249 250 251);
+}
+.dark .calendar-container :deep(.fc-daygrid-day.fc-day-today) {
     background-color: rgb(17 24 39);
-    border-color: rgb(17 24 39);
 }
 
-.dark .calendar-container :deep(.fc .fc-button-primary:not(:disabled).fc-button-active) {
-    background-color: white;
-    border-color: white;
+.calendar-container :deep(.fc-button-primary) {
+    background-color: rgb(17 24 39) !important;
+    border-color: rgb(17 24 39) !important;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 0.5rem !important;
+}
+.dark .calendar-container :deep(.fc-button-primary) {
+    background-color: rgb(255 255 255) !important;
+    border-color: rgb(255 255 255) !important;
+    color: rgb(17 24 39) !important;
 }
 
-.calendar-container :deep(.fc-daygrid-event) {
-    padding: 2px 4px;
-    margin: 1px 2px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    cursor: pointer;
-}
-
-.calendar-container :deep(.fc-event-title) {
-    font-weight: 500;
+.calendar-container :deep(.fc-button-primary:disabled) {
+    opacity: 0.4 !important;
 }
 
 .calendar-container :deep(.fc-toolbar-title) {
-    font-size: 1.5rem;
-    font-weight: 300;
+    font-size: 1rem !important;
+    font-weight: 600;
     color: rgb(17 24 39);
 }
-
 .dark .calendar-container :deep(.fc-toolbar-title) {
-    color: white;
+    color: rgb(255 255 255);
+}
+
+.calendar-container :deep(.fc-event) {
+    border-radius: 4px !important;
+    font-size: 0.7rem !important;
+    padding: 1px 4px !important;
+    cursor: pointer;
+}
+
+.calendar-container :deep(.fc-daygrid-more-link) {
+    font-size: 0.7rem;
+    color: rgb(107 114 128);
 }
 </style>
