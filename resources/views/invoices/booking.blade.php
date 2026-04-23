@@ -5,7 +5,7 @@
     <title>Invoice {{ $booking->booking_reference }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 13px; color: #111827; background: #fff; padding: 48px; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 13px; color: #111827; background: #fff; padding: 48px; }
 
         .header { display: table; width: 100%; margin-bottom: 40px; }
         .header-left { display: table-cell; vertical-align: top; }
