@@ -37,6 +37,7 @@ class Booking extends Model
         'payment_status',
         'payment_method',
         'paystack_reference',
+        'monnify_reference',
         'payment_reference',
         'paid_at',
         'special_requests',

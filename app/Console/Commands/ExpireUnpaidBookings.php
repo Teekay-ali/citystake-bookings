@@ -13,12 +13,10 @@ class ExpireUnpaidBookings extends Command
     protected $signature = 'bookings:expire-unpaid';
     protected $description = 'Cancel bookings that were never paid within the hold window';
 
-    // Minutes a pending booking is held before being released
-    const HOLD_MINUTES = 30;
-
     public function handle(): void
     {
-        $cutoff = now()->subMinutes(self::HOLD_MINUTES);
+        $holdMinutes = config('booking.payment_hold_minutes', 30);
+        $cutoff      = now()->subMinutes($holdMinutes);
 
         $expired = Booking::where('payment_status', 'pending')
             ->where('status', 'pending')
@@ -36,7 +34,7 @@ class ExpireUnpaidBookings extends Command
             $booking->update([
                 'status'              => 'cancelled',
                 'cancelled_at'        => now(),
-                'cancellation_reason' => 'Automatically cancelled — payment not completed within ' . self::HOLD_MINUTES . ' minutes.',
+                'cancellation_reason' => "Automatically cancelled — payment not completed within {$holdMinutes} minutes.",
             ]);
 
             $count++;

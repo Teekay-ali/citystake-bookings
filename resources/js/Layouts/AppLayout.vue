@@ -20,43 +20,15 @@ const props = defineProps({
     },
 });
 
-// Show flash messages on mount
-onMounted(() => {
-    const flash = page.props.flash;
+function handleFlash(flash) {
+    if (flash?.success) toast.success(flash.success)
+    if (flash?.error)   toast.error(flash.error)
+    if (flash?.info)    toast.info(flash.info)
+    if (flash?.warning) toast.warning(flash.warning)
+}
 
-    if (flash?.success) {
-        toast.success(flash.success);
-    }
-    if (flash?.error) {
-        toast.error(flash.error);
-    }
-    if (flash?.info) {
-        toast.info(flash.info);
-    }
-    if (flash?.warning) {
-        toast.warning(flash.warning);
-    }
-});
-
-// Also watch for changes (for SPA navigation)
-watch(
-    () => page.props.flash,
-    (flash) => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
-        if (flash?.info) {
-            toast.info(flash.info);
-        }
-        if (flash?.warning) {
-            toast.warning(flash.warning);
-        }
-    },
-    { deep: true }
-);
+onMounted(() => handleFlash(page.props.flash))
+watch(() => page.props.flash, handleFlash, { deep: true })
 
 // Cookie settings function
 const openCookieSettings = () => {
@@ -111,7 +83,7 @@ const openCookieSettings = () => {
                             <Link
                                 v-if="$page.props.auth.user.is_admin || $page.props.auth.user.is_staff"
                                 :href="route('manage.dashboard')"
-                                class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-full hover:opacity-90 transition-all"
+                                class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:opacity-90 transition-all"
                             >
                                 Dashboard
                             </Link>
@@ -148,7 +120,7 @@ const openCookieSettings = () => {
                             </Link>
                             <Link
                                 :href="route('register')"
-                                class="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-full hover:bg-gray-800 dark:hover:bg-gray-100 transition-all"
+                                class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-full hover:bg-gray-800 dark:hover:bg-gray-100 transition-all"
                             >
                                 Sign up
                             </Link>
@@ -246,7 +218,7 @@ const openCookieSettings = () => {
         <!-- Main Content -->
         <main :class="
             $page.props.auth?.user && !$page.props.auth.user.email_verified_at
-                ? 'pt-[100px]'
+                ? 'pt-[120px]'
                 : 'pt-20'
         ">
             <slot />

@@ -341,10 +341,13 @@ class FinancialController extends Controller
         $expenses = $transactions->where('type', 'expense')->sum('amount');
         $net      = $income - $expenses;
 
-        $html = view('reports.financial', compact(
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.financial', compact(
             'transactions', 'income', 'expenses', 'net', 'start', 'end'
-        ))->render();
+        ))->setPaper('a4', 'landscape');
 
-        return response($html)->header('Content-Type', 'text/html');
+        $filename = 'transactions-' . $start->format('Y-m-d') . '-to-' . $end->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
     }
+
 }

@@ -76,6 +76,6 @@
 </table>
 
 <div class="footer">CityStake Property Management · Confidential · {{ now()->format('d M Y') }}</div>
-<script>window.onload = () => window.print()</script>
+
 </body>
 </html>

@@ -20,7 +20,10 @@ return [
     'min_hours_before_checkin' => 24, // 24 hours notice
 
     // Hours after which a pending payment booking is auto-cancelled
-    'payment_timeout_hours' => 2,
+//    'payment_timeout_hours' => 2,
+
+    // Minutes after which a pending payment booking is auto-cancelled (must match Payment.vue countdown)
+    'payment_hold_minutes' => 30,
 
     // Allow same-day checkout and check-in on different units
     'allow_same_day_turnover' => false,
