@@ -3,8 +3,10 @@
 namespace App\Mail;
 
 use App\Models\Booking;
+use App\Services\InvoiceService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -13,12 +15,7 @@ class BookingConfirmation extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public Booking $booking;
-
-    public function __construct(Booking $booking)
-    {
-        $this->booking = $booking;
-    }
+    public function __construct(public Booking $booking) {}
 
     public function envelope(): Envelope
     {
@@ -36,6 +33,22 @@ class BookingConfirmation extends Mailable
 
     public function attachments(): array
     {
-        return [];
+        try {
+            $pdf = InvoiceService::generatePdfString($this->booking);
+
+            return [
+                Attachment::fromData(
+                    fn () => $pdf,
+                    'invoice-' . $this->booking->booking_reference . '.pdf'
+                )->withMime('application/pdf'),
+            ];
+        } catch (\Exception $e) {
+            // Never let a PDF failure block the confirmation email
+            \Log::error('Invoice PDF generation failed for email', [
+                'booking_reference' => $this->booking->booking_reference,
+                'error'             => $e->getMessage(),
+            ]);
+            return [];
+        }
     }
 }

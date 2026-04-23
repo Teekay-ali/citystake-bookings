@@ -5,7 +5,7 @@ import { ref, computed } from 'vue';
 import { useToast } from 'vue-toastification';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import {
-    ArrowLeft,
+    ArrowLeft, FileText,
     Calendar, CreditCard,
     MapPin,
     Users,
@@ -382,6 +382,17 @@ const daysUntilCheckIn = computed(() => {
                                 <Download class="w-4 h-4 mr-2" />
                                 Print Receipt
                             </button>
+
+                            <!-- Download Invoice — only if paid -->
+                            <a
+                                v-if="booking.payment_status === 'paid'"
+                                :href="route('bookings.invoice', booking.id)"
+                                target="_blank"
+                                class="w-full flex items-center justify-center px-4 py-2.5 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl transition-all"
+                            >
+                                <FileText class="w-4 h-4 mr-2" />
+                                Download Invoice
+                            </a>
 
                             <button
                                 v-if="canCancel"

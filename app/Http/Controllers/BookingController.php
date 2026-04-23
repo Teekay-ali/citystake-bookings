@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Notifications\NewBookingNotification;
 use App\Notifications\BookingCancelledNotification;
+use App\Services\InvoiceService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Notification;
 use App\Models\AuditLog;
@@ -495,6 +496,19 @@ class BookingController extends Controller
         ]);
 
         return back()->with('success', 'Guest checked in successfully.');
+    }
+
+    public function downloadInvoice(Booking $booking)
+    {
+        if ($booking->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if (!$booking->isPaid()) {
+            abort(404, 'Invoice only available for paid bookings.');
+        }
+
+        return InvoiceService::download($booking);
     }
 
 }

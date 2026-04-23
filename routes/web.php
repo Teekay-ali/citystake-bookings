@@ -120,6 +120,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/bookings/{bookingReference}/verify-monnify', [BookingController::class, 'verifyMonnifyPayment'])
         ->name('bookings.verify-monnify');
     Route::get('/bookings/{booking}/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
+    Route::get('/bookings/{booking}/invoice', [BookingController::class, 'downloadInvoice'])
+        ->name('bookings.invoice');
 
     // My Bookings
     Route::get('/my-bookings', [BookingController::class, 'index'])->name('bookings.index');
