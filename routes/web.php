@@ -174,9 +174,11 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/blocked-dates', [BlockedDateController::class, 'store'])->name('blocked-dates.store');
     Route::delete('/blocked-dates/{blockedDate}', [BlockedDateController::class, 'destroy'])->name('blocked-dates.destroy');
 
-    // Analytics
-    Route::get('/analytics/occupancy', [App\Http\Controllers\Admin\OccupancyAnalyticsController::class, 'index'])
-        ->name('analytics.occupancy');
+    // Analytics hub
+    Route::get('/analytics', [App\Http\Controllers\Admin\AnalyticsController::class, 'index'])
+        ->name('analytics.index');
+    // Backward compat redirect
+    Route::redirect('/analytics/occupancy', '/manage/analytics?tab=occupancy')->name('analytics.occupancy');
 
     // Staff Management
     Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');

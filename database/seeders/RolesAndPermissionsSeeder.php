@@ -95,7 +95,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-stock', 'manage-stock', 'log-stock-usage',
                 'manage-staff-queries',
                 'view-analytics',
-                'view-financials',
                 'manage-tasks', 'view-tasks',
                 'view-procurement',
                 'view-maintenance',
