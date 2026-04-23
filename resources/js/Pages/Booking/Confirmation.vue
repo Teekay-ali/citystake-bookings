@@ -34,7 +34,6 @@ const cancelBooking = () => {
     router.post(route('bookings.cancel', props.booking.id), {}, {
         onSuccess: () => {
             showCancelModal.value = false;
-            toast.success('Booking cancelled successfully.');
         },
         onError: () => {
             toast.error('Failed to cancel booking. Please try again.');
