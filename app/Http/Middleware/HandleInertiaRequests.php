@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\BookingMessage;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -58,6 +59,17 @@ class HandleInertiaRequests extends Middleware
                 : 0,
             'unreadNotifications' => auth()->check() && request()->routeIs('manage.*')
                 ? auth()->user()->unreadNotifications()->count()
+                : 0,
+            'unreadMessages' => auth()->check() && request()->routeIs('manage.*')
+                ? BookingMessage::where('sender_type', 'guest')
+                    ->whereNull('read_at')
+                    ->whereHas('booking', function ($q) {
+                        $user = auth()->user();
+                        if (!$user->hasGlobalAccess()) {
+                            $q->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
+                        }
+                    })
+                    ->count()
                 : 0,
         ]);
     }
