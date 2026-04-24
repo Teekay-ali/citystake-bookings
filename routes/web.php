@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\FinancialController;
 use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
+use App\Http\Controllers\Webhooks\MonnifyWebhookController;
 use App\Http\Controllers\Webhooks\PaystackWebhookController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsStaff;
@@ -88,6 +89,9 @@ Route::post('/properties/{building:slug}/{unitType:slug}/check-availability', [U
 // Paystack webhook — outside auth, CSRF excluded via bootstrap/app.php
 Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])
     ->name('webhooks.paystack');
+
+Route::post('/webhooks/monnify', [MonnifyWebhookController::class, 'handle'])
+    ->name('webhooks.monnify');
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {

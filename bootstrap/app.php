@@ -16,9 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // Exclude Paystack webhook from CSRF verification
+        // Exclude Paystack, Monnify webhook from CSRF verification
         $middleware->validateCsrfTokens(except: [
             'webhooks/paystack',
+            'webhooks/monnify',
         ]);
 
         // Register middleware alias
