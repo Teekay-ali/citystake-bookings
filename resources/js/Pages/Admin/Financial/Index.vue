@@ -130,9 +130,17 @@ function formatDate(d) {
     return new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+// ── Trend chart ───────────────────────────────────────────────
+const TREND_HEIGHT_PX = 140
+
 const maxTrend = computed(() =>
-    Math.max(...props.trend.map(t => Math.max(t.income, t.expenses, 1)))
+    Math.max(...(props.trend ?? []).map(t => Math.max(t.income, t.expenses, 0)), 1)
 )
+
+function trendBarHeight(value) {
+    if (!value || maxTrend.value === 0) return '2px'
+    return Math.max((value / maxTrend.value) * TREND_HEIGHT_PX, 3) + 'px'
+}
 
 const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
 const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
@@ -291,35 +299,73 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
         </div>
 
         <!-- ── Trend chart + Transaction ledger ── -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-6">
 
-            <!-- Trend -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-                <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">12-Month Trend</h2>
-                <div class="flex items-end gap-0.5 h-28">
-                    <div v-for="t in trend" :key="t.month" class="flex-1 flex flex-col justify-end gap-0.5">
-                        <div class="w-full bg-emerald-400 dark:bg-emerald-500 rounded-sm"
-                             :style="{ height: maxTrend > 0 ? Math.max((t.income / maxTrend * 100), 1) + '%' : '2px' }"
-                             :title="`${t.month} · Income: ${formatAmount(t.income)}`" />
-                        <div class="w-full bg-red-400 dark:bg-red-500 rounded-sm"
-                             :style="{ height: maxTrend > 0 ? Math.max((t.expenses / maxTrend * 100), 1) + '%' : '2px' }"
-                             :title="`${t.month} · Expenses: ${formatAmount(t.expenses)}`" />
+            <!-- ── Trend chart ── -->
+            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col">
+
+                <!-- Chart header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">12-Month Trend</h2>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Income vs Expenses</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-sm bg-emerald-400 flex-shrink-0" />
+                            <span class="text-xs text-gray-400">Income</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-sm bg-red-400 flex-shrink-0" />
+                            <span class="text-xs text-gray-400">Expenses</span>
+                        </div>
                     </div>
                 </div>
-                <div class="flex gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                    <div class="flex items-center gap-1.5">
-                        <div class="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
-                        <span class="text-xs text-gray-400">Income</span>
+
+                <!-- Chart body — fills remaining card height -->
+                <div class="flex-1 flex flex-col justify-end">
+
+                    <!-- Bars -->
+                    <div class="flex items-end gap-1" style="height: 140px;">
+                        <div v-for="t in trend" :key="t.month"
+                             class="flex-1 flex flex-col justify-end gap-0.5 group relative">
+
+                            <!-- Hover tooltip -->
+                            <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10
+                                        bg-gray-900 dark:bg-white text-white dark:text-gray-900
+                                        text-[10px] rounded-lg px-2.5 py-2 whitespace-nowrap shadow-lg
+                                        opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                <p class="font-semibold mb-1">{{ t.month }}</p>
+                                <p class="text-emerald-400 dark:text-emerald-600">↑ {{ formatAmount(t.income) }}</p>
+                                <p class="text-red-400 dark:text-red-500">↓ {{ formatAmount(t.expenses) }}</p>
+                                <p :class="t.net >= 0 ? 'text-gray-300 dark:text-gray-500' : 'text-red-300 dark:text-red-400'">
+                                    Net: {{ t.net >= 0 ? '+' : '' }}{{ formatAmount(t.net) }}
+                                </p>
+                            </div>
+
+                            <!-- Income bar -->
+                            <div class="w-full bg-emerald-400 dark:bg-emerald-500 rounded-t-sm transition-all duration-300"
+                                 :style="{ height: trendBarHeight(t.income) }" />
+                            <!-- Expense bar -->
+                            <div class="w-full bg-red-400 dark:bg-red-500 rounded-t-sm transition-all duration-300"
+                                 :style="{ height: trendBarHeight(t.expenses) }" />
+                        </div>
                     </div>
-                    <div class="flex items-center gap-1.5">
-                        <div class="w-2.5 h-2.5 rounded-sm bg-red-400" />
-                        <span class="text-xs text-gray-400">Expenses</span>
+
+                    <!-- Baseline -->
+                    <div class="border-t border-gray-200 dark:border-gray-700" />
+
+                    <!-- Month labels -->
+                    <div class="flex gap-1 mt-1.5">
+                        <div v-for="t in trend" :key="t.month" class="flex-1 text-center">
+                            <span class="text-[9px] text-gray-400 leading-none">{{ t.month.split(' ')[0] }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Transaction ledger -->
-            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+            <!-- ── Transaction ledger ── -->
+            <div class="lg:col-span-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
                     <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                         Transaction Ledger
@@ -467,7 +513,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
         leave-from-class="opacity-100"
         leave-to-class="opacity-0">
         <div v-if="showManual" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 w-full max-w-md">
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
                     <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Log Manual Transaction</h3>
                     <button @click="showManual = false" class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
@@ -476,21 +522,27 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                 </div>
                 <div class="p-5">
                     <form @submit.prevent="submitManual" class="space-y-3">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Building *</label>
-                                <select v-model="manualForm.building_id" :class="inputClass">
-                                    <option value="">Select</option>
-                                    <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
-                                </select>
-                                <p v-if="manualForm.errors.building_id" class="mt-1 text-xs text-red-600">{{ manualForm.errors.building_id }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Type *</label>
-                                <select v-model="manualForm.type" :class="inputClass">
-                                    <option value="income">Income</option>
-                                    <option value="expense">Expense</option>
-                                </select>
+                        <div v-if="buildings.length > 1">
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Property *</label>
+                            <select v-model="manualForm.building_id" :class="inputClass">
+                                <option value="">Select property</option>
+                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
+                            <p v-if="manualForm.errors.building_id" class="mt-1 text-xs text-red-600">{{ manualForm.errors.building_id }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Type *</label>
+                            <div class="flex gap-2">
+                                <button type="button" @click="manualForm.type = 'income'"
+                                        :class="manualForm.type === 'income' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'"
+                                        class="flex-1 py-2 rounded-lg text-sm font-medium border transition-all">
+                                    Income
+                                </button>
+                                <button type="button" @click="manualForm.type = 'expense'"
+                                        :class="manualForm.type === 'expense' ? 'bg-red-600 text-white border-red-600' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'"
+                                        class="flex-1 py-2 rounded-lg text-sm font-medium border transition-all">
+                                    Expense
+                                </button>
                             </div>
                         </div>
                         <div>
@@ -521,13 +573,13 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Reference</label>
-                                <input v-model="manualForm.payment_reference" type="text" :class="inputClass" />
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Bank Name</label>
+                                <input v-model="manualForm.bank_name" type="text" :class="inputClass" />
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Bank Name</label>
-                            <input v-model="manualForm.bank_name" type="text" :class="inputClass" />
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Payment Reference</label>
+                            <input v-model="manualForm.payment_reference" type="text" :class="inputClass" />
                         </div>
                         <div>
                             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</label>
@@ -536,7 +588,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                         <div class="flex gap-3 pt-1">
                             <button type="submit" :disabled="manualForm.processing"
                                     class="flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all">
-                                {{ manualForm.processing ? 'Saving...' : 'Record Transaction' }}
+                                {{ manualForm.processing ? 'Saving...' : 'Log Transaction' }}
                             </button>
                             <button type="button" @click="showManual = false"
                                     class="px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all">
