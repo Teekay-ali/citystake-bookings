@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BlockedDateController;
+use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingMessageController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Profile\EmailPreferencesController;
 use App\Http\Controllers\ProfileController;
@@ -26,7 +28,6 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Webhooks\MonnifyWebhookController;
 use App\Http\Controllers\Webhooks\PaystackWebhookController;
-use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsStaff;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -130,9 +131,14 @@ Route::middleware('auth')->group(function () {
     // My Bookings
     Route::get('/my-bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::post('/bookings/{booking}/messages', [App\Http\Controllers\BookingMessageController::class, 'guestSend'])
+        ->name('bookings.messages.send');
 
     // View booking details
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+
+    Route::post('/bookings/{booking}/messages', [BookingMessageController::class, 'guestSend'])
+        ->name('bookings.messages.send');
 });
 
 // Admin routes
@@ -148,12 +154,17 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     // Bookings
     Route::get('/bookings/late-checkout-requests', [AdminBookingController::class, 'lateCheckoutRequests'])->name('bookings.late-checkout.index');
     Route::get('/bookings/create', [AdminBookingController::class, 'create'])->name('bookings.create');
-    Route::get('/bookings/calendar', [App\Http\Controllers\Admin\BookingCalendarController::class, 'index'])->name('bookings.calendar');
+    Route::get('/bookings/calendar', [BookingCalendarController::class, 'index'])->name('bookings.calendar');
     Route::get('/bookings/export', [BookingExportController::class, 'export'])->name('bookings.export');
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
+
+    Route::post('/bookings/{booking}/messages', [BookingMessageController::class, 'staffSend'])
+        ->name('manage.bookings.messages.send');
+    Route::get('/messages', [BookingMessageController::class, 'index'])
+        ->name('manage.messages.index');
 
     Route::post('/bookings/{booking}/late-checkout/request', [AdminBookingController::class, 'requestLateCheckout'])->name('bookings.late-checkout.request');
     Route::post('/bookings/{booking}/late-checkout/approve', [AdminBookingController::class, 'approveLateCheckout'])->name('bookings.late-checkout.approve');
@@ -273,6 +284,12 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
+    // Messages
+    Route::get('/messages', [BookingMessageController::class, 'index'])
+        ->name('messages.index');
+    Route::post('/bookings/{booking}/messages', [BookingMessageController::class, 'staffSend'])
+        ->name('bookings.messages.send');
 
 });
 

@@ -110,7 +110,7 @@ class BookingController extends Controller
             abort(403);
         }
 
-        $booking->load(['building.images', 'unitType.images', 'unit']);
+        $booking->load(['building.images', 'unitType.images', 'unit', 'messages.sender']);
 
         return Inertia::render('Booking/Show', [
             'booking' => $booking,

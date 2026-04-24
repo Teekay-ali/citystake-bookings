@@ -110,6 +110,11 @@ class Booking extends Model
         return $this->belongsTo(User::class, 'created_by_admin_id');
     }
 
+    public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(BookingMessage::class)->orderBy('created_at');
+    }
+
     // Helper methods
     public static function generateReference(): string
     {

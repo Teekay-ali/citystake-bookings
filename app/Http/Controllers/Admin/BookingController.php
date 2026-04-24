@@ -251,11 +251,19 @@ class BookingController extends Controller
     {
         abort_unless(auth()->user()->can('view-bookings'), 403);
 
-        $booking->load(['building', 'unitType', 'unit', 'user', 'checkedInBy', 'lateCheckoutApprovedBy']);
+        $booking->load([
+            'building', 'unitType', 'unit', 'user',
+            'checkedInBy', 'lateCheckoutApprovedBy',
+            'messages.sender',
+        ]);
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => array_merge($booking->toArray(), [
                 'checked_in_by_name' => $booking->checkedInBy?->name,
+                'unreadMessageCount' => $booking->messages()
+                    ->where('sender_type', 'guest')
+                    ->whereNull('read_at')
+                    ->count(),
             ]),
         ]);
     }
