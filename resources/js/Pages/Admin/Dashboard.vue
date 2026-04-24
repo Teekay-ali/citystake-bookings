@@ -76,6 +76,13 @@ const maxPropertyRevenue = computed(() => {
     return Math.max(...(props.revenueByProperty?.map(p => p.total) ?? [0]), 1)
 })
 
+const CHART_H = 96 // matches h-24 container
+
+function revenueBarPx(value) {
+    if (!value || maxRevenue.value === 0) return '2px'
+    return Math.max((value / maxRevenue.value) * CHART_H, 3) + 'px'
+}
+
 const totalStatusCount = computed(() => {
     const b = props.statusBreakdown
     return (b?.confirmed ?? 0) + (b?.pending ?? 0) + (b?.completed ?? 0) + (b?.cancelled ?? 0)
@@ -210,25 +217,38 @@ const initials = (name) => {
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
                 <div class="flex items-center justify-between mb-5">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Revenue trend</p>
-                    <Link :href="route('manage.analytics.occupancy')"
+                    <Link :href="route('manage.analytics.index')"
                           class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1">
                         Analytics <ArrowRight class="w-3 h-3" />
                     </Link>
                 </div>
+
                 <!-- Bar chart -->
-                <div class="flex items-end gap-1.5 h-24 mb-3">
+                <div class="flex items-end gap-1.5" style="height: 96px;">
                     <div v-for="month in monthlyRevenue" :key="month.month"
-                         class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                        <div class="w-full rounded-t-sm transition-all"
-                             :class="month === monthlyRevenue[monthlyRevenue.length - 1]
-                                 ? 'bg-gray-900 dark:bg-white'
-                                 : 'bg-gray-200 dark:bg-gray-700'"
-                             :style="{ height: ((month.total / maxRevenue) * 100) + '%', minHeight: '4px' }">
+                         class="flex-1 flex flex-col justify-end group relative">
+                        <!-- Tooltip -->
+                        <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10
+                    bg-gray-900 dark:bg-white text-white dark:text-gray-900
+                    text-[10px] rounded-lg px-2.5 py-2 whitespace-nowrap shadow-lg
+                    opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            <p class="font-semibold">{{ month.month }}</p>
+                            <p>{{ financialsVisible ? formatPrice(month.total) : '₦ ••••••' }}</p>
                         </div>
-                        <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ month.month }}</span>
+                        <div class="w-full rounded-t-sm transition-all duration-300"
+                             :class="month === monthlyRevenue[monthlyRevenue.length - 1]
+                 ? 'bg-gray-900 dark:bg-white'
+                 : 'bg-gray-200 dark:bg-gray-700'"
+                             :style="{ height: revenueBarPx(month.total) }"/>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 dark:text-gray-500">Last 6 months · NGN</p>
+                <!-- Baseline + month labels -->
+                <div class="border-t border-gray-200 dark:border-gray-700 mt-0" />
+                <div class="flex gap-1.5 mt-1.5 mb-3">
+                    <div v-for="month in monthlyRevenue" :key="month.month" class="flex-1 text-center">
+                        <span class="text-[9px] text-gray-400 leading-none">{{ month.month.split(' ')[0] }}</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Booking + payment status -->
