@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\AvailabilityController;
+use  App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
@@ -72,7 +72,6 @@ Route::post('/contact', function (\Illuminate\Http\Request $request) {
 
     return redirect()->back()->with('success', 'Thank you for contacting us! We\'ll get back to you soon.');
 })->middleware('throttle:3,1')->name('contact.store');
-
 
 Route::get('/terms', function () {
     return Inertia::render('Terms');

@@ -196,7 +196,7 @@ function canSeeItem(item) {
             </div>
         </Transition>
 
-        <!-- ─── Sidebar ─────────────────────────────────────────────── -->
+        <!-- ─── Sidebar ─── -->
         <aside
             :class="[
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
@@ -216,8 +216,9 @@ function canSeeItem(item) {
                 </Link>
 
                 <!-- Mobile close button -->
-                <button @click="sidebarOpen = false"
-                        class="lg:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <button
+                    @click="sidebarOpen = false"
+                    class="lg:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <X class="w-5 h-5" />
                 </button>
 
@@ -352,15 +353,16 @@ function canSeeItem(item) {
             </div>
         </aside>
 
-        <!-- ─── Main content ────────────────────────────────────────── -->
+        <!-- ─── Main content ─── -->
         <div
             :class="collapsed ? 'lg:ml-16' : 'lg:ml-64'"
             class="flex-1 flex flex-col min-w-0 transition-all duration-300">
 
             <!-- Mobile top bar -->
             <header class="h-16 bg-white dark:bg-gray-900 flex items-center justify-between px-4 lg:hidden shrink-0 sticky top-0 z-30">
-                <button @click="sidebarOpen = true"
-                        class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                <button
+                    @click="sidebarOpen = true"
+                    class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <Menu class="w-5 h-5" />
                 </button>
                 <Link :href="route('home')" class="font-semibold text-gray-900 dark:text-white text-sm">

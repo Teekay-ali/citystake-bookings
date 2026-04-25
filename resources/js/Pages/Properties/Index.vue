@@ -30,7 +30,7 @@ const applyFilters = () => {
 
 watch([bedroomFilter, guestsFilter, buildingFilter, sortBy], applyFilters)
 
-const selectClass = "px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
+const selectClass = "pl-4 pr-8 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all appearance-none cursor-pointer"
 </script>
 
 <template>

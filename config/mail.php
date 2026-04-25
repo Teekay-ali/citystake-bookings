@@ -112,8 +112,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Citystake'),
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@csbookings.ninetentech.net'),
+        'name' => env('MAIL_FROM_NAME', 'Citystake Bookings'),
     ],
 
     'admin_email' => env('MAIL_ADMIN_EMAIL', 'admin@csbookings.ninetentech.net'),

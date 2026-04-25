@@ -30,9 +30,14 @@ class UnitTypeController extends Controller
             $query->where('max_guests', '>=', $request->guests);
         }
 
-        // Filter by building
+        // Filter by building — slug-based
         if ($request->filled('building')) {
-            $query->where('building_id', $request->building);
+            $value = $request->building;
+            if (is_numeric($value)) {
+                $query->where('building_id', (int) $value);
+            } else {
+                $query->whereHas('building', fn($q) => $q->where('slug', $value));
+            }
         }
 
         // Sort by price
@@ -50,7 +55,7 @@ class UnitTypeController extends Controller
 
         // Get all buildings for filter
         $buildings = Building::where('is_active', true)
-            ->select('id', 'name')
+            ->select('id', 'name', 'slug')
             ->get();
 
         return Inertia::render('Properties/Index', [

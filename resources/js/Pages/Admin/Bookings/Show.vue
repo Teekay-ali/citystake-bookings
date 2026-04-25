@@ -7,7 +7,6 @@ import { useToast } from "vue-toastification";
 import ConfirmationModal from "@/Components/ConfirmationModal.vue";
 import {
     ArrowLeft,
-    MessageSquare,
     Mail,
     Phone,
     Download,
@@ -165,6 +164,7 @@ function submitCheckIn() {
         preserveScroll: true,
     });
 }
+
 </script>
 
 <template>
@@ -202,9 +202,7 @@ function submitCheckIn() {
                                     >{{ booking.booking_reference }}</span
                                 >
                             </p>
-                            <span class="text-gray-300 dark:text-gray-700"
-                                >•</span
-                            >
+                            <span class="text-gray-300 dark:text-gray-700">•</span>
                             <p class="text-sm text-gray-600 dark:text-gray-400">
                                 Created {{ formatDateTime(booking.created_at) }}
                             </p>
@@ -317,131 +315,6 @@ function submitCheckIn() {
                                 </p>
                             </div>
 
-                            <!-- Guest Messages -->
-                            <div
-                                class="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden"
-                            >
-                                <div
-                                    class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2"
-                                >
-                                    <MessageSquare
-                                        class="w-4 h-4 text-gray-400"
-                                    />
-                                    <h2
-                                        class="text-sm font-semibold text-gray-900 dark:text-white"
-                                    >
-                                        Guest Messages
-                                    </h2>
-                                    <span
-                                        v-if="unreadMessageCount > 0"
-                                        class="ml-2 text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full"
-                                    >
-                                        {{ unreadMessageCount }} new
-                                    </span>
-                                </div>
-
-                                <div
-                                    class="divide-y divide-gray-50 dark:divide-gray-800/50 max-h-80 overflow-y-auto"
-                                >
-                                    <div
-                                        v-if="!booking.messages?.length"
-                                        class="px-6 py-8 text-center"
-                                    >
-                                        <p
-                                            class="text-sm text-gray-400 dark:text-gray-500"
-                                        >
-                                            No messages for this booking.
-                                        </p>
-                                    </div>
-                                    <div
-                                        v-for="msg in booking.messages"
-                                        :key="msg.id"
-                                        class="px-6 py-4"
-                                        :class="
-                                            msg.sender_type === 'guest'
-                                                ? 'bg-white dark:bg-gray-950'
-                                                : 'bg-gray-50 dark:bg-gray-900/60'
-                                        "
-                                    >
-                                        <div
-                                            class="flex items-center gap-2 mb-1.5"
-                                        >
-                                            <span
-                                                class="text-xs font-semibold"
-                                                :class="
-                                                    msg.sender_type === 'guest'
-                                                        ? 'text-gray-900 dark:text-white'
-                                                        : 'text-blue-600 dark:text-blue-400'
-                                                "
-                                            >
-                                                {{
-                                                    msg.sender_type === "guest"
-                                                        ? booking.guest_name
-                                                        : (msg.sender?.name ??
-                                                          "Staff")
-                                                }}
-                                            </span>
-                                            <span
-                                                class="text-[10px] text-gray-400"
-                                            >
-                                                {{
-                                                    new Date(
-                                                        msg.created_at,
-                                                    ).toLocaleString("en-GB", {
-                                                        day: "2-digit",
-                                                        month: "short",
-                                                        hour: "2-digit",
-                                                        minute: "2-digit",
-                                                    })
-                                                }}
-                                            </span>
-                                            <span
-                                                v-if="
-                                                    msg.sender_type ===
-                                                        'guest' && !msg.read_at
-                                                "
-                                                class="ml-auto text-[9px] font-bold text-red-500 uppercase tracking-wider"
-                                                >Unread</span
-                                            >
-                                        </div>
-                                        <p
-                                            class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed"
-                                        >
-                                            {{ msg.body }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <!-- Reply input -->
-                                <div
-                                    class="px-6 py-4 border-t border-gray-100 dark:border-gray-800"
-                                >
-                                    <form @submit.prevent="sendReply">
-                                        <textarea
-                                            v-model="replyBody"
-                                            rows="2"
-                                            placeholder="Reply to guest..."
-                                            class="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none transition-all"
-                                        />
-                                        <div class="flex justify-end mt-2">
-                                            <button
-                                                type="submit"
-                                                :disabled="
-                                                    sendingReply ||
-                                                    !replyBody.trim()
-                                                "
-                                                class="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all"
-                                            >
-                                                {{
-                                                    sendingReply
-                                                        ? "Sending..."
-                                                        : "Send Reply"
-                                                }}
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Property & Stay Details -->
@@ -549,6 +422,132 @@ function submitCheckIn() {
                             </div>
                         </div>
 
+                        <!-- Guest Messages -->
+                        <div
+                            class="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden"
+                        >
+                            <div
+                                class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2"
+                            >
+                                <MessageSquare
+                                    class="w-4 h-4 text-gray-400"
+                                />
+                                <h2
+                                    class="text-sm font-semibold text-gray-900 dark:text-white"
+                                >
+                                    Guest Messages
+                                </h2>
+                                <span
+                                    v-if="unreadMessageCount > 0"
+                                    class="ml-2 text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full"
+                                >
+                                        {{ unreadMessageCount }} new
+                                    </span>
+                            </div>
+
+                            <div
+                                class="divide-y divide-gray-50 dark:divide-gray-800/50 max-h-80 overflow-y-auto"
+                            >
+                                <div
+                                    v-if="!booking.messages?.length"
+                                    class="px-6 py-8 text-center"
+                                >
+                                    <p
+                                        class="text-sm text-gray-400 dark:text-gray-500"
+                                    >
+                                        No messages for this booking.
+                                    </p>
+                                </div>
+                                <div
+                                    v-for="msg in booking.messages"
+                                    :key="msg.id"
+                                    class="px-6 py-4"
+                                    :class="
+                                            msg.sender_type === 'guest'
+                                                ? 'bg-white dark:bg-gray-950'
+                                                : 'bg-gray-50 dark:bg-gray-900/60'
+                                        "
+                                >
+                                    <div
+                                        class="flex items-center gap-2 mb-1.5"
+                                    >
+                                            <span
+                                                class="text-xs font-semibold"
+                                                :class="
+                                                    msg.sender_type === 'guest'
+                                                        ? 'text-gray-900 dark:text-white'
+                                                        : 'text-blue-600 dark:text-blue-400'
+                                                "
+                                            >
+                                                {{
+                                                    msg.sender_type === "guest"
+                                                        ? booking.guest_name
+                                                        : (msg.sender?.name ??
+                                                            "Staff")
+                                                }}
+                                            </span>
+                                        <span
+                                            class="text-[10px] text-gray-400"
+                                        >
+                                                {{
+                                                new Date(
+                                                    msg.created_at,
+                                                ).toLocaleString("en-GB", {
+                                                    day: "2-digit",
+                                                    month: "short",
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })
+                                            }}
+                                            </span>
+                                        <span
+                                            v-if="
+                                                    msg.sender_type ===
+                                                        'guest' && !msg.read_at
+                                                "
+                                            class="ml-auto text-[9px] font-bold text-red-500 uppercase tracking-wider"
+                                        >Unread</span
+                                        >
+                                    </div>
+                                    <p
+                                        class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed"
+                                    >
+                                        {{ msg.body }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Reply input -->
+                            <div
+                                class="px-6 py-4 border-t border-gray-100 dark:border-gray-800"
+                            >
+                                <form @submit.prevent="sendReply">
+                                        <textarea
+                                            v-model="replyBody"
+                                            rows="2"
+                                            placeholder="Reply to guest..."
+                                            class="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none transition-all"
+                                        />
+                                    <div class="flex justify-end mt-2">
+                                        <button
+                                            type="submit"
+                                            :disabled="
+                                                    sendingReply ||
+                                                    !replyBody.trim()
+                                                "
+                                            class="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all"
+                                        >
+                                            {{
+                                                sendingReply
+                                                    ? "Sending..."
+                                                    : "Send Reply"
+                                            }}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
                         <!-- Payment Information -->
                         <div
                             class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6"
@@ -615,7 +614,7 @@ function submitCheckIn() {
                                     >
                                         Discount ({{
                                             booking.discount_percent
-                                        }}% —
+                                        }}% -
                                         {{
                                             booking.discount_type ===
                                             "long_stay"
@@ -626,7 +625,7 @@ function submitCheckIn() {
                                     <span
                                         class="text-sm font-medium text-emerald-600 dark:text-emerald-400"
                                     >
-                                        −₦{{
+                                        − ₦{{
                                             Number(
                                                 booking.discount_amount,
                                             ).toLocaleString()
