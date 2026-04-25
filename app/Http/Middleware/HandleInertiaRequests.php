@@ -45,6 +45,10 @@ class HandleInertiaRequests extends Middleware
                         ? null
                         : $request->user()->buildings()->pluck('buildings.id'),
                     'email_verified_at' => $request->user()->email_verified_at,
+                    'phone' => $request->user()->phone,
+                    'email_marketing'    => (bool) $request->user()->email_marketing,
+                    'email_reminders'    => (bool) $request->user()->email_reminders,
+                    'email_newsletters'  => (bool) $request->user()->email_newsletters,
                 ] : null,
             ],
             'flash' => [
