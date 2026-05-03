@@ -90,10 +90,10 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
 
             <!-- Bold editorial image — opacity-40, not ghosted at 15% -->
             <img
-                src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1600&h=900&fit=crop&q=80"
+                src="/images/hero-apartment.jpg"
                 alt=""
                 fetchpriority="high"
-                class="absolute inset-0 w-full h-full object-cover object-center opacity-40"
+                class="absolute inset-0 w-full h-full object-cover object-center opacity-40 animate-kenburns"
                 aria-hidden="true"
             />
 
@@ -432,3 +432,15 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+@keyframes kenburns {
+    0%   { transform: scale(1)    translateX(0)   translateY(0); }
+    50%  { transform: scale(1.08) translateX(-1%) translateY(-1%); }
+    100% { transform: scale(1)    translateX(0)   translateY(0); }
+}
+
+.animate-kenburns {
+    animation: kenburns 20s ease-in-out infinite;
+}
+</style>

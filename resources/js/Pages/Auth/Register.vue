@@ -257,51 +257,103 @@ const submit = () => {
             </div>
         </div>
 
-        <!-- Right Side - Hero Image (same as login) -->
-        <div class="hidden lg:block relative flex-1">
+        <!-- Right Side - Hero Image -->
+        <div class="hidden lg:block relative flex-1 overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 dark:from-gray-950 dark:to-gray-900">
+
+                <!-- Ken Burns background image -->
+                <div class="absolute inset-0 bg-[url('/images/hero-apartment.jpg')] bg-cover bg-center opacity-20 animate-kenburns"></div>
+
+                <!-- Floating blobs -->
+                <div class="absolute top-1/4 left-1/4 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-float-slow"></div>
+                <div class="absolute bottom-1/3 right-1/4 w-96 h-96 bg-white/3 rounded-full blur-3xl animate-float-slower"></div>
+
+                <!-- Grid pattern -->
                 <div class="absolute inset-0 opacity-10">
                     <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')]"></div>
                 </div>
-                <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&h=1600&fit=crop')] bg-cover bg-center opacity-20"></div>
+
+                <!-- Content -->
                 <div class="relative h-full flex flex-col justify-center px-16 text-white">
                     <div class="max-w-lg">
-                        <h2 class="text-4xl font-light tracking-tight mb-6">
+                        <h2 class="text-4xl font-light tracking-tight mb-6 animate-fade-up" style="animation-delay: 0.1s">
                             Join CityStake<br />
                             <span class="text-gray-300">Today</span>
                         </h2>
-                        <p class="text-lg text-gray-300 font-light mb-8">
-                            Get exclusive access to premium properties and enjoy seamless booking experience.
+                        <p class="text-lg text-gray-300 font-light mb-8 animate-fade-up" style="animation-delay: 0.25s">
+                            Get exclusive access to premium properties and enjoy a seamless booking experience.
                         </p>
+
+                        <!-- Features -->
                         <div class="space-y-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                            <div class="flex items-center gap-3 animate-fade-up" style="animation-delay: 0.4s">
+                                <div class="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
-                                <span class="text-gray-200">Instant booking confirmation</span>
+                                <span class="text-gray-200">Free to create an account</span>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                            <div class="flex items-center gap-3 animate-fade-up" style="animation-delay: 0.55s">
+                                <div class="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
-                                <span class="text-gray-200">Manage bookings easily</span>
+                                <span class="text-gray-200">Manage all your bookings in one place</span>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                            <div class="flex items-center gap-3 animate-fade-up" style="animation-delay: 0.7s">
+                                <div class="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
-                                <span class="text-gray-200">Exclusive member benefits</span>
+                                <span class="text-gray-200">Exclusive deals for returning guests</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </template>
+
+<style scoped>
+@keyframes kenburns {
+    0%   { transform: scale(1)    translateX(0)    translateY(0); }
+    50%  { transform: scale(1.08) translateX(-1%)  translateY(-1%); }
+    100% { transform: scale(1)    translateX(0)    translateY(0); }
+}
+
+@keyframes float-slow {
+    0%, 100% { transform: translateY(0)    translateX(0); }
+    50%       { transform: translateY(-30px) translateX(15px); }
+}
+
+@keyframes float-slower {
+    0%, 100% { transform: translateY(0)    translateX(0); }
+    50%       { transform: translateY(20px) translateX(-20px); }
+}
+
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-kenburns {
+    animation: kenburns 20s ease-in-out infinite;
+}
+
+.animate-float-slow {
+    animation: float-slow 12s ease-in-out infinite;
+}
+
+.animate-float-slower {
+    animation: float-slower 18s ease-in-out infinite;
+}
+
+.animate-fade-up {
+    animation: fade-up 0.6s ease-out both;
+}
+</style>
