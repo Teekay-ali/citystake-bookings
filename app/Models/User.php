@@ -46,7 +46,11 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    // ─── Relationships ────────────────────────────────────────────
+    // ─── Relationships
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
 
     public function bookings(): HasMany
     {
@@ -60,7 +64,7 @@ class User extends Authenticatable implements MustVerifyEmail
             ->select('buildings.*'); // always qualify — prevents ambiguous column on any join
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────
+    // ─── Helpers ──────
 
     /**
      * Super Admin and CEO see all buildings.
