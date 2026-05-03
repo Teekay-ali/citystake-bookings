@@ -85,6 +85,8 @@ class BookingMessageController extends Controller
     /**
      * Admin messages index — all conversations with unread counts
      */
+    // REPLACE the entire index() method with this:
+
     public function index(Request $request)
     {
         abort_unless(auth()->user()->can('view-bookings'), 403);
@@ -114,8 +116,36 @@ class BookingMessageController extends Controller
             )
             ->paginate(20);
 
+        // Load active conversation if ?booking= is present
+        $activeConversation = null;
+        if ($request->filled('booking')) {
+            $activeConversation = Booking::where('id', $request->booking)
+                ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+                ->with([
+                    'building:id,name',
+                    'unit:id,unit_number',
+                    'unitType:id,name',
+                    'messages' => fn($q) => $q->oldest()->with('sender:id,name'),
+                ])
+                ->first();
+
+            // Mark all guest messages as read when staff opens the thread
+            if ($activeConversation) {
+                BookingMessage::where('booking_id', $activeConversation->id)
+                    ->where('sender_type', 'guest')
+                    ->whereNull('read_at')
+                    ->update(['read_at' => now()]);
+
+                // Refresh unread count to 0 for this booking in the list
+                $activeConversation->unread_count = 0;
+            }
+        }
+
         return inertia('Admin/Messages/Index', [
-            'conversations' => $conversations,
+            'conversations'      => $conversations,
+            'activeConversation' => $activeConversation,
+            'activeBookingId'    => $request->booking ? (int) $request->booking : null,
         ]);
     }
+
 }

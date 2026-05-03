@@ -160,11 +160,6 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
 
-    Route::post('/bookings/{booking}/messages', [BookingMessageController::class, 'staffSend'])
-        ->name('manage.bookings.messages.send');
-    Route::get('/messages', [BookingMessageController::class, 'index'])
-        ->name('manage.messages.index');
-
     Route::post('/bookings/{booking}/late-checkout/request', [AdminBookingController::class, 'requestLateCheckout'])->name('bookings.late-checkout.request');
     Route::post('/bookings/{booking}/late-checkout/approve', [AdminBookingController::class, 'approveLateCheckout'])->name('bookings.late-checkout.approve');
     Route::post('/bookings/{booking}/late-checkout/settle', [AdminBookingController::class, 'settleLateCheckout'])->name('bookings.late-checkout.settle');

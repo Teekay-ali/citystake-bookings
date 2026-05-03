@@ -1,13 +1,13 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { Link, usePage, router } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { useToast } from 'vue-toastification'
 import {
     LayoutDashboard, CalendarDays, Building2, Ban, BarChart3,
     Users, Grid3x3, Clock, Menu, X, LogOut, User,
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
-    ChevronLeft, ChevronRight, FileText, ShieldCheck
+    ChevronLeft, ChevronRight, FileText, ShieldCheck, ChevronUp, ChevronDown
 } from 'lucide-vue-next'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
@@ -33,7 +33,7 @@ function toggleCollapsed() {
     localStorage.setItem('sidebar-collapsed', collapsed.value)
 }
 
-// Sidebar scroll persistence
+// ── Sidebar scroll persistence ────────────────────────────────
 const navRef = ref(null)
 
 watch(navRef, (el) => {
@@ -44,7 +44,7 @@ function saveScroll() {
     if (navRef.value) localStorage.setItem('sidebar-scroll', navRef.value.scrollTop)
 }
 
-// ── Tooltip (nav item hover) ──────────────────────────────────
+// ── Tooltip (nav item hover, collapsed mode only) ─────────────
 const hoveredItem = ref(null)
 const tooltipAnchor = ref(null)
 const tooltipEl = ref(null)
@@ -68,14 +68,6 @@ function onMouseLeave() {
 
 // ── User menu ─────────────────────────────────────────────────
 const showUserMenu = ref(false)
-const userMenuAnchor = ref(null)
-const userMenuEl = ref(null)
-
-const { floatingStyles: userMenuStyles } = useFloating(userMenuAnchor, userMenuEl, {
-    placement: 'right',
-    strategy: 'fixed',
-    middleware: [offset(8), shift({ padding: 8 }), flip()],
-})
 
 function toggleUserMenu() {
     showUserMenu.value = !showUserMenu.value
@@ -86,10 +78,7 @@ function closeUserMenu() {
 }
 
 function handleClickOutside(e) {
-    if (
-        userMenuEl.value && !userMenuEl.value.contains(e.target) &&
-        userMenuAnchor.value && !userMenuAnchor.value.contains(e.target)
-    ) {
+    if (showUserMenu.value && !e.target.closest('.user-footer-container')) {
         showUserMenu.value = false
     }
 }
@@ -104,6 +93,7 @@ watch(() => page.props.flash, (flash) => {
     if (flash?.warning) toast.warning(flash.warning)
 }, { deep: true, immediate: true })
 
+// ── Dashboard route (role-aware) ──────────────────────────────
 const dashboardRoute = computed(() => {
     const roles = user.value?.roles ?? []
     return roles.includes('super-admin') || roles.includes('ceo')
@@ -111,6 +101,7 @@ const dashboardRoute = computed(() => {
         : 'manage.home'
 })
 
+// ── Nav groups ────────────────────────────────────────────────
 const navGroups = computed(() => [
     {
         label: 'Overview',
@@ -121,10 +112,11 @@ const navGroups = computed(() => [
     {
         label: 'Bookings',
         items: [
-            { label: 'All Bookings',  icon: CalendarDays, route: 'manage.bookings.index',              match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
-            { label: 'Availability',  icon: Grid3x3,      route: 'manage.availability.index',          match: 'manage.availability.*',               permission: 'manage-availability' },
-            { label: 'Late Checkouts',icon: Clock,        route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'view-bookings', badge: pendingCount },
-            { label: 'Calendar',      icon: CalendarDays, route: 'manage.bookings.calendar',           match: 'manage.bookings.calendar',            permission: 'view-bookings' },
+            { label: 'All Bookings',   icon: CalendarDays,   route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
+            { label: 'Availability',   icon: Grid3x3,        route: 'manage.availability.index',           match: 'manage.availability.*',                permission: 'manage-availability' },
+            { label: 'Calendar',       icon: CalendarDays,   route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',             permission: 'view-bookings' },
+            { label: 'Messages',          icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                    badge: unreadMessages },
+            { label: 'Late Checkouts', icon: Clock,          route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index',  permission: 'view-bookings', badge: pendingCount },
         ]
     },
     {
@@ -154,11 +146,10 @@ const navGroups = computed(() => [
     {
         label: 'Team',
         items: [
-            { label: 'Staff',         icon: Users,          route: 'manage.staff.index',         match: 'manage.staff.*',         permission: 'manage-staff' },
-            { label: 'Staff Queries', icon: FileText,       route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', permission: 'manage-staff-queries' },
-            { label: 'Roles',         icon: ShieldCheck,    route: 'manage.roles.index',         match: 'manage.roles.*',         permission: 'manage-roles' },
-            { label: 'Tasks',         icon: CheckSquare,    route: 'manage.tasks.index',         match: 'manage.tasks.*',         permission: 'view-tasks' },
-            { label: 'Messages',      icon: MessageSquare,  route: 'manage.messages.index',      match: 'manage.messages.*',      badge: unreadMessages },
+            { label: 'Staff',         icon: Users,       route: 'manage.staff.index',         match: 'manage.staff.*',         permission: 'manage-staff' },
+            { label: 'Staff Queries', icon: FileText,    route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', permission: 'manage-staff-queries' },
+            { label: 'Tasks',         icon: CheckSquare, route: 'manage.tasks.index',         match: 'manage.tasks.*',         permission: 'view-tasks' },
+            { label: 'Roles',         icon: ShieldCheck, route: 'manage.roles.index',         match: 'manage.roles.*',         permission: 'manage-roles' },
         ]
     },
 ])
@@ -172,13 +163,13 @@ function isActive(match) {
 }
 
 const roleLabels = {
-    'super-admin':        'Super Admin',
-    'manager':            'Manager',
-    'accountant':         'Accountant',
-    'ceo':                'CEO',
-    'head-of-procurement':'Head of Procurement',
-    'receptionist':       'Receptionist',
-    'staff':              'Staff',
+    'super-admin':         'Super Admin',
+    'manager':             'Manager',
+    'accountant':          'Accountant',
+    'ceo':                 'CEO',
+    'head-of-procurement': 'Head of Procurement',
+    'receptionist':        'Receptionist',
+    'staff':               'Staff',
 }
 
 const userPermissions = computed(() => page.props.auth.user?.permissions ?? [])
@@ -192,7 +183,7 @@ function canSeeItem(item) {
 <template>
     <div class="min-h-screen bg-white dark:bg-gray-950 flex">
 
-        <!-- Mobile backdrop -->
+        <!-- ── Mobile backdrop ─────────────────────────────────────── -->
         <Transition
             enter-active-class="transition-opacity duration-200"
             enter-from-class="opacity-0"
@@ -205,7 +196,7 @@ function canSeeItem(item) {
                  class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" />
         </Transition>
 
-        <!-- Floating tooltip -->
+        <!-- ── Floating tooltip (collapsed nav hover) ──────────────── -->
         <Transition
             enter-active-class="transition-opacity duration-100"
             enter-from-class="opacity-0"
@@ -221,54 +212,7 @@ function canSeeItem(item) {
             </div>
         </Transition>
 
-        <!-- User menu — floating, sibling to tooltip, escapes sidebar -->
-        <Transition
-            enter-active-class="transition ease-out duration-150"
-            enter-from-class="opacity-0 translate-y-1"
-            enter-to-class="opacity-100 translate-y-0"
-            leave-active-class="transition ease-in duration-100"
-            leave-from-class="opacity-100 translate-y-0"
-            leave-to-class="opacity-0 translate-y-1">
-            <div v-if="showUserMenu"
-                 ref="userMenuEl"
-                 :style="userMenuStyles"
-                 class="fixed z-[9999] w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden">
-
-                <!-- Header -->
-                <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                    <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ user?.name }}</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ user?.email }}</p>
-                </div>
-
-                <!-- Items -->
-                <div class="py-1">
-                    <button @click="toggleDark(); closeUserMenu()"
-                            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                        <Sun v-if="isDark" class="w-4 h-4" />
-                        <Moon v-else class="w-4 h-4" />
-                        {{ isDark ? 'Light mode' : 'Dark mode' }}
-                    </button>
-                    <Link :href="route('profile.edit')"
-                          @click="closeUserMenu"
-                          class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                        <User class="w-4 h-4" />
-                        Profile Settings
-                    </Link>
-                </div>
-
-                <!-- Sign out -->
-                <div class="border-t border-gray-100 dark:border-gray-800 py-1">
-                    <Link :href="route('logout')" method="post" as="button"
-                          @click="closeUserMenu"
-                          class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                        <LogOut class="w-4 h-4" />
-                        Sign out
-                    </Link>
-                </div>
-            </div>
-        </Transition>
-
-        <!-- ─── Sidebar ─── -->
+        <!-- ── Sidebar ─────────────────────────────────────────────── -->
         <aside
             :class="[
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
@@ -276,7 +220,7 @@ function canSeeItem(item) {
                 'fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0'
             ]">
 
-            <!-- Logo row — always h-16, logo always centered when collapsed -->
+            <!-- Logo row -->
             <div class="h-16 flex items-center justify-between px-4 shrink-0">
                 <Link :href="route('home')"
                       :class="collapsed ? 'mx-auto' : ''"
@@ -287,14 +231,13 @@ function canSeeItem(item) {
                     <span v-if="!collapsed" class="font-semibold text-gray-900 dark:text-white text-sm truncate">CityStake</span>
                 </Link>
 
-                <!-- Mobile close button -->
-                <button
-                    @click="sidebarOpen = false"
-                    class="lg:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <!-- Mobile close -->
+                <button @click="sidebarOpen = false"
+                        class="lg:hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <X class="w-5 h-5" />
                 </button>
 
-                <!-- Desktop collapse button — only shown when expanded -->
+                <!-- Desktop collapse -->
                 <button v-if="!collapsed"
                         @click="toggleCollapsed()"
                         :aria-expanded="!collapsed"
@@ -304,28 +247,27 @@ function canSeeItem(item) {
                 </button>
             </div>
 
-            <!-- Expand button — only shown when collapsed, sits below logo in its own row -->
-            <div v-if="collapsed"
-                 class="hidden lg:flex justify-center pb-2 shrink-0">
-                <button
-                    @click="toggleCollapsed()"
-                    aria-label="Expand sidebar"
-                    class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            <!-- Expand button when collapsed -->
+            <div v-if="collapsed" class="hidden lg:flex justify-center pb-2 shrink-0">
+                <button @click="toggleCollapsed()"
+                        aria-label="Expand sidebar"
+                        class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <ChevronRight class="w-4 h-4" />
                 </button>
             </div>
 
             <!-- Nav items -->
-            <nav ref="navRef" @scroll="saveScroll" class="flex-1 overflow-y-auto py-4 px-2" style="scrollbar-width: none; -ms-overflow-style: none;">
+            <nav ref="navRef"
+                 @scroll="saveScroll"
+                 class="flex-1 overflow-y-auto py-4 px-2"
+                 style="scrollbar-width: none; -ms-overflow-style: none;">
                 <template v-for="group in navGroups" :key="group.label">
                     <div v-if="group.items.some(item => canSeeItem(item) && !item.soon)" class="mb-4">
 
-                        <!-- Group label — reduced weight so nav items lead visually -->
                         <p v-if="!collapsed"
                            class="text-xs font-medium text-gray-300 dark:text-gray-600 uppercase tracking-wider px-3 mb-1">
                             {{ group.label }}
                         </p>
-                        <!-- Divider when collapsed -->
                         <div v-else class="border-t border-gray-100 dark:border-gray-800 mx-2 mb-2" />
 
                         <div class="space-y-0.5">
@@ -348,7 +290,7 @@ function canSeeItem(item) {
                                         </span>
                                     </div>
 
-                                    <!-- Active nav link — filled icon box replaces left border -->
+                                    <!-- Nav link -->
                                     <Link v-else
                                           :href="route(item.route)"
                                           @click="sidebarOpen = false"
@@ -356,7 +298,7 @@ function canSeeItem(item) {
                                           @mouseleave="onMouseLeave"
                                           :class="[
                                               isActive(item.match)
-                                                  ? 'bg-gray-100 dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium'
+                                                  ? 'bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium border border-gray-200 dark:border-gray-800 rounded-xl'
                                                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
                                               collapsed ? 'justify-center px-0' : 'px-3'
                                           ]"
@@ -372,7 +314,6 @@ function canSeeItem(item) {
                                               class="bg-amber-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center">
                                             {{ item.badge }}
                                         </span>
-                                        <!-- Collapsed badge dot -->
                                         <span v-if="collapsed && item.badge && item.badge > 0"
                                               class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
                                     </Link>
@@ -384,18 +325,65 @@ function canSeeItem(item) {
                 </template>
             </nav>
 
-            <!-- User footer -->
-            <div class="p-2 shrink-0">
+            <!-- ── User footer ──────────────────────────────────────── -->
+            <div class="p-2 shrink-0 relative user-footer-container">
+
+                <!-- User menu popup — grows upward from footer -->
+                <Transition
+                    enter-active-class="transition ease-out duration-150"
+                    enter-from-class="opacity-0 translate-y-2"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition ease-in duration-100"
+                    leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 translate-y-2">
+                    <div v-if="showUserMenu"
+                         :class="collapsed ? 'fixed left-16 bottom-4 w-56' : 'absolute bottom-full left-2 right-2 mb-1'"
+                         class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-[9999]">
+
+                        <!-- Header -->
+                        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                            <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ user?.name }}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ user?.email }}</p>
+                        </div>
+
+                        <!-- Items -->
+                        <div class="py-1">
+                            <button @click="toggleDark(); closeUserMenu()"
+                                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                <Sun v-if="isDark" class="w-4 h-4" />
+                                <Moon v-else class="w-4 h-4" />
+                                {{ isDark ? 'Light mode' : 'Dark mode' }}
+                            </button>
+                            <Link :href="route('profile.edit')"
+                                  @click="closeUserMenu"
+                                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                <User class="w-4 h-4" />
+                                Profile Settings
+                            </Link>
+                        </div>
+
+                        <!-- Sign out -->
+                        <div class="border-t border-gray-100 dark:border-gray-800 py-1">
+                            <Link :href="route('logout')" method="post" as="button"
+                                  @click="closeUserMenu"
+                                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                <LogOut class="w-4 h-4" />
+                                Sign out
+                            </Link>
+                        </div>
+                    </div>
+                </Transition>
+
+                <!-- Footer card -->
                 <div :class="collapsed ? 'flex-col items-center' : 'items-center gap-3 px-2'"
                      class="flex py-2 bg-gray-100 dark:bg-gray-800/50 rounded-xl">
 
-                    <!-- Avatar — click trigger for floating menu -->
-                    <button ref="userMenuAnchor"
-                            @click.stop="toggleUserMenu"
+                    <!-- Avatar -->
+                    <button @click.stop="toggleUserMenu"
                             class="w-8 h-8 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity cursor-pointer">
-            <span class="text-white dark:text-gray-900 text-xs font-medium">
-                {{ user?.name?.charAt(0)?.toUpperCase() }}
-            </span>
+                        <span class="text-white dark:text-gray-900 text-xs font-medium">
+                            {{ user?.name?.charAt(0)?.toUpperCase() }}
+                        </span>
                     </button>
 
                     <!-- Name + role — hidden when collapsed -->
@@ -406,23 +394,29 @@ function canSeeItem(item) {
                         </p>
                     </div>
 
-                    <!-- Notification bell — only when expanded -->
+                    <!-- Notification bell -->
                     <NotificationBell v-if="!collapsed" dropdown-direction="up" />
+
+                    <!-- Chevron -->
+                    <button v-if="!collapsed"
+                            @click.stop="toggleUserMenu"
+                            class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                        <ChevronUp v-if="showUserMenu" class="w-4 h-4" />
+                        <ChevronDown v-else class="w-4 h-4" />
+                    </button>
                 </div>
             </div>
 
         </aside>
 
-        <!-- ─── Main content ─── -->
-        <div
-            :class="collapsed ? 'lg:ml-16' : 'lg:ml-64'"
-            class="flex-1 flex flex-col min-w-0 transition-all duration-300">
+        <!-- ── Main content ─────────────────────────────────────────── -->
+        <div :class="collapsed ? 'lg:ml-16' : 'lg:ml-64'"
+             class="flex-1 flex flex-col min-w-0 transition-all duration-300">
 
             <!-- Mobile top bar -->
             <header class="h-16 bg-white dark:bg-gray-900 flex items-center justify-between px-4 lg:hidden shrink-0 sticky top-0 z-30">
-                <button
-                    @click="sidebarOpen = true"
-                    class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                <button @click="sidebarOpen = true"
+                        class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                     <Menu class="w-5 h-5" />
                 </button>
                 <Link :href="route('home')" class="font-semibold text-gray-900 dark:text-white text-sm">
