@@ -328,6 +328,78 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
             </div>
         </div>
 
+        <!-- ─── Offers & Discounts ────────────────────────────────── -->
+        <div class="relative bg-gray-900 border-y border-white/5 overflow-hidden">
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="w-[600px] h-[100px] bg-amber-400/5 rounded-full blur-3xl"></div>
+            </div>
+            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent"></div>
+
+            <div class="relative max-w-7xl mx-auto px-6 lg:px-8 py-8">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+
+                    <!-- Label -->
+                    <div class="shrink-0">
+                        <p class="text-xs font-medium text-amber-500 tracking-widest uppercase mb-1">Exclusive Savings</p>
+                        <p class="text-sm text-gray-400 font-light">Discounts applied automatically at checkout</p>
+                    </div>
+
+                    <!-- Offers -->
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-3 px-5 py-3 bg-white/5 border border-white/10 rounded-xl hover:border-amber-400/30 transition-all group">
+                            <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-white">5% off</p>
+                                <p class="text-xs text-gray-500">5+ nights</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3 px-5 py-3 bg-white/5 border border-white/10 rounded-xl hover:border-white/20 transition-all group">
+                            <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-white">10% off</p>
+                                <p class="text-xs text-gray-500">7+ units</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CTA -->
+                    <div class="shrink-0">
+                        <template v-if="!$page.props.auth.user">
+                            <div class="flex items-center gap-3">
+                                <Link
+                                    :href="route('login')"
+                                    class="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-gray-900 text-sm font-semibold rounded-xl transition-all"
+                                >
+                                    Sign in to book
+                                </Link>
+                                <Link
+                                    :href="route('register')"
+                                    class="px-5 py-2.5 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white text-sm font-medium rounded-xl transition-all"
+                                >
+                                    Register
+                                </Link>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <Link
+                                :href="route('properties.index')"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-gray-900 text-sm font-semibold rounded-xl transition-all group"
+                            >
+                                Browse properties
+                                <ArrowRight class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                            </Link>
+                        </template>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
         <!-- ─── Why Stay With Us ──────────────────────────────────── -->
         <div class="bg-white dark:bg-gray-950 py-24">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">

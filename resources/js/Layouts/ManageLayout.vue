@@ -150,6 +150,7 @@ const navGroups = computed(() => [
             { label: 'Staff Queries', icon: FileText,    route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', permission: 'manage-staff-queries' },
             { label: 'Tasks',         icon: CheckSquare, route: 'manage.tasks.index',         match: 'manage.tasks.*',         permission: 'view-tasks' },
             { label: 'Roles',         icon: ShieldCheck, route: 'manage.roles.index',         match: 'manage.roles.*',         permission: 'manage-roles' },
+            { label: 'Audit Logs',    icon: ShieldCheck, route: 'manage.audit-logs.index', match: 'manage.audit-logs.*', permission: 'manage-roles' },
         ]
     },
 ])

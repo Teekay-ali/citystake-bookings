@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Building;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -59,6 +60,8 @@ class StaffController extends Controller
         $user->assignRole($validated['role']);
         $user->buildings()->sync($validated['building_ids']);
 
+        AuditLog::log('staff.created', $user, null, ['name' => $user->name, 'email' => $user->email, 'role' => $validated['role']]);
+
         return redirect()->route('manage.staff.index')
             ->with('success', 'Staff member created successfully.');
     }
@@ -111,6 +114,8 @@ class StaffController extends Controller
         $staff->syncRoles([$validated['role']]);
         $staff->buildings()->sync($validated['building_ids']);
 
+        AuditLog::log('staff.updated', $staff, ['name' => $staff->getOriginal('name'), 'email' => $staff->getOriginal('email')], ['name' => $validated['name'], 'email' => $validated['email'], 'role' => $validated['role']]);
+
         return redirect()->route('manage.staff.index')
             ->with('success', 'Staff member updated successfully.');
     }
@@ -125,6 +130,8 @@ class StaffController extends Controller
         }
 
         $staff->update(['is_active' => !$staff->is_active]);
+
+        AuditLog::log($staff->is_active ? 'staff.activated' : 'staff.deactivated', $staff, null, ['is_active' => $staff->is_active]);
 
         return back()->with('success', $staff->is_active
             ? 'Staff member activated.'

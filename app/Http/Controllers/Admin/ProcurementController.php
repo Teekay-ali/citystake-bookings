@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\AuditLog;
 use App\Models\StockItem;
 use App\Models\StockLog;
 use App\Notifications\ProcurementStatusNotification;
@@ -121,6 +122,8 @@ class ProcurementController extends Controller
         }
 
         $pr->update(['total_amount' => $total]);
+
+        AuditLog::log('procurement.submitted', $pr, null, ['reference' => $pr->reference, 'title' => $pr->title, 'total' => $pr->total_amount]);
 
         return redirect()->route('manage.procurement.index')
             ->with('success', 'Procurement request submitted successfully.');
@@ -257,6 +260,8 @@ class ProcurementController extends Controller
             return back()->with('error', 'You are not authorized to perform this action.');
         }
 
+        AuditLog::log('procurement.status_updated', $procurement, ['status' => $procurement->getOriginal('status')], ['status' => $procurement->status]);
+
         return back()->with('success', 'Request updated successfully.');
     }
 
@@ -267,6 +272,8 @@ class ProcurementController extends Controller
         if (!in_array($procurement->status, ['pending', 'rejected'])) {
             return back()->with('error', 'Only pending or rejected requests can be deleted.');
         }
+
+        AuditLog::log('procurement.deleted', $procurement, ['reference' => $procurement->reference, 'title' => $procurement->title], null);
 
         $procurement->items()->delete();
         $procurement->delete();

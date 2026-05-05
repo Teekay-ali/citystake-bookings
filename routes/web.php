@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use  App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingCalendarController;
@@ -255,6 +256,10 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     Route::post('/staff/{staff}/assign-role', [RoleController::class, 'assignRole'])->name('staff.assign-role');
     Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('roles.update-permissions');
+
+    //  Audit Logs
+    Route::get('/audit-logs', [App\Http\Controllers\Admin\AuditLogController::class, 'index'])
+        ->name('audit-logs.index');
 
     // Financial Reports
     Route::get('/financials', [FinancialController::class, 'index'])->name('financials.index');

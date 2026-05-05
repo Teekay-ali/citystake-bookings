@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\AuditLog;
 use App\Traits\ScopedByBuilding;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
@@ -52,7 +53,9 @@ class BuildingController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
 
-        Building::create($validated);
+        $building = Building::create($validated);
+
+        AuditLog::log('building.created', $building, null, ['name' => $building->name]);
 
         return redirect()->route('manage.properties.index')
             ->with('success', 'Property created successfully!');
@@ -82,6 +85,8 @@ class BuildingController extends Controller
 
         $building->update($validated);
 
+        AuditLog::log('building.updated', $building, ['name' => $building->getOriginal('name')], ['name' => $building->name]);
+
         return redirect()->route('manage.properties.index')
             ->with('success', 'Property updated successfully!');
     }
@@ -95,6 +100,8 @@ class BuildingController extends Controller
             return redirect()->back()
                 ->with('error', 'Cannot delete property with existing bookings.');
         }
+
+        AuditLog::log('building.deleted', $building, ['name' => $building->name], null);
 
         $building->delete();
 

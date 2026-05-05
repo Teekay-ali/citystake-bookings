@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Building;
 use App\Models\StaffQuery;
 use App\Models\User;
@@ -114,6 +115,8 @@ class StaffQueryController extends Controller
             'issued_by' => $user->id,
         ]);
 
+        AuditLog::log('staff_query.issued', null, null, ['subject' => $validated['subject'], 'type' => $validated['type'], 'staff_id' => $validated['staff_id']]);
+
         return redirect()->route('manage.staff-queries.index')
             ->with('success', 'Staff query recorded successfully.');
     }
@@ -143,6 +146,8 @@ class StaffQueryController extends Controller
             'resolution' => $validated['resolution'],
             'closed_at'  => now(),
         ]);
+
+        AuditLog::log('staff_query.closed', $staffQuery, ['status' => 'open'], ['status' => 'closed']);
 
         return back()->with('success', 'Query closed.');
     }

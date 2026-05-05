@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\AuditLog;
 use App\Notifications\NewBookingNotification;
 use App\Notifications\LateCheckoutRequestedNotification;
 use App\Services\NotificationService;
@@ -224,6 +225,8 @@ class BookingController extends Controller
                 'transaction_date' => now()->toDateString(),
             ]);
 
+            AuditLog::log('booking.created', $booking, null, ['reference' => $booking->booking_reference, 'guest' => $booking->guest_name, 'method' => $validated['payment_method']]);
+
             // Send confirmation email to guest
             Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
 
@@ -290,6 +293,8 @@ class BookingController extends Controller
             'checkin_payment_method' => $validated['checkin_payment_method'],
             'checkin_notes'          => $validated['checkin_notes'] ?? null,
         ]);
+
+        AuditLog::log('booking.checked_in', $booking, ['status' => 'confirmed'], ['status' => 'checked_in', 'checked_in_by' => auth()->id()]);
 
         return back()->with('success', 'Guest checked in successfully.');
     }

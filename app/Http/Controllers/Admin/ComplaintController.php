@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\AuditLog;
 use App\Notifications\ComplaintSubmittedNotification;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Notification;
@@ -90,7 +91,7 @@ class ComplaintController extends Controller
             }
         }
 
-        Complaint::create([
+        $complaint = Complaint::create([
             'building_id'  => $validated['building_id'],
             'submitted_by' => auth()->id(),
             'title'        => $validated['title'],
@@ -99,6 +100,8 @@ class ComplaintController extends Controller
             'severity'     => $validated['severity'],
             'photos'       => $photoPaths ?: null,
         ]);
+
+        AuditLog::log('complaint.submitted', $complaint, null, ['title' => $complaint->title, 'severity' => $complaint->severity]);
 
         $recipients = NotificationService::getUsersByRoles(['manager', 'ceo'], $complaint->building_id);
         Notification::send($recipients, new ComplaintSubmittedNotification($complaint));
@@ -142,6 +145,8 @@ class ComplaintController extends Controller
             'resolved_at'      => $validated['status'] === 'resolved' ? now() : null,
         ]);
 
+        AuditLog::log('complaint.updated', $complaint, ['status' => $complaint->getOriginal('status')], ['status' => $validated['status']]);
+
         return back()->with('success', 'Complaint updated successfully.');
     }
 
@@ -153,6 +158,8 @@ class ComplaintController extends Controller
         foreach ($complaint->photos ?? [] as $path) {
             Storage::disk('public')->delete($path);
         }
+
+        AuditLog::log('complaint.deleted', $complaint, ['title' => $complaint->title], null);
 
         $complaint->delete();
 

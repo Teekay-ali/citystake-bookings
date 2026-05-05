@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\AuditLog;
 use App\Services\NotificationService;
 use App\Notifications\MaintenanceStatusNotification;
 use Illuminate\Support\Facades\Notification;
@@ -155,6 +156,9 @@ class MaintenanceReportController extends Controller
                 'rejection_reason' => $validated['notes'],
                 'rejected_by_role' => $user->getRoleNames()->first(),
             ]);
+
+            AuditLog::log('maintenance.rejected', $maintenance, null, ['reason' => $validated['notes']]);
+
             return back()->with('success', 'Report rejected.');
         }
 
@@ -165,6 +169,8 @@ class MaintenanceReportController extends Controller
                 'manager_approved_by' => $user->id,
                 'manager_approved_at' => now(),
             ]);
+
+            AuditLog::log('maintenance.approved', $maintenance, ['status' => 'pending'], ['status' => 'manager_approved']);
 
             $recipients = NotificationService::getUsersByRoles(['accountant'], $maintenance->building_id);
             Notification::send($recipients, new MaintenanceStatusNotification(
@@ -182,6 +188,8 @@ class MaintenanceReportController extends Controller
                 'actual_cost'            => $validated2['actual_cost'],
             ]);
 
+            AuditLog::log('maintenance.approved', $maintenance, ['status' => 'manager_approved'], ['status' => 'accountant_approved', 'actual_cost' => $validated2['actual_cost']]);
+
             $recipients = NotificationService::getUsersByRoles(['ceo'], $maintenance->building_id);
             Notification::send($recipients, new MaintenanceStatusNotification(
                 $maintenance,
@@ -195,6 +203,8 @@ class MaintenanceReportController extends Controller
                 'ceo_approved_by' => $user->id,
                 'ceo_approved_at' => now(),
             ]);
+
+            AuditLog::log('maintenance.approved', $maintenance, ['status' => 'accountant_approved'], ['status' => 'ceo_approved']);
 
             $recipients = NotificationService::getUsersByRoles(['accountant'], $maintenance->building_id);
             Notification::send($recipients, new MaintenanceStatusNotification(
