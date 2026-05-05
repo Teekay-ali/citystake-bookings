@@ -34,7 +34,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        AuditLog::log('auth.login', auth()->user(), null, ['email' => auth()->user()->email]);
+        if (auth()->user()->is_staff || auth()->user()->is_admin) {
+            AuditLog::log('auth.login', auth()->user(), null, ['email' => auth()->user()->email]);
+        }
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
@@ -44,7 +46,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        AuditLog::log('auth.logout', auth()->user(), null, null);
+        if (auth()->user()->is_staff || auth()->user()->is_admin) {
+            AuditLog::log('auth.logout', auth()->user(), null, null);
+        }
 
         Auth::guard('web')->logout();
 

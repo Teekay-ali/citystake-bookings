@@ -262,20 +262,23 @@ class BookingController extends Controller
                     'paid_at' => now(),
                 ]);
 
-
-                FinancialTransaction::create([
-                    'building_id'      => $booking->building_id,
-                    'recorded_by'      => $booking->user_id ?? 1, // system
-                    'type'             => 'income',
-                    'category'         => 'booking',
-                    'reference_type'   => \App\Models\Booking::class,
-                    'reference_id'     => $booking->id,
-                    'description'      => "Booking {$booking->booking_reference} — {$booking->guest_name}",
-                    'amount'           => $booking->total_amount,
-                    'payment_method'   => 'paystack',
-                    'payment_reference'=> $reference,
-                    'transaction_date' => now()->toDateString(),
-                ]);
+                FinancialTransaction::firstOrCreate(
+                    [
+                        'payment_reference' => $reference,
+                        'reference_type'    => Booking::class,
+                    ],
+                    [
+                        'building_id'     => $booking->building_id,
+                        'recorded_by'     => $booking->user_id,
+                        'type'            => 'income',
+                        'category'        => 'booking',
+                        'reference_id'    => $booking->id,
+                        'description'     => "Booking {$booking->booking_reference} — {$booking->guest_name}",
+                        'amount'          => $booking->total_amount,
+                        'payment_method'  => 'paystack',
+                        'transaction_date'=> now()->toDateString(),
+                    ]
+                );
 
                 // Send confirmation email to guest
                 Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
@@ -335,19 +338,23 @@ class BookingController extends Controller
                     'paid_at'            => now(),
                 ]);
 
-                FinancialTransaction::create([
-                    'building_id'       => $booking->building_id,
-                    'recorded_by'       => $booking->user_id ?? 1,
-                    'type'              => 'income',
-                    'category'          => 'booking',
-                    'reference_type'    => \App\Models\Booking::class,
-                    'reference_id'      => $booking->id,
-                    'description'       => "Booking {$booking->booking_reference} — {$booking->guest_name}",
-                    'amount'            => $booking->total_amount,
-                    'payment_method'    => 'monnify',
-                    'payment_reference' => $paymentReference,
-                    'transaction_date'  => now()->toDateString(),
-                ]);
+                FinancialTransaction::firstOrCreate(
+                    [
+                        'payment_reference' => $paymentReference,
+                        'reference_type'    => Booking::class,
+                    ],
+                    [
+                        'building_id'     => $booking->building_id,
+                        'recorded_by'     => $booking->user_id ?? 1,
+                        'type'            => 'income',
+                        'category'        => 'booking',
+                        'reference_id'    => $booking->id,
+                        'description'     => "Booking {$booking->booking_reference} — {$booking->guest_name}",
+                        'amount'          => $booking->total_amount,
+                        'payment_method'  => 'monnify',
+                        'transaction_date'=> now()->toDateString(),
+                    ]
+                );
 
                 Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
 

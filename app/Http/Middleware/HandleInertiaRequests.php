@@ -39,8 +39,8 @@ class HandleInertiaRequests extends Middleware
                     'email'             => $request->user()->email,
                     'is_admin'          => $request->user()->is_admin,
                     'is_staff'          => $request->user()?->is_staff ?? false,
-                    'roles'             => $request->user()->getRoleNames(),
-                    'permissions'       => $request->user()->getAllPermissions()->pluck('name'),
+                    'roles'             => $request->routeIs('manage.*') ? $request->user()->getRoleNames() : [],
+                    'permissions'       => $request->routeIs('manage.*') ? $request->user()->getAllPermissions()->pluck('name') : [],
                     'buildings'         => $request->user()->hasGlobalAccess()
                         ? null
                         : $request->user()->buildings()->pluck('buildings.id'),
@@ -59,7 +59,14 @@ class HandleInertiaRequests extends Middleware
             ],
             'appName' => config('app.name'),
             'lateCheckoutPendingCount' => auth()->check()
-                ? Booking::where('late_checkout_status', 'pending')->count()
+                ? (function () {
+                    $user = auth()->user();
+                    $query = Booking::where('late_checkout_status', 'pending');
+                    if (! $user->hasGlobalAccess()) {
+                        $query->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
+                    }
+                    return $query->count();
+                })()
                 : 0,
             'unreadNotifications' => auth()->check() && request()->routeIs('manage.*')
                 ? auth()->user()->unreadNotifications()->count()

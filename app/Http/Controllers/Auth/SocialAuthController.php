@@ -12,7 +12,12 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
 {
-    protected array $allowedProviders = ['google', 'facebook'];
+    protected array $allowedProviders = [];
+
+    public function __construct()
+    {
+        $this->allowedProviders = config('services.social_providers', []);
+    }
 
     public function redirect(string $provider): RedirectResponse
     {
@@ -43,6 +48,11 @@ class SocialAuthController extends Controller
                 'provider_refresh_token' => $socialUser->refreshToken,
             ]);
 
+            if ($socialAccount->user->is_staff || $socialAccount->user->is_admin) {
+                return redirect()->route('login')
+                    ->withErrors(['social' => 'Staff accounts must sign in with email and password.']);
+            }
+
             Auth::login($socialAccount->user, remember: true);
 
             return redirect()->intended(route('home'));
@@ -69,6 +79,11 @@ class SocialAuthController extends Controller
             'provider_token'         => $socialUser->token,
             'provider_refresh_token' => $socialUser->refreshToken,
         ]);
+
+        if ($user->is_staff || $user->is_admin) {
+            return redirect()->route('login')
+                ->withErrors(['social' => 'Staff accounts must sign in with email and password.']);
+        }
 
         Auth::login($user, remember: true);
 

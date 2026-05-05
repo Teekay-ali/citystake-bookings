@@ -35,6 +35,8 @@ return [
         ],
     ],
 
+    'social_providers' => ['google'],
+
     // Social Login
     'google' => [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
