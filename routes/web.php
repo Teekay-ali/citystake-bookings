@@ -149,7 +149,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('manage.')->group(function () {
 
     Route::get('/search', App\Http\Controllers\Admin\GlobalSearchController::class)
-        ->name('manage.search');
+        ->name('search');
 
     Route::get('/home', [AdminHomeController::class, 'index'])->name('home');
 
