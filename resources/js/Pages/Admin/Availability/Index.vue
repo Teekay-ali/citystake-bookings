@@ -202,7 +202,7 @@ const monthGroups = computed(() => {
 <template>
     <Head title="Availability" />
 
-    <div class="p-4 lg:p-6 flex flex-col gap-4 h-full">
+    <div class="p-4 lg:p-6 flex flex-col gap-4 min-h-full">
 
         <!-- ── Header ── -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

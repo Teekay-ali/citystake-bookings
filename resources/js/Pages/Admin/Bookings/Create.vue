@@ -110,7 +110,7 @@ const submit = () => {
 
 <template>
     <ManageLayout>
-        <Head title="Create Booking - Admin" />
+        <Head title="Create Booking" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
             <div class="max-w-5xl mx-auto px-6 lg:px-8">

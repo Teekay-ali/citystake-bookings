@@ -7,7 +7,8 @@ import {
     Users, Grid3x3, Clock, Menu, X, LogOut, User,
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
-    ChevronLeft, ChevronRight, FileText, ShieldCheck, ChevronUp, ChevronDown
+    ChevronLeft, ChevronRight, FileText, ShieldCheck, ChevronUp, ChevronDown,
+    Search, Plus
 } from 'lucide-vue-next'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
@@ -81,9 +82,71 @@ function handleClickOutside(e) {
     if (showUserMenu.value && !e.target.closest('.user-footer-container')) {
         showUserMenu.value = false
     }
+    if (quickActionsOpen.value && !e.target.closest('.quick-actions-container')) {
+        quickActionsOpen.value = false
+    }
 }
-onMounted(() => document.addEventListener('click', handleClickOutside))
-onUnmounted(() => document.removeEventListener('click', handleClickOutside))
+
+// ── Global search ─────────────────────────────────────────────
+const searchQuery   = ref('')
+const searchResults = ref([])
+const searchOpen    = ref(false)
+const searchLoading = ref(false)
+const searchRef     = ref(null)
+let   searchTimeout = null
+
+async function runSearch(q) {
+    if (q.length < 2) { searchResults.value = []; searchOpen.value = false; return }
+    searchLoading.value = true
+    try {
+        const res  = await fetch(route('manage.search') + '?q=' + encodeURIComponent(q))
+        const data = await res.json()
+        searchResults.value = data
+        searchOpen.value    = data.length > 0
+    } catch {
+        searchResults.value = []
+    } finally {
+        searchLoading.value = false
+    }
+}
+
+watch(searchQuery, (q) => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => runSearch(q), 300)
+})
+
+function closeSearch() {
+    searchOpen.value  = false
+    searchQuery.value = ''
+}
+
+function handleSearchClickOutside(e) {
+    if (searchRef.value && !searchRef.value.contains(e.target)) closeSearch()
+}
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside)
+    document.addEventListener('click', handleSearchClickOutside)
+})
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
+    document.removeEventListener('click', handleSearchClickOutside)
+})
+
+// ── Quick actions ─────────────────────────────────────────────
+const quickActionsOpen = ref(false)
+
+const quickActions = [
+    { label: 'New Booking',            icon: CalendarDays,  route: 'manage.bookings.create',      permission: 'manage-bookings' },
+    { label: 'New Complaint',          icon: AlertTriangle, route: 'manage.complaints.create',    permission: 'view-complaints' },
+    { label: 'New Maintenance Report', icon: Wrench,        route: 'manage.maintenance.create',   permission: 'view-maintenance' },
+    { label: 'New Procurement',        icon: ShoppingCart,  route: 'manage.procurement.create',   permission: 'view-procurement' },
+]
+
+const visibleQuickActions = computed(() =>
+    quickActions.filter(a => !a.permission || userPermissions.value.includes(a.permission))
+)
 
 // ── Flash toasts ──────────────────────────────────────────────
 watch(() => page.props.flash, (flash) => {
@@ -182,7 +245,7 @@ function canSeeItem(item) {
 </script>
 
 <template>
-    <div class="min-h-screen bg-white dark:bg-gray-950 flex">
+    <div class="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
 
         <!-- ── Mobile backdrop ─────────────────────────────────────── -->
         <Transition
@@ -326,87 +389,6 @@ function canSeeItem(item) {
                 </template>
             </nav>
 
-            <!-- ── User footer ──────────────────────────────────────── -->
-            <div class="p-2 shrink-0 relative user-footer-container">
-
-                <!-- User menu popup — grows upward from footer -->
-                <Transition
-                    enter-active-class="transition ease-out duration-150"
-                    enter-from-class="opacity-0 translate-y-2"
-                    enter-to-class="opacity-100 translate-y-0"
-                    leave-active-class="transition ease-in duration-100"
-                    leave-from-class="opacity-100 translate-y-0"
-                    leave-to-class="opacity-0 translate-y-2">
-                    <div v-if="showUserMenu"
-                         :class="collapsed ? 'fixed left-16 bottom-4 w-56' : 'absolute bottom-full left-2 right-2 mb-1'"
-                         class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-[9999]">
-
-                        <!-- Header -->
-                        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                            <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ user?.name }}</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ user?.email }}</p>
-                        </div>
-
-                        <!-- Items -->
-                        <div class="py-1">
-                            <button @click="toggleDark(); closeUserMenu()"
-                                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                <Sun v-if="isDark" class="w-4 h-4" />
-                                <Moon v-else class="w-4 h-4" />
-                                {{ isDark ? 'Light mode' : 'Dark mode' }}
-                            </button>
-                            <Link :href="route('profile.edit')"
-                                  @click="closeUserMenu"
-                                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                <User class="w-4 h-4" />
-                                Profile Settings
-                            </Link>
-                        </div>
-
-                        <!-- Sign out -->
-                        <div class="border-t border-gray-100 dark:border-gray-800 py-1">
-                            <Link :href="route('logout')" method="post" as="button"
-                                  @click="closeUserMenu"
-                                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                <LogOut class="w-4 h-4" />
-                                Sign out
-                            </Link>
-                        </div>
-                    </div>
-                </Transition>
-
-                <!-- Footer card -->
-                <div :class="collapsed ? 'flex-col items-center' : 'items-center gap-3 px-2'"
-                     class="flex py-2 bg-gray-100 dark:bg-gray-800/50 rounded-xl">
-
-                    <!-- Avatar -->
-                    <button @click.stop="toggleUserMenu"
-                            class="w-8 h-8 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity cursor-pointer">
-                        <span class="text-white dark:text-gray-900 text-xs font-medium">
-                            {{ user?.name?.charAt(0)?.toUpperCase() }}
-                        </span>
-                    </button>
-
-                    <!-- Name + role — hidden when collapsed -->
-                    <div v-if="!collapsed" class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user?.name }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {{ roleLabels[user?.roles?.[0]] ?? 'Admin' }}
-                        </p>
-                    </div>
-
-                    <!-- Notification bell -->
-                    <NotificationBell v-if="!collapsed" dropdown-direction="up" />
-
-                    <!-- Chevron -->
-                    <button v-if="!collapsed"
-                            @click.stop="toggleUserMenu"
-                            class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                        <ChevronUp v-if="showUserMenu" class="w-4 h-4" />
-                        <ChevronDown v-else class="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
 
         </aside>
 
@@ -414,20 +396,163 @@ function canSeeItem(item) {
         <div :class="collapsed ? 'lg:ml-16' : 'lg:ml-64'"
              class="flex-1 flex flex-col min-w-0 transition-all duration-300">
 
-            <!-- Mobile top bar -->
-            <header class="h-16 bg-white dark:bg-gray-900 flex items-center justify-between px-4 lg:hidden shrink-0 sticky top-0 z-30">
+            <!-- ── Topbar ── -->
+            <header class="h-16 bg-white dark:bg-gray-950 flex items-center gap-3 px-4 shrink-0 sticky top-0 z-30">
+                <!-- Mobile hamburger -->
                 <button @click="sidebarOpen = true"
-                        class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                        class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all lg:hidden">
                     <Menu class="w-5 h-5" />
                 </button>
-                <Link :href="route('home')" class="font-semibold text-gray-900 dark:text-white text-sm">
-                    CityStake
-                </Link>
+
+                <!-- Global search -->
+                <div ref="searchRef" class="relative flex-1 max-w-sm">
+                    <div class="relative">
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            placeholder="Search bookings, guests, units..."
+                            class="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
+                        />
+                        <div v-if="searchLoading"
+                             class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                    </div>
+
+                    <!-- Results dropdown -->
+                    <Transition
+                        enter-active-class="transition ease-out duration-150"
+                        enter-from-class="opacity-0 -translate-y-1"
+                        enter-to-class="opacity-100 translate-y-0"
+                        leave-active-class="transition ease-in duration-100"
+                        leave-from-class="opacity-100 translate-y-0"
+                        leave-to-class="opacity-0 -translate-y-1">
+                        <div v-if="searchOpen"
+                             class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
+                            <Link
+                                v-for="result in searchResults" :key="`${result.type}-${result.id}`"
+                                :href="result.url"
+                                @click="closeSearch"
+                                class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
+                                <div :class="[
+                                'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0',
+                                result.type === 'booking' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
+                                result.type === 'unit'    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' :
+                                'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                            ]">
+                                    {{ result.type === 'booking' ? 'B' : result.type === 'unit' ? 'U' : 'P' }}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ result.label }}</p>
+                                    <p class="text-xs text-gray-400 truncate">{{ result.sublabel }}</p>
+                                </div>
+                                <span :class="[
+                                'text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0',
+                                result.status === 'confirmed'  ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' :
+                                result.status === 'checked_in' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' :
+                                result.status === 'cancelled'  ? 'bg-red-50 dark:bg-red-900/20 text-red-500' :
+                                result.status === 'staff'      ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' :
+                                'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                            ]">{{ result.status }}</span>
+                            </Link>
+                        </div>
+                    </Transition>
+                </div>
+
+                <!-- Spacer -->
+                <div class="flex-1" />
+
+                <!-- Quick actions -->
+                <div v-if="visibleQuickActions.length" class="relative quick-actions-container">
+                    <button @click="quickActionsOpen = !quickActionsOpen"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:opacity-90 transition-all">
+                        <Plus class="w-4 h-4" />
+                        <span class="hidden sm:inline">New</span>
+                        <ChevronDown class="w-3.5 h-3.5" />
+                    </button>
+
+                    <Transition
+                        enter-active-class="transition ease-out duration-150"
+                        enter-from-class="opacity-0 translate-y-1"
+                        enter-to-class="opacity-100 translate-y-0"
+                        leave-active-class="transition ease-in duration-100"
+                        leave-from-class="opacity-100 translate-y-0"
+                        leave-to-class="opacity-0 translate-y-1">
+                        <div v-if="quickActionsOpen"
+                             class="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
+                            <Link v-for="action in visibleQuickActions" :key="action.label"
+                                  :href="route(action.route)"
+                                  @click="quickActionsOpen = false"
+                                  class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                                <component :is="action.icon" class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                {{ action.label }}
+                            </Link>
+                        </div>
+                    </Transition>
+                </div>
+
+                <!-- Dark mode -->
+                <button @click="toggleDark"
+                        class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all">
+                    <Sun v-if="isDark" class="w-4 h-4" />
+                    <Moon v-else class="w-4 h-4" />
+                </button>
+
+                <!-- Notification bell -->
                 <NotificationBell />
+
+                <!-- User avatar -->
+                <div class="relative user-footer-container">
+                    <button @click.stop="toggleUserMenu"
+                            class="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 transition-all">
+                        <div class="w-7 h-7 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center">
+                        <span class="text-white dark:text-gray-900 text-xs font-semibold">
+                            {{ user?.name?.charAt(0)?.toUpperCase() }}
+                        </span>
+                        </div>
+                        <span class="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300 max-w-24 truncate">
+                        {{ user?.name?.split(' ')[0] }}
+                    </span>
+                        <ChevronDown class="hidden sm:block w-3.5 h-3.5 text-gray-400" />
+                    </button>
+
+                    <!-- User dropdown -->
+                    <Transition
+                        enter-active-class="transition ease-out duration-150"
+                        enter-from-class="opacity-0 translate-y-1"
+                        enter-to-class="opacity-100 translate-y-0"
+                        leave-active-class="transition ease-in duration-100"
+                        leave-from-class="opacity-100 translate-y-0"
+                        leave-to-class="opacity-0 translate-y-1">
+                        <div v-if="showUserMenu"
+                             class="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
+                            <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ user?.name }}</p>
+                                <p class="text-xs text-gray-400 truncate">{{ roleLabels[user?.roles?.[0]] ?? 'Admin' }}</p>
+                            </div>
+                            <Link :href="route('profile.edit')"
+                                  @click="closeUserMenu"
+                                  class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                <User class="w-4 h-4 text-gray-400" />
+                                Profile
+                            </Link>
+                            <Link :href="route('home')"
+                                  @click="closeUserMenu"
+                                  class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-t border-gray-100 dark:border-gray-800">
+                                <Building2 class="w-4 h-4 text-gray-400" />
+                                Guest Site
+                            </Link>
+                            <Link :href="route('logout')" method="post" as="button"
+                                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-800">
+                                <LogOut class="w-4 h-4" />
+                                Sign out
+                            </Link>
+                        </div>
+                    </Transition>
+                </div>
             </header>
 
             <!-- Page slot -->
-            <main class="flex-1 overflow-auto">
+            <main class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-950">
                 <slot />
             </main>
         </div>
