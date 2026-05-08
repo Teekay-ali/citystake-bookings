@@ -9,15 +9,15 @@ defineOptions({ layout: ManageLayout })
 const props = defineProps({
     conversations:      Object,
     activeConversation: Object,
-    activeBookingId:    Number,
+    activeBookingId:    String,
 })
 
 const threadEl = ref(null)
 
 const form = useForm({ body: '' })
 
-function selectConversation(id) {
-    router.visit(route('manage.messages.index', { booking: id }), {
+function selectConversation(bookingReference) {
+    router.visit(route('manage.messages.index', { booking: bookingReference }), {
         preserveScroll: false,
     })
 }
@@ -92,9 +92,9 @@ function guestName(conv) {
                 <button
                     v-for="conv in conversations.data"
                     :key="conv.id"
-                    @click="selectConversation(conv.id)"
+                    @click="selectConversation(conv.booking_reference)"
                     class="w-full text-left flex items-start gap-3 px-5 py-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-900"
-                    :class="activeBookingId === conv.id
+                    :class="activeBookingId === conv.booking_reference
                         ? 'bg-gray-100 dark:bg-gray-900 border-l-2 border-l-gray-900 dark:border-l-white'
                         : ''"
                 >

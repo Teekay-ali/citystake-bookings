@@ -83,9 +83,13 @@ Route::get('/privacy', function () {
 })->name('privacy');
 
 Route::get('/properties', [UnitTypeController::class, 'index'])->name('properties.index');
+Route::get('/properties/{building:slug}', [UnitTypeController::class, 'showBuilding'])
+    ->name('properties.building');
 Route::get('/properties/{building:slug}/{unitType:slug}', [UnitTypeController::class, 'show'])->name('properties.show');
 Route::post('/properties/{building:slug}/{unitType:slug}/check-availability', [UnitTypeController::class, 'checkAvailability'])
     ->name('properties.check-availability');
+Route::get('/properties/{building:slug}/{unitType:slug}/unavailable-dates', [UnitTypeController::class, 'unavailableDates'])
+    ->name('properties.unavailable-dates');
 
 // Paystack webhook — outside auth, CSRF excluded via bootstrap/app.php
 Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])

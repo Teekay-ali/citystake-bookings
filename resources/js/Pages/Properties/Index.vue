@@ -1,8 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PropertyCard from '@/Components/Property/PropertyCard.vue'
-import { Head, router } from '@inertiajs/vue3'
-import { Building2 } from 'lucide-vue-next'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { Building2, MapPin, ChevronRight } from 'lucide-vue-next'
 import { ref, watch } from 'vue'
 
 const props = defineProps({
@@ -87,6 +87,17 @@ const selectClass = "pl-4 pr-8 py-2 bg-white dark:bg-gray-900 border border-gray
                         class="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                         Clear filters
                     </button>
+                </div>
+
+                <!-- Building quick links -->
+                <div class="flex flex-wrap gap-3 mb-8">
+                    <Link v-for="b in buildings" :key="b.id"
+                          :href="route('properties.building', b.slug)"
+                          class="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-600 hover:bg-white dark:hover:bg-gray-800 transition-all">
+                        <MapPin class="w-3.5 h-3.5 text-amber-500" />
+                        {{ b.name }}
+                        <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                    </Link>
                 </div>
 
                 <!-- Property Grid -->

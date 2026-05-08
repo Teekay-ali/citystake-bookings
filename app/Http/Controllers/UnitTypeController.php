@@ -213,4 +213,104 @@ class UnitTypeController extends Controller
         ]);
     }
 
+    public function unavailableDates(Request $request, Building $building, UnitType $unitType)
+    {
+        if ($unitType->building_id !== $building->id) {
+            abort(404);
+        }
+
+        // Get total units available for this type
+        $totalUnits = $unitType->units()
+            ->where('status', 'available')
+            ->where('is_available', true)
+            ->count();
+
+        if ($totalUnits === 0) {
+            return response()->json(['unavailable' => []]);
+        }
+
+        // Look 12 months ahead
+        $start = now()->toDateString();
+        $end   = now()->addMonths(12)->toDateString();
+
+        // Get all active bookings in the window
+        $bookings = Booking::whereHas('unit', fn($q) => $q->where('unit_type_id', $unitType->id))
+            ->whereNotIn('status', ['cancelled'])
+            ->where('check_in', '<', $end)
+            ->where('check_out', '>', $start)
+            ->get(['check_in', 'check_out', 'unit_id']);
+
+        // Get all blocked dates in the window
+        $blocked = \App\Models\BlockedDate::whereHas('unit', fn($q) => $q->where('unit_type_id', $unitType->id))
+            ->where('blocked_from', '<', $end)
+            ->where('blocked_to', '>', $start)
+            ->get(['blocked_from', 'blocked_to', 'unit_id']);
+
+        // For each date, count how many units are occupied
+        // A date is unavailable when occupied units >= total units
+        $unavailable = [];
+        $current = new \DateTime($start);
+        $endDt   = new \DateTime($end);
+
+        while ($current <= $endDt) {
+            $dateStr  = $current->format('Y-m-d');
+            $occupied = collect();
+
+            foreach ($bookings as $booking) {
+                if ($booking->check_in <= $dateStr && $booking->check_out > $dateStr) {
+                    $occupied->push($booking->unit_id);
+                }
+            }
+
+            foreach ($blocked as $block) {
+                if ($block->blocked_from <= $dateStr && $block->blocked_to > $dateStr) {
+                    $occupied->push($block->unit_id);
+                }
+            }
+
+            if ($occupied->unique()->count() >= $totalUnits) {
+                $unavailable[] = $dateStr;
+            }
+
+            $current->modify('+1 day');
+        }
+
+        return response()->json(['unavailable' => $unavailable]);
+    }
+
+    public function showBuilding(Building $building): Response
+    {
+        if (! $building->is_active) {
+            abort(404);
+        }
+
+        $building->load([
+            'images',
+            'unitTypes' => fn($q) => $q->where('is_active', true)
+                ->with(['primaryImage'])
+                ->withCount('units')
+                ->orderBy('base_price_per_night'),
+        ]);
+
+        // Available unit count per unit type for today
+        $today = now()->toDateString();
+        $tomorrow = now()->addDay()->toDateString();
+
+        $building->unitTypes->each(function ($unitType) use ($today, $tomorrow) {
+            $unitType->available_now = $unitType->getAvailableUnitsCount($today, $tomorrow);
+        });
+
+        // Other buildings for "explore more" section
+        $otherBuildings = Building::where('is_active', true)
+            ->where('id', '!=', $building->id)
+            ->with(['images' => fn($q) => $q->where('is_primary', true)])
+            ->withCount('unitTypes')
+            ->get(['id', 'name', 'slug', 'city', 'address']);
+
+        return Inertia::render('Properties/Building', [
+            'building'       => $building,
+            'otherBuildings' => $otherBuildings,
+        ]);
+    }
+
 }

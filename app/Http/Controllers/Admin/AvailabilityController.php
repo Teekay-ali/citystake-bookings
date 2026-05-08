@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
@@ -16,101 +15,79 @@ class AvailabilityController extends Controller
     {
         abort_unless(auth()->user()->can('manage-availability'), 403);
 
-        $date = $request->date ? Carbon::parse($request->date) : Carbon::today();
+        $user      = auth()->user();
+        $startDate = $request->start ? Carbon::parse($request->start) : Carbon::today();
+        $days      = 30;
+        $endDate   = $startDate->copy()->addDays($days - 1);
 
         $buildingsQuery = Building::with([
-            'unitTypes.units' => function ($q) {
-                $q->orderBy('unit_number');
-            },
+            'unitTypes' => fn($q) => $q->where('is_active', true)->orderBy('name')->with([
+                'units' => fn($q) => $q->whereIn('status', ['available', 'maintenance'])->orderBy('unit_number'),
+            ]),
         ])->where('is_active', true);
 
-        // Building scope: staff only see their buildings
-        $user = auth()->user();
-        if (!$user->hasGlobalAccess()) {
-            $buildingIds = $user->accessibleBuildingIds();
-            $buildingsQuery->whereIn('id', $buildingIds);
+        if (! $user->hasGlobalAccess()) {
+            $buildingsQuery->whereIn('id', $user->accessibleBuildingIds());
         }
 
-        if ($request->building_id) {
+        if ($request->filled('building_id')) {
             $buildingsQuery->where('id', $request->building_id);
         }
 
         $buildings = $buildingsQuery->get();
 
-        // Collect all unit IDs across filtered buildings
         $unitIds = $buildings->flatMap(
             fn($b) => $b->unitTypes->flatMap(
                 fn($ut) => $ut->units->pluck('id')
             )
         );
 
-        // Get all bookings that overlap with the selected date
-        $bookings = Booking::with(['unit', 'unitType'])
+        // Load all bookings in the 30-day window
+        $bookings = Booking::with(['unit'])
             ->whereIn('unit_id', $unitIds)
             ->whereNotIn('status', ['cancelled'])
-            ->where('check_in', '<=', $date->toDateString())
-            ->where('check_out', '>', $date->toDateString())
-            ->get()
-            ->keyBy('unit_id'); // one active booking per unit per day
+            ->where('check_in', '<', $endDate->copy()->addDay()->toDateString())
+            ->where('check_out', '>', $startDate->toDateString())
+            ->get();
 
-        // Shape units with their booking status for the frontend
-        $buildings->each(function ($building) use ($bookings, $date) {
-            $building->unitTypes->each(function ($unitType) use ($bookings, $date) {
-                $unitType->units->each(function ($unit) use ($bookings, $date) {
-                    $booking = $bookings->get($unit->id);
+        // Index bookings by unit_id for fast lookup
+        $bookingsByUnit = $bookings->groupBy('unit_id');
 
-                    $unit->availability = $this->resolveUnitStatus($unit, $booking);
-                    $unit->current_booking = $booking ? [
-                        'id' => $booking->id,
-                        'reference' => $booking->booking_reference,
-                        'guest_name' => $booking->guest_name,
-                        'guest_phone' => $booking->guest_phone,
-                        'check_in' => $booking->check_in->toDateString(),
-                        'check_out' => $booking->check_out->toDateString(),
-                        'nights' => $booking->nights,
-                        'status' => $booking->status,
-                        'payment_status' => $booking->payment_status,
-                        'total_amount' => $booking->total_amount,
-                    ] : null;
+        // Shape data — units carry their bookings for the window
+        $buildings->each(function ($building) use ($bookingsByUnit) {
+            $building->unitTypes->each(function ($unitType) use ($bookingsByUnit) {
+                $unitType->units->each(function ($unit) use ($bookingsByUnit) {
+                    $unit->bookings = ($bookingsByUnit->get($unit->id) ?? collect())
+                        ->map(fn($b) => [
+                            'id'             => $b->id,
+                            'reference'      => $b->booking_reference,
+                            'guest_name'     => $b->guest_name,
+                            'guest_phone'    => $b->guest_phone,
+                            'check_in'       => $b->check_in->toDateString(),
+                            'check_out'      => $b->check_out->toDateString(),
+                            'nights'         => $b->nights,
+                            'status'         => $b->status,
+                            'payment_status' => $b->payment_status,
+                            'total_amount'   => $b->total_amount,
+                        ])->values();
                 });
             });
         });
 
-        // All buildings for the filter dropdown (unscoped)
         $allBuildings = Building::where('is_active', true)
-            ->when(!$user->hasGlobalAccess(), function ($q) use ($user) {
-                $q->whereIn('id', $user->accessibleBuildingIds());
-            })
+            ->when(! $user->hasGlobalAccess(), fn($q) => $q->whereIn('id', $user->accessibleBuildingIds()))
             ->select('id', 'name')
             ->get();
 
         return Inertia::render('Admin/Availability/Index', [
-            'buildings' => $buildings,
+            'buildings'    => $buildings,
             'allBuildings' => $allBuildings,
-            'selectedDate' => $date->toDateString(),
-            'filters' => [
+            'startDate'    => $startDate->toDateString(),
+            'days'         => $days,
+            'filters'      => [
                 'building_id' => $request->building_id,
-                'date' => $date->toDateString(),
-            ],
-            'summary' => [
-                'total' => $unitIds->count(),
-                'occupied' => $bookings->count(),
-                'available' => $unitIds->count() - $bookings->count(),
-                'maintenance' => $buildings->flatMap(
-                    fn($b) => $b->unitTypes->flatMap(
-                        fn($ut) => $ut->units->where('status', 'maintenance')
-                    )
-                )->count(),
+                'start'       => $startDate->toDateString(),
             ],
         ]);
-    }
-
-    private function resolveUnitStatus($unit, $booking): string
-    {
-        if ($unit->status === 'maintenance') return 'maintenance';
-        if ($unit->status === 'retired') return 'retired';
-        if (!$booking) return 'available';
-        if ($booking->status === 'checked_in') return 'checked_in';
-        return 'occupied'; // confirmed but not yet checked in
     }
 }

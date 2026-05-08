@@ -28,7 +28,7 @@ import {
     Volume2,       // For noise/quiet hours
     Baby           // For children rules
 } from 'lucide-vue-next';
-import { ref, computed, nextTick } from 'vue';
+import {ref, computed, nextTick, onMounted} from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 
@@ -38,8 +38,6 @@ const props = defineProps({
     userBooking: Object,
     similarProperties: Array,
 });
-
-
 
 const isReserving = ref(false);
 const toast = useToast();
@@ -69,14 +67,26 @@ const dateRange = ref(null);
 const checkIn = ref('');
 const checkOut = ref('');
 
+const unavailableDates = ref([])
 
-const dateConfig = {
+// Fetch unavailable dates on mount
+onMounted(async () => {
+    try {
+        const res = await fetch(route('properties.unavailable-dates', [props.building.slug, props.unitType.slug]))
+        const data = await res.json()
+        unavailableDates.value = data.unavailable ?? []
+    } catch (e) {
+        // silently fail — dates just won't be disabled
+    }
+})
+
+const dateConfig = computed(() => ({
     mode: 'range',
     dateFormat: 'd M Y',
     minDate: 'today',
+    disable: unavailableDates.value,
     onClose: (selectedDates) => {
         if (selectedDates.length === 2) {
-            // Fix timezone issue by using local date string
             const formatLocalDate = (date) => {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -88,7 +98,7 @@ const dateConfig = {
             checkOut.value = formatLocalDate(selectedDates[1]);
         }
     }
-};
+}))
 
 const formatPrice = (price) => {
     return new Intl.NumberFormat('en-NG', {

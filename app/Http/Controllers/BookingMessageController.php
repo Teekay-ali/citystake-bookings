@@ -14,6 +14,70 @@ use Illuminate\Support\Facades\Mail;
 class BookingMessageController extends Controller
 {
     /**
+     * Admin messages index — all conversations with unread counts
+     */
+    public function index(Request $request)
+    {
+        abort_unless(auth()->user()->can('view-bookings'), 403);
+
+        $user        = auth()->user();
+        $buildingIds = $user->hasGlobalAccess()
+            ? null
+            : $user->accessibleBuildingIds();
+
+        $conversations = Booking::whereHas('messages')
+            ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+            ->with([
+                'building:id,name',
+                'unitType:id,name',
+                'messages' => fn($q) => $q->latest()->limit(1),
+            ])
+            ->withCount([
+                'messages as unread_count' => fn($q) => $q
+                    ->where('sender_type', 'guest')
+                    ->whereNull('read_at'),
+            ])
+            ->orderByDesc(
+                BookingMessage::select('created_at')
+                    ->whereColumn('booking_id', 'bookings.id')
+                    ->latest()
+                    ->limit(1)
+            )
+            ->paginate(20);
+
+        // Load active conversation if ?booking= is present
+        $activeConversation = null;
+        if ($request->filled('booking')) {
+            $activeConversation = Booking::where('booking_reference', $request->booking)                ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+                ->with([
+                    'building:id,name',
+                    'unit:id,unit_number',
+                    'unitType:id,name',
+                    'messages' => fn($q) => $q->oldest()->with('sender:id,name'),
+                ])
+                ->first();
+
+            // Mark all guest messages as read when staff opens the thread
+            if ($activeConversation) {
+                BookingMessage::where('booking_id', $activeConversation->id)
+                    ->where('sender_type', 'guest')
+                    ->whereNull('read_at')
+                    ->update(['read_at' => now()]);
+
+                // Refresh unread count to 0 for this booking in the list
+                $activeConversation->unread_count = 0;
+            }
+        }
+
+        return inertia('Admin/Messages/Index', [
+            'conversations'      => $conversations,
+            'activeConversation' => $activeConversation,
+            'activeBookingId' => $request->booking ?? null,
+        ]);
+    }
+
+
+    /**
      * Guest sends a message
      */
     public function guestSend(Request $request, Booking $booking)
@@ -80,72 +144,6 @@ class BookingMessageController extends Controller
         }
 
         return back()->with('success', 'Reply sent.');
-    }
-
-    /**
-     * Admin messages index — all conversations with unread counts
-     */
-    // REPLACE the entire index() method with this:
-
-    public function index(Request $request)
-    {
-        abort_unless(auth()->user()->can('view-bookings'), 403);
-
-        $user        = auth()->user();
-        $buildingIds = $user->hasGlobalAccess()
-            ? null
-            : $user->accessibleBuildingIds();
-
-        $conversations = Booking::whereHas('messages')
-            ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
-            ->with([
-                'building:id,name',
-                'unitType:id,name',
-                'messages' => fn($q) => $q->latest()->limit(1),
-            ])
-            ->withCount([
-                'messages as unread_count' => fn($q) => $q
-                    ->where('sender_type', 'guest')
-                    ->whereNull('read_at'),
-            ])
-            ->orderByDesc(
-                BookingMessage::select('created_at')
-                    ->whereColumn('booking_id', 'bookings.id')
-                    ->latest()
-                    ->limit(1)
-            )
-            ->paginate(20);
-
-        // Load active conversation if ?booking= is present
-        $activeConversation = null;
-        if ($request->filled('booking')) {
-            $activeConversation = Booking::where('id', $request->booking)
-                ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
-                ->with([
-                    'building:id,name',
-                    'unit:id,unit_number',
-                    'unitType:id,name',
-                    'messages' => fn($q) => $q->oldest()->with('sender:id,name'),
-                ])
-                ->first();
-
-            // Mark all guest messages as read when staff opens the thread
-            if ($activeConversation) {
-                BookingMessage::where('booking_id', $activeConversation->id)
-                    ->where('sender_type', 'guest')
-                    ->whereNull('read_at')
-                    ->update(['read_at' => now()]);
-
-                // Refresh unread count to 0 for this booking in the list
-                $activeConversation->unread_count = 0;
-            }
-        }
-
-        return inertia('Admin/Messages/Index', [
-            'conversations'      => $conversations,
-            'activeConversation' => $activeConversation,
-            'activeBookingId'    => $request->booking ? (int) $request->booking : null,
-        ]);
     }
 
 }
