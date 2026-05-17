@@ -93,12 +93,12 @@ const featuredProperties = computed(() => props.buildings.slice(0, 3));
                 src="/images/hero-apartment.jpg"
                 alt=""
                 fetchpriority="high"
-                class="absolute inset-0 w-full h-full object-cover object-center opacity-40 animate-kenburns"
+                class="absolute inset-0 w-full h-full object-cover object-center opacity-60 dark:opacity-40 animate-kenburns"
                 aria-hidden="true"
             />
 
             <!-- Single clean gradient — no pulsing grid -->
-            <div class="absolute inset-0 bg-gradient-to-b from-gray-950/60 via-gray-950/40 to-gray-950/90"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-gray-900/30 via-gray-900/20 to-gray-900/70 dark:from-gray-950/60 dark:via-gray-950/40 dark:to-gray-950/90"></div>
 
             <!-- Thin gold accent line at very top -->
             <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"></div>
