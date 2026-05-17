@@ -4,10 +4,16 @@ import { ref, watch, onMounted } from 'vue';
 import { useDarkMode } from '@/Composables/useDarkMode';
 import { usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
+import { onClickOutside } from '@vueuse/core';
+import { Sun, Moon, Menu, X } from 'lucide-vue-next';
 import CookieConsent from '@/Components/CookieConsent.vue';
 import EmailVerificationBanner from '@/Components/EmailVerificationBanner.vue';
 
 const showMobileMenu = ref(false);
+const showUserMenu = ref(false);
+const userMenuRef = ref(null);
+const isScrolled = ref(false);
+
 const { isDark, toggle } = useDarkMode();
 
 const page = usePage();
@@ -27,8 +33,17 @@ function handleFlash(flash) {
     if (flash?.warning) toast.warning(flash.warning)
 }
 
-onMounted(() => handleFlash(page.props.flash))
-watch(() => page.props.flash, handleFlash, { deep: true })
+onMounted(() => {
+    handleFlash(page.props.flash);
+
+    window.addEventListener('scroll', () => {
+        isScrolled.value = window.scrollY > 10;
+    }, { passive: true });
+});
+
+watch(() => page.props.flash, handleFlash, { deep: true });
+
+onClickOutside(userMenuRef, () => showUserMenu.value = false);
 
 // Cookie settings function
 const openCookieSettings = () => {
@@ -43,13 +58,19 @@ const openCookieSettings = () => {
         <EmailVerificationBanner />
 
         <!-- Navigation -->
-        <nav class="fixed left-0 right-0 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md z-50 border-b border-gray-100 dark:border-gray-900"
-             :class="$page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'top-[40px]' : 'top-0'">
+        <nav class="fixed left-0 right-0 z-50 transition-all duration-300"
+             :class="[
+                 $page.props.auth?.user && !$page.props.auth.user.email_verified_at ? 'top-[40px]' : 'top-0',
+                 isScrolled
+                     ? 'bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-sm'
+                     : 'bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-900'
+             ]">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
                 <div class="flex justify-between items-center h-20">
 
                     <!-- Logo -->
                     <Link :href="route('home')" class="flex items-center space-x-2">
+                        <img src="/citystake-120.png" alt="CityStake Bookings" class="h-8 w-auto dark:invert" />
                         <span class="text-2xl font-light tracking-tight text-gray-900 dark:text-white">CityStake</span>
                     </Link>
 
@@ -57,7 +78,10 @@ const openCookieSettings = () => {
                     <div class="hidden md:flex items-center space-x-8">
                         <Link
                             :href="route('properties.index')"
-                            class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            class="text-sm font-medium transition-colors"
+                            :class="route().current('properties.*')
+                                ? 'text-gray-900 dark:text-white font-semibold'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                         >
                             Properties
                         </Link>
@@ -65,19 +89,15 @@ const openCookieSettings = () => {
                         <!-- Dark Mode Toggle -->
                         <button
                             @click="toggle"
-                            class="p-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
                             aria-label="Toggle dark mode"
                         >
-                            <svg v-if="isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                            </svg>
+                            <Sun v-if="isDark" class="w-5 h-5" />
+                            <Moon v-else class="w-5 h-5" />
                         </button>
 
                         <!-- Authenticated user -->
-                        <div v-if="$page.props.auth.user" class="flex items-center space-x-6">
+                        <template v-if="$page.props.auth.user">
 
                             <!-- Dashboard entry point for staff/admin -->
                             <Link
@@ -88,30 +108,63 @@ const openCookieSettings = () => {
                                 Dashboard
                             </Link>
 
-                            <Link
-                                :href="route('bookings.index')"
-                                class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                            >
-                                My Bookings
-                            </Link>
-                            <Link
-                                :href="route('profile.edit')"
-                                class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                            >
-                                {{ $page.props.auth.user.name }}
-                            </Link>
-                            <Link
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
-                                class="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                            >
-                                Sign out
-                            </Link>
-                        </div>
+                            <!-- User dropdown -->
+                            <div ref="userMenuRef" class="relative">
+                                <button
+                                    @click="showUserMenu = !showUserMenu"
+                                    class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                >
+                                    <span class="w-8 h-8 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center text-xs font-semibold shrink-0">
+                                        {{ $page.props.auth.user.name.charAt(0).toUpperCase() }}
+                                    </span>
+                                    <svg class="w-4 h-4 transition-transform duration-200" :class="showUserMenu ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <Transition
+                                    enter-active-class="transition ease-out duration-150"
+                                    enter-from-class="opacity-0 scale-95 -translate-y-1"
+                                    enter-to-class="opacity-100 scale-100 translate-y-0"
+                                    leave-active-class="transition ease-in duration-100"
+                                    leave-from-class="opacity-100 scale-100 translate-y-0"
+                                    leave-to-class="opacity-0 scale-95 -translate-y-1"
+                                >
+                                    <div v-if="showUserMenu"
+                                         class="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden">
+                                        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">Signed in as</p>
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $page.props.auth.user.name }}</p>
+                                        </div>
+                                        <Link
+                                            :href="route('bookings.index')"
+                                            @click="showUserMenu = false"
+                                            class="flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                        >
+                                            My Bookings
+                                        </Link>
+                                        <Link
+                                            :href="route('profile.edit')"
+                                            @click="showUserMenu = false"
+                                            class="flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                        >
+                                            Profile Settings
+                                        </Link>
+                                        <Link
+                                            :href="route('logout')"
+                                            method="post"
+                                            as="button"
+                                            class="w-full text-left flex items-center px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-800"
+                                        >
+                                            Sign out
+                                        </Link>
+                                    </div>
+                                </Transition>
+                            </div>
+                        </template>
 
                         <!-- Guest -->
-                        <div v-else class="flex items-center space-x-6">
+                        <template v-else>
                             <Link
                                 :href="route('login')"
                                 class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -124,100 +177,110 @@ const openCookieSettings = () => {
                             >
                                 Sign up
                             </Link>
-                        </div>
+                        </template>
                     </div>
 
-                    <!-- Mobile menu button -->
-                    <button
-                        @click="showMobileMenu = !showMobileMenu"
-                        class="md:hidden p-2 text-gray-700 dark:text-gray-300"
-                    >
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path v-if="!showMobileMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <!-- Mobile: Dark mode toggle + Hamburger -->
+                    <div class="md:hidden flex items-center space-x-2">
+                        <button
+                            @click="toggle"
+                            class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                            aria-label="Toggle dark mode"
+                        >
+                            <Sun v-if="isDark" class="w-5 h-5" />
+                            <Moon v-else class="w-5 h-5" />
+                        </button>
+                        <button
+                            @click="showMobileMenu = !showMobileMenu"
+                            class="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                            :aria-label="showMobileMenu ? 'Close menu' : 'Open menu'"
+                        >
+                            <X v-if="showMobileMenu" class="w-5 h-5" />
+                            <Menu v-else class="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Mobile menu -->
-            <div v-if="showMobileMenu" class="md:hidden border-t border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950">
-                <div class="px-6 py-4 space-y-4">
-                    <Link
-                        :href="route('properties.index')"
-                        class="block text-base font-medium text-gray-700 dark:text-gray-300"
-                    >
-                        Properties
-                    </Link>
-
-                    <!-- Dark Mode Toggle Mobile -->
-                    <button
-                        @click="toggle"
-                        class="flex items-center space-x-2 text-base font-medium text-gray-700 dark:text-gray-300"
-                    >
-                        <svg v-if="isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
-                        <span>{{ isDark ? 'Light mode' : 'Dark mode' }}</span>
-                    </button>
-
-                    <template v-if="$page.props.auth.user">
-
-                        <!-- Dashboard entry point for staff/admin (mobile) -->
+            <!-- Mobile menu with animation -->
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0 -translate-y-2"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-2"
+            >
+                <div v-if="showMobileMenu" class="md:hidden border-t border-gray-100 dark:border-gray-900 bg-white dark:bg-gray-950">
+                    <div class="px-6 py-4 space-y-1">
                         <Link
-                            v-if="$page.props.auth.user.is_admin || $page.props.auth.user.is_staff"
-                            :href="route('manage.dashboard')"
-                            class="block text-base font-medium text-gray-900 dark:text-white"
+                            :href="route('properties.index')"
+                            @click="showMobileMenu = false"
+                            class="block px-3 py-2.5 rounded-lg text-base font-medium transition-colors"
+                            :class="route().current('properties.*')
+                                ? 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900'"
                         >
-                            Dashboard
+                            Properties
                         </Link>
 
-                        <Link
-                            :href="route('bookings.index')"
-                            class="block text-base font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            My Bookings
-                        </Link>
+                        <template v-if="$page.props.auth.user">
+                            <Link
+                                v-if="$page.props.auth.user.is_admin || $page.props.auth.user.is_staff"
+                                :href="route('manage.dashboard')"
+                                @click="showMobileMenu = false"
+                                class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                            >
+                                Dashboard
+                            </Link>
+                            <Link
+                                :href="route('bookings.index')"
+                                @click="showMobileMenu = false"
+                                class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                            >
+                                My Bookings
+                            </Link>
+                            <Link
+                                :href="route('profile.edit')"
+                                @click="showMobileMenu = false"
+                                class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                            >
+                                Profile Settings
+                            </Link>
+                            <Link
+                                :href="route('logout')"
+                                method="post"
+                                as="button"
+                                class="block w-full text-left px-3 py-2.5 rounded-lg text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            >
+                                Sign out
+                            </Link>
+                        </template>
 
-                        <Link
-                            :href="route('profile.edit')"
-                            class="block text-base font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            Profile
-                        </Link>
-                        <Link
-                            :href="route('logout')"
-                            method="post"
-                            as="button"
-                            class="block text-base font-medium text-gray-500 dark:text-gray-400"
-                        >
-                            Sign out
-                        </Link>
-                    </template>
-                    <template v-else>
-                        <Link
-                            :href="route('login')"
-                            class="block text-base font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            Sign in
-                        </Link>
-                        <Link
-                            :href="route('register')"
-                            class="block text-base font-medium text-gray-700 dark:text-gray-300"
-                        >
-                            Sign up
-                        </Link>
-                    </template>
+                        <template v-else>
+                            <Link
+                                :href="route('login')"
+                                @click="showMobileMenu = false"
+                                class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                            >
+                                Sign in
+                            </Link>
+                            <Link
+                                :href="route('register')"
+                                @click="showMobileMenu = false"
+                                class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                            >
+                                Sign up
+                            </Link>
+                        </template>
+                    </div>
                 </div>
-            </div>
+            </Transition>
         </nav>
 
-        <!-- Main Content -->
-        <main :class="
-            $page.props.auth?.user && !$page.props.auth.user.email_verified_at
+        <!-- Page Content -->
+        <main
+            :class="$page.props.auth?.user && !$page.props.auth.user.email_verified_at
                 ? 'pt-[120px]'
                 : 'pt-20'
         ">
