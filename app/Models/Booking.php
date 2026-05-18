@@ -115,6 +115,11 @@ class Booking extends Model
         return $this->hasMany(BookingMessage::class)->orderBy('created_at');
     }
 
+    public function adjustments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(BookingAdjustment::class);
+    }
+
     // Helper methods
     public static function generateReference(): string
     {

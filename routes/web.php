@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\Admin\BookingAdjustmentController;
 use App\Http\Controllers\BookingMessageController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Profile\EmailPreferencesController;
@@ -171,6 +172,9 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/bookings/{booking}/late-checkout/request', [AdminBookingController::class, 'requestLateCheckout'])->name('bookings.late-checkout.request');
     Route::post('/bookings/{booking}/late-checkout/approve', [AdminBookingController::class, 'approveLateCheckout'])->name('bookings.late-checkout.approve');
     Route::post('/bookings/{booking}/late-checkout/settle', [AdminBookingController::class, 'settleLateCheckout'])->name('bookings.late-checkout.settle');
+
+    Route::post('/bookings/{booking}/adjustments', [BookingAdjustmentController::class, 'store'])->name('bookings.adjustments.store');
+    Route::delete('/bookings/{booking}/adjustments/{adjustment}', [BookingAdjustmentController::class, 'destroy'])->name('bookings.adjustments.destroy');
 
     // Properties
     Route::get('/properties', [BuildingController::class, 'index'])->name('properties.index');

@@ -255,9 +255,10 @@ class BookingController extends Controller
         abort_unless(auth()->user()->can('view-bookings'), 403);
 
         $booking->load([
-            'building', 'unitType', 'unit', 'user',
+            'building', 'unitType', 'unit', 'user', 'adjustments',
             'checkedInBy', 'lateCheckoutApprovedBy',
             'messages.sender',
+            'adjustments.appliedBy',
         ]);
 
         return Inertia::render('Admin/Bookings/Show', [

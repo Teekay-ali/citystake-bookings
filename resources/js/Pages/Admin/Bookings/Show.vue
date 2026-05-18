@@ -1,13 +1,13 @@
 <script setup>
 import ManageLayout from "@/Layouts/ManageLayout.vue";
 import { LogIn } from "lucide-vue-next";
-import { Head, Link, router, useForm } from "@inertiajs/vue3";
+import { Head, Link, router, usePage, useForm } from "@inertiajs/vue3";
 import { ref } from "vue";
 import { useToast } from "vue-toastification";
 import ConfirmationModal from "@/Components/ConfirmationModal.vue";
 import {
     ArrowLeft,
-    Mail,
+    Mail, AlertTriangle, Trash2,
     Phone,
     Download,
     XCircle,
@@ -26,6 +26,11 @@ const props = defineProps({
     unreadMessageCount: Number,
 });
 
+const page = usePage()
+function can(permission) {
+    return page.props.auth.user?.permissions?.includes(permission)
+}
+
 const toast = useToast();
 
 const replyBody = ref("");
@@ -33,6 +38,34 @@ const sendingReply = ref(false);
 
 const showCancelModal = ref(false);
 const isCancelling = ref(false);
+
+const showAdjustmentForm = ref(false)
+
+const adjForm = useForm({
+    amount_type:       'fixed',
+    amount_value:      '',
+    reason:            '',
+    notes:             '',
+    payment_reference: '',
+    transaction_date:  new Date().toISOString().split('T')[0],
+})
+
+function submitAdjustment() {
+    adjForm.post(route('manage.bookings.adjustments.store', props.booking.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAdjustmentForm.value = false
+            adjForm.reset()
+        },
+    })
+}
+
+function deleteAdjustment(adj) {
+    if (!confirm('Remove this adjustment? This will also delete the financial transaction record.')) return
+    router.delete(route('manage.bookings.adjustments.destroy', { booking: props.booking.id, adjustment: adj.id }), {
+        preserveScroll: true,
+    })
+}
 
 const formatPrice = (price) => {
     return new Intl.NumberFormat("en-NG", {
@@ -1197,6 +1230,115 @@ function submitCheckIn() {
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Unforeseen Circumstances -->
+                        <div class="border border-amber-200 dark:border-amber-800 rounded-2xl p-6 bg-amber-50/50 dark:bg-amber-900/10">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                    <AlertTriangle class="w-5 h-5 text-amber-500" />
+                                    Unforeseen Circumstances
+                                </h3>
+                            </div>
+
+                            <!-- Existing adjustments -->
+                            <div v-if="booking.adjustments?.length" class="space-y-3 mb-5">
+                                <div v-for="adj in booking.adjustments" :key="adj.id"
+                                     class="bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                                ₦{{ formatAmount(adj.amount_naira) }}
+                                                <span class="text-xs font-normal text-gray-400 ml-1">
+                            ({{ adj.amount_type === 'percentage' ? adj.amount_value + '%' : 'fixed' }})
+                        </span>
+                                            </p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{{ adj.reason }}</p>
+                                            <p v-if="adj.notes" class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ adj.notes }}</p>
+                                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                Applied by {{ adj.applied_by?.name }} · {{ formatDate(adj.transaction_date) }}
+                                            </p>
+                                        </div>
+                                        <button v-if="can('manage-adjustments')"
+                                                @click="deleteAdjustment(adj)"
+                                                class="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all shrink-0">
+                                            <Trash2 class="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p v-else class="text-sm text-gray-400 dark:text-gray-500 mb-5">No adjustments applied to this booking.</p>
+
+                            <!-- Apply new adjustment form -->
+                            <div v-if="can('manage-adjustments') && ['confirmed','checked_in','completed'].includes(booking.status)">
+                                <div v-if="!showAdjustmentForm">
+                                    <button @click="showAdjustmentForm = true"
+                                            class="w-full py-2 text-sm font-medium border border-dashed border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
+                                        + Apply Adjustment
+                                    </button>
+                                </div>
+
+                                <form v-else @submit.prevent="submitAdjustment" class="space-y-3 border-t border-amber-200 dark:border-amber-800 pt-4">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Type</label>
+                                            <select v-model="adjForm.amount_type" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all">
+                                                <option value="fixed">Fixed (₦)</option>
+                                                <option value="percentage">Percentage (%)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                {{ adjForm.amount_type === 'percentage' ? 'Percentage (%)' : 'Amount (₦)' }}
+                                            </label>
+                                            <input v-model="adjForm.amount_value" type="number" step="0.01" min="0.01"
+                                                   class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" />
+                                        </div>
+                                    </div>
+
+                                    <!-- Live preview -->
+                                    <p v-if="adjForm.amount_value && adjForm.amount_type === 'percentage'"
+                                       class="text-xs text-amber-600 dark:text-amber-400">
+                                        ≈ ₦{{ formatAmount((adjForm.amount_value / 100) * booking.total_amount) }} of total booking value
+                                    </p>
+
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Reason *</label>
+                                        <input v-model="adjForm.reason" type="text" placeholder="e.g. Power outage during stay"
+                                               class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Payment Reference</label>
+                                        <input v-model="adjForm.payment_reference" type="text" placeholder="Bank transfer reference"
+                                               class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Date</label>
+                                        <input v-model="adjForm.transaction_date" type="date"
+                                               class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all" />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes (optional)</label>
+                                        <textarea v-model="adjForm.notes" rows="2" placeholder="Internal notes..."
+                                                  class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all resize-none"></textarea>
+                                    </div>
+
+                                    <div class="flex gap-2 pt-1">
+                                        <button type="submit" :disabled="adjForm.processing"
+                                                class="flex-1 py-2 text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all disabled:opacity-50">
+                                            Apply Adjustment
+                                        </button>
+                                        <button type="button" @click="showAdjustmentForm = false"
+                                                class="px-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 

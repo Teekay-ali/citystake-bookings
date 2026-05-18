@@ -491,6 +491,28 @@ const daysUntilCheckIn = computed(() => {
                                 Cancel Booking
                             </button>
                         </div>
+
+                        <!-- Goodwill Adjustments -->
+                        <div v-if="booking.adjustments?.length"
+                             class="border border-amber-200 dark:border-amber-800 rounded-2xl p-6 bg-amber-50/50 dark:bg-amber-900/10">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+                                🎁 Goodwill Refunds Applied
+                            </h3>
+                            <div class="space-y-3">
+                                <div v-for="adj in booking.adjustments" :key="adj.id"
+                                     class="flex justify-between items-start text-sm">
+                                    <div>
+                                        <p class="font-medium text-gray-900 dark:text-white">{{ adj.reason }}</p>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ formatDate(adj.transaction_date) }}</p>
+                                    </div>
+                                    <span class="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-4">
+                                        ₦{{ Number(adj.amount_naira).toLocaleString('en-NG') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+
                     </div>
                 </div>
 

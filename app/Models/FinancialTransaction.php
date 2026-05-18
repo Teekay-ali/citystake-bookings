@@ -48,6 +48,7 @@ class FinancialTransaction extends Model
             'procurement'    => 'Procurement',
             'manual_income'  => 'Manual Income',
             'manual_expense' => 'Manual Expense',
+            'goodwill_adjustment' => 'Goodwill Adjustment',
         ];
     }
 }

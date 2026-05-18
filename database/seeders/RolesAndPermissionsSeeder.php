@@ -23,6 +23,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-availability',
             'request-late-checkout',
             'approve-late-checkout',
+            'manage-adjustments',
 
             // Properties
             'manage-properties',
@@ -85,6 +86,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'manager' => [
                 'view-bookings', 'create-bookings', 'manage-bookings',
+                'manage-adjustments',
                 'confirm-checkin', 'manage-availability',
                 'request-late-checkout', 'approve-late-checkout',
                 'manage-blocked-dates',
@@ -119,6 +121,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'ceo' => [
                 'view-bookings',
+                'manage-adjustments',
                 'view-vendors',
                 'submit-complaints', 'submit-maintenance',
                 'approve-maintenance-ceo',
