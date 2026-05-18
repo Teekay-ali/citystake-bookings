@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { Plus, Pencil, CheckCircle2, XCircle, Building2, ShieldCheck, Users } from 'lucide-vue-next'
+import { Plus, Pencil, CheckCircle2, XCircle, Mail, Building2, ShieldCheck, Users } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -93,6 +93,12 @@ function initials(name) {
                                   :class="['text-xs px-2 py-0.5 rounded-lg border font-medium inline-flex items-center gap-1', roleColors[member.roles[0].name] ?? roleColors['staff']]">
                                 <ShieldCheck class="w-3 h-3" />
                                 {{ roleLabels[member.roles[0].name] ?? member.roles[0].name }}
+                            </span>
+
+                            <span v-if="!member.welcome_sent_at"
+                                  class="text-xs px-2 py-0.5 rounded-lg border font-medium inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                                <Mail class="w-3 h-3" />
+                                Not notified
                             </span>
 
                             <!-- Building badges -->

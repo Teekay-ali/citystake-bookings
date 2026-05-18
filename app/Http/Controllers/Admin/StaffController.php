@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\StaffWelcome;
 use App\Models\AuditLog;
 use App\Models\Building;
 use App\Models\User;
@@ -61,6 +64,13 @@ class StaffController extends Controller
         $user->buildings()->sync($validated['building_ids']);
 
         AuditLog::log('staff.created', $user, null, ['name' => $user->name, 'email' => $user->email, 'role' => $validated['role']]);
+
+        try {
+            Mail::to($user->email)->send(new StaffWelcome($user, $validated['password'], $validated['role']));
+            $user->update(['welcome_sent_at' => now()]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send staff welcome email', ['error' => $e->getMessage(), 'user_id' => $user->id]);
+        }
 
         return redirect()->route('manage.staff.index')
             ->with('success', 'Staff member created successfully.');
