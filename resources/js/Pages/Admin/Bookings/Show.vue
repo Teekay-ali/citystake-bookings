@@ -1247,10 +1247,10 @@ function submitCheckIn() {
                                     <div class="flex items-start justify-between gap-3">
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                                                ₦{{ formatAmount(adj.amount_naira) }}
+                                                ₦{{ formatPrice(adj.amount_naira) }}
                                                 <span class="text-xs font-normal text-gray-400 ml-1">
-                            ({{ adj.amount_type === 'percentage' ? adj.amount_value + '%' : 'fixed' }})
-                        </span>
+                                                    ({{ adj.amount_type === 'percentage' ? adj.amount_value + '%' : 'fixed' }})
+                                                </span>
                                             </p>
                                             <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{{ adj.reason }}</p>
                                             <p v-if="adj.notes" class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ adj.notes }}</p>
@@ -1298,7 +1298,7 @@ function submitCheckIn() {
                                     <!-- Live preview -->
                                     <p v-if="adjForm.amount_value && adjForm.amount_type === 'percentage'"
                                        class="text-xs text-amber-600 dark:text-amber-400">
-                                        ≈ ₦{{ formatAmount((adjForm.amount_value / 100) * booking.total_amount) }} of total booking value
+                                        ≈ {{ formatPrice((adjForm.amount_value / 100) * booking.total_amount) }} of total booking value
                                     </p>
 
                                     <div>
