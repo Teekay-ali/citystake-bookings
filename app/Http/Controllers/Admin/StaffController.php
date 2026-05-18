@@ -20,6 +20,7 @@ class StaffController extends Controller
     {
         $staff = User::with(['roles', 'buildings'])
             ->where('is_staff', true)
+            ->select(['id', 'name', 'email', 'phone', 'is_staff', 'is_active', 'welcome_sent_at', 'created_at', 'updated_at'])
             ->latest()
             ->paginate(20);
 

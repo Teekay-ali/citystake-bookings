@@ -95,18 +95,19 @@ function initials(name) {
                                 {{ roleLabels[member.roles[0].name] ?? member.roles[0].name }}
                             </span>
 
-                            <span v-if="!member.welcome_sent_at"
-                                  class="text-xs px-2 py-0.5 rounded-lg border font-medium inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800">
-                                <Mail class="w-3 h-3" />
-                                Not notified
-                            </span>
-
                             <!-- Building badges -->
                             <span v-for="building in member.buildings" :key="building.id"
                                   class="text-xs px-2 py-0.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 inline-flex items-center gap-1">
                                 <Building2 class="w-3 h-3" />
                                 {{ building.name }}
                             </span>
+
+                            <span v-if="!member.welcome_sent_at"
+                                  class="text-xs px-2 py-0.5 rounded-lg border font-medium inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                                <Mail class="w-3 h-3" />
+                                Not notified
+                            </span>
+
                         </div>
                     </div>
                 </div>
