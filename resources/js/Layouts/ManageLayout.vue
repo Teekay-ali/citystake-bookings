@@ -247,7 +247,7 @@ function canSeeItem(item) {
 <template>
     <div class="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
 
-        <!-- ── Mobile backdrop ─────────────────────────────────────── -->
+        <!-- ── Mobile backdrop ───────────────────────────── -->
         <Transition
             enter-active-class="transition-opacity duration-200"
             enter-from-class="opacity-0"
@@ -260,7 +260,7 @@ function canSeeItem(item) {
                  class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" />
         </Transition>
 
-        <!-- ── Floating tooltip (collapsed nav hover) ──────────────── -->
+        <!-- ── Floating tooltip (collapsed nav hover) ────── -->
         <Transition
             enter-active-class="transition-opacity duration-100"
             enter-from-class="opacity-0"
@@ -276,7 +276,7 @@ function canSeeItem(item) {
             </div>
         </Transition>
 
-        <!-- ── Sidebar ─────────────────────────────────────────────── -->
+        <!-- ── Sidebar ───────────────────────────────────── -->
         <aside
             :class="[
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
@@ -323,7 +323,7 @@ function canSeeItem(item) {
             <!-- Nav items -->
             <nav ref="navRef"
                  @scroll="saveScroll"
-                 class="flex-1 overflow-y-auto py-4 px-2"
+                 class="flex-1 overflow-y-auto overscroll-contain py-4 px-2"
                  style="scrollbar-width: none; -ms-overflow-style: none;">
                 <template v-for="group in navGroups" :key="group.label">
                     <div v-if="group.items.some(item => canSeeItem(item) && !item.soon)" class="mb-4">

@@ -37,7 +37,7 @@ class AuditLog extends Model
             'model_id' => $model?->id,
             'old_values' => $oldValues,
             'new_values' => $newValues,
-            'ip_address' => request()->ip(),
+            'ip_address' => request()->header('CF-Connecting-IP') ?? request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
     }
