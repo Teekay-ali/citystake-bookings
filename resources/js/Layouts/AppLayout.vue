@@ -66,7 +66,7 @@ const openCookieSettings = () => {
                      : 'bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-900'
              ]">
             <div class="max-w-7xl mx-auto px-6 lg:px-8">
-                <div class="flex justify-between items-center h-20">
+                <div class="flex justify-between items-center h-16">
 
                     <!-- Logo -->
                     <Link :href="route('home')" class="flex items-center space-x-2">
@@ -282,7 +282,7 @@ const openCookieSettings = () => {
         <main
             :class="$page.props.auth?.user && !$page.props.auth.user.email_verified_at
                 ? 'pt-[120px]'
-                : 'pt-20'
+                : 'pt-16'
         ">
             <slot />
         </main>
