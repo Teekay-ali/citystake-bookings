@@ -245,7 +245,7 @@ function canSeeItem(item) {
 </script>
 
 <template>
-    <div class="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
+    <div class="min-h-[100dvh] bg-white dark:bg-gray-950 flex flex-col">
 
         <!-- ── Mobile backdrop ───────────────────────────── -->
         <Transition
@@ -281,7 +281,7 @@ function canSeeItem(item) {
             :class="[
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 collapsed ? 'lg:w-16' : 'lg:w-64',
-                'fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0'
+                'fixed top-0 left-0 h-[100dvh] w-64 bg-white dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0'
             ]">
 
             <!-- Logo row -->
