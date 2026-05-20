@@ -219,7 +219,7 @@ const submit = () => {
                                 <div class="flex items-start space-x-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-900">
                                     <img
                                         v-if="unitType?.images && unitType?.images[0]"
-                                        :src="unitType?.images[0].image_path"
+                                        :src="unitType?.images[0].url"
                                         :alt="unitType?.name"
                                         class="w-24 h-24 rounded-xl object-cover"
                                     />

@@ -13,60 +13,17 @@ class UnitTypeController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = UnitType::with(['building', 'primaryImage'])
-            ->select('id', 'building_id', 'name', 'slug', 'bedroom_type', 'max_guests', 'base_price_per_night', 'is_active', 'created_at')
-            ->where('is_active', true)
-            ->whereHas('building', function ($q) {
-                $q->where('is_active', true);
-            });
-
-        // Filter by bedroom type
-        if ($request->filled('bedroom_type')) {
-            $query->where('bedroom_type', $request->bedroom_type);
-        }
-
-        // Filter by max guests
-        if ($request->filled('guests')) {
-            $query->where('max_guests', '>=', $request->guests);
-        }
-
-        // Filter by building — slug-based
-        if ($request->filled('building')) {
-            $value = $request->building;
-            if (is_numeric($value)) {
-                $query->where('building_id', (int) $value);
-            } else {
-                $query->whereHas('building', fn($q) => $q->where('slug', $value));
-            }
-        }
-
-        // Sort by price
-        if ($request->filled('sort')) {
-            if ($request->sort === 'price_asc') {
-                $query->orderBy('base_price_per_night', 'asc');
-            } elseif ($request->sort === 'price_desc') {
-                $query->orderBy('base_price_per_night', 'desc');
-            }
-        } else {
-            $query->orderBy('created_at', 'desc');
-        }
-
-        $unitTypes = $query->paginate(9)->withQueryString();
-
-        // Get all buildings for filter
         $buildings = Building::where('is_active', true)
-            ->select('id', 'name', 'slug')
+            ->with([
+                'primaryImage',
+                'unitTypes' => fn($q) => $q->where('is_active', true)
+                    ->orderBy('base_price_per_night'),
+            ])
+            ->withCount(['unitTypes', 'units'])
             ->get();
 
         return Inertia::render('Properties/Index', [
-            'unitTypes' => $unitTypes,
             'buildings' => $buildings,
-            'filters' => [
-                'bedroom_type' => $request->bedroom_type,
-                'guests' => $request->guests,
-                'building' => $request->building,
-                'sort_by' => $request->sort,
-            ],
         ]);
     }
 

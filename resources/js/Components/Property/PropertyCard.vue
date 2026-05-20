@@ -25,7 +25,7 @@ const formatPrice = (price) => {
         <div class="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-900 mb-4">
             <img
                 v-if="unitType.primary_image"
-                :src="unitType.primary_image.image_path"
+                :src="unitType.primary_image.url"
                 :alt="unitType.name"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
             <div v-else class="w-full h-full flex items-center justify-center">

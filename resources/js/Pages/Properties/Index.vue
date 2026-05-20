@@ -1,149 +1,95 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
-import PropertyCard from '@/Components/Property/PropertyCard.vue'
-import { Head, Link, router } from '@inertiajs/vue3'
-import { Building2, MapPin, ChevronRight } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
+import { Head, Link } from '@inertiajs/vue3'
+import { MapPin, Building2, BedDouble, Users } from 'lucide-vue-next'
 
 const props = defineProps({
-    unitTypes: Object,
     buildings: Array,
-    filters: Object,
 })
 
-const bedroomFilter = ref(props.filters.bedroom_type || '')
-const guestsFilter  = ref(props.filters.guests || '')
-const buildingFilter = ref(props.filters.building || '')
-const sortBy        = ref(props.filters.sort_by || '')
+const formatPrice = (price) => new Intl.NumberFormat('en-NG', {
+    style: 'currency', currency: 'NGN', minimumFractionDigits: 0,
+}).format(price)
 
-const applyFilters = () => {
-    router.get(route('properties.index'), {
-        bedroom_type: bedroomFilter.value,
-        guests:       guestsFilter.value,
-        building:     buildingFilter.value,
-        sort:         sortBy.value,
-    }, {
-        preserveState:  true,
-        preserveScroll: true,
-    })
+const startingPrice = (building) => {
+    if (!building.unit_types?.length) return null
+    return Math.min(...building.unit_types.map(ut => parseFloat(ut.base_price_per_night)))
 }
 
-watch([bedroomFilter, guestsFilter, buildingFilter, sortBy], applyFilters)
-
-const selectClass = "pl-4 pr-8 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all appearance-none cursor-pointer"
+const unitTypeSummary = (building) => {
+    if (!building.unit_types?.length) return ''
+    return building.unit_types.map(ut => ut.name).join(' · ')
+}
 </script>
 
 <template>
-    <AppLayout :hide-footer="true">
-        <Head title="Browse Properties" />
+    <AppLayout>
+        <Head title="Our Properties" />
 
         <div class="min-h-screen bg-white dark:bg-gray-950">
-            <div class="max-w-7xl mx-auto px-6 lg:px-8 py-16">
+            <div class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
 
                 <!-- Header -->
-                <div class="mb-10">
-                    <h1 class="text-4xl md:text-5xl font-light tracking-tight text-gray-900 dark:text-white mb-3">
-                        Available properties
+                <div class="mb-8">
+                    <h1 class="text-3xl font-light tracking-tight text-gray-900 dark:text-white mb-1">
+                        Our properties
                     </h1>
-                    <p class="text-lg text-gray-500 dark:text-gray-400 font-light">
-                        {{ unitTypes.total }} apartment type{{ unitTypes.total !== 1 ? 's' : '' }} ready for your next stay
+                    <p class="text-gray-500 dark:text-gray-400">
+                        {{ buildings.length }} {{ buildings.length === 1 ? 'property' : 'properties' }} in Abuja
                     </p>
                 </div>
 
-                <!-- Filters -->
-                <div class="flex flex-wrap items-center gap-2 mb-8">
-                    <select v-model="buildingFilter" :class="selectClass">
-                        <option value="">All locations</option>
-                        <option v-for="building in buildings" :key="building.id" :value="building.slug">
-                            {{ building.name }}
-                        </option>
-                    </select>
-
-                    <select v-model="bedroomFilter" :class="selectClass">
-                        <option value="">All bedrooms</option>
-                        <option value="2-bed">2 Bedrooms</option>
-                        <option value="3-bed">3 Bedrooms</option>
-                        <option value="4-bed">4+ Bedrooms</option>
-                    </select>
-
-                    <select v-model="guestsFilter" :class="selectClass">
-                        <option value="">Any guests</option>
-                        <option :value="2">2+ guests</option>
-                        <option :value="4">4+ guests</option>
-                        <option :value="6">6+ guests</option>
-                        <option :value="8">8+ guests</option>
-                    </select>
-
-                    <select v-model="sortBy" :class="selectClass">
-                        <option value="">Newest first</option>
-                        <option value="price_asc">Price: Low to High</option>
-                        <option value="price_desc">Price: High to Low</option>
-                    </select>
-
-                    <!-- Active filter count indicator -->
-                    <button
-                        v-if="bedroomFilter || guestsFilter || buildingFilter || sortBy"
-                        @click="bedroomFilter = ''; guestsFilter = ''; buildingFilter = ''; sortBy = ''"
-                        class="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                        Clear filters
-                    </button>
+                <!-- Empty state -->
+                <div v-if="!buildings.length" class="text-center py-24">
+                    <Building2 class="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p class="text-gray-500">No properties available right now.</p>
                 </div>
 
-                <!-- Building quick links -->
-                <div class="flex flex-wrap gap-3 mb-8">
-                    <Link v-for="b in buildings" :key="b.id"
-                          :href="route('properties.building', b.slug)"
-                          class="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-600 hover:bg-white dark:hover:bg-gray-800 transition-all">
-                        <MapPin class="w-3.5 h-3.5 text-amber-500" />
-                        {{ b.name }}
-                        <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                <!-- Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Link
+                        v-for="building in buildings"
+                        :key="building.id"
+                        :href="route('properties.building', building.slug)"
+                        class="group block"
+                    >
+                        <!-- Image -->
+                        <div class="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 mb-3">
+                            <img
+                                v-if="building.primary_image"
+                                :src="building.primary_image.url"
+                                :alt="building.name"
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                            />
+                            <div v-else class="w-full h-full flex items-center justify-center">
+                                <Building2 class="w-10 h-10 text-gray-300 dark:text-gray-700" />
+                            </div>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="space-y-1">
+                            <div class="flex items-start justify-between gap-2">
+                                <h2 class="font-medium text-gray-900 dark:text-white group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">
+                                    {{ building.name }}
+                                </h2>
+                                <div v-if="startingPrice(building)" class="text-right flex-shrink-0">
+                                    <span class="font-semibold text-gray-900 dark:text-white text-sm">
+                                        {{ formatPrice(startingPrice(building)) }}
+                                    </span>
+                                    <span class="text-xs text-gray-400"> / night</span>
+                                </div>
+                            </div>
+
+                            <p class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                                <MapPin class="w-3.5 h-3.5 flex-shrink-0" />
+                                {{ building.address }}, {{ building.city }}
+                            </p>
+
+                            <p class="text-sm text-gray-400 dark:text-gray-500 truncate">
+                                {{ unitTypeSummary(building) }}
+                            </p>
+                        </div>
                     </Link>
-                </div>
-
-                <!-- Property Grid -->
-                <div v-if="unitTypes.data.length > 0"
-                     class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 mb-16">
-                    <PropertyCard
-                        v-for="unitType in unitTypes.data"
-                        :key="unitType.id"
-                        :unit-type="unitType" />
-                </div>
-
-                <!-- Empty State -->
-                <div v-else class="text-center py-20">
-                    <div class="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-auto mb-4">
-                        <Building2 class="w-6 h-6 text-gray-400" />
-                    </div>
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                        No properties found
-                    </h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
-                        Try adjusting your filters to see more results.
-                    </p>
-                    <button
-                        @click="bedroomFilter = ''; guestsFilter = ''; buildingFilter = ''; sortBy = ''"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-all">
-                        Clear all filters
-                    </button>
-                </div>
-
-                <!-- Pagination -->
-                <div v-if="unitTypes.links.length > 3" class="flex justify-center items-center gap-1.5">
-                    <component
-                        v-for="(link, index) in unitTypes.links"
-                        :key="index"
-                        :is="link.url ? 'button' : 'span'"
-                        @click="link.url && router.visit(link.url)"
-                        v-html="link.label"
-                        :disabled="!link.url"
-                        :class="[
-                            'min-w-[36px] h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-all px-3',
-                            link.active
-                                ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                                : link.url
-                                ? 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800'
-                                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                        ]" />
                 </div>
 
             </div>

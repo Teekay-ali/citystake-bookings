@@ -85,7 +85,7 @@ const lowestPrice = computed(() =>
                     <button
                         v-if="building.images?.length > 5"
                         @click="gridViewOpen = true"
-                        class="absolute bottom-14 right-0 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm font-medium rounded-xl shadow-lg transition-all"
+                        class="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm font-medium rounded-xl shadow-lg transition-all"
                     >
                         <LayoutGrid class="w-4 h-4" />
                         Show all {{ building.images.length }} photos
@@ -299,7 +299,7 @@ const lowestPrice = computed(() =>
                 <div v-if="gridViewOpen" class="fixed inset-0 z-50 bg-white dark:bg-gray-950 overflow-y-auto">
                     <div class="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-100 dark:border-gray-900">
                 <span class="text-sm font-medium text-gray-900 dark:text-white">
-                    {{ building.name }} — {{ building.images.length }} photos
+                    {{ building.name }} - {{ building.images.length }} photos
                 </span>
                         <button @click="gridViewOpen = false" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors">
                             <X class="w-5 h-5 text-gray-600 dark:text-gray-400" />
