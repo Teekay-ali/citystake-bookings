@@ -44,6 +44,8 @@ class DatabaseSeeder extends Seeder
             $this->createWuseBuilding();
         }
 
+        $this->call(SixtyNinePlaceSeeder::class);
+
         $this->call(RolesAndPermissionsSeeder::class);
     }
 

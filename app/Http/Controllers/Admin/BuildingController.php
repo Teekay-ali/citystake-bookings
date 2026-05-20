@@ -63,6 +63,8 @@ class BuildingController extends Controller
 
     public function edit(Building $building)
     {
+        $building->load(['images' => fn($q) => $q->orderBy('sort_order')]);
+
         return Inertia::render('Admin/Properties/EditBuilding', [
             'building' => $building,
         ]);

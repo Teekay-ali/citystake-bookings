@@ -8,7 +8,7 @@ import {
     Home, CheckCircle,
     Wifi, ChevronLeft, ChevronRight,
     Wind, X, Navigation,
-    Car,
+    Car, LayoutGrid, Images,
     Waves,
     Dumbbell,
     Shield,
@@ -47,6 +47,15 @@ const lightboxIndex = ref(0);
 
 const lightboxEl = ref(null);
 
+const gridViewOpen = ref(false);
+
+const openGrid = () => { gridViewOpen.value = true; };
+const closeGrid = () => { gridViewOpen.value = false; };
+const openFromGrid = (index) => {
+    gridViewOpen.value = false;
+    openLightbox(index);
+};
+
 const openLightbox = (index) => {
     lightboxIndex.value = index;
     lightboxOpen.value = true;
@@ -57,7 +66,7 @@ const closeLightbox = () => { lightboxOpen.value = false; };
 const lightboxPrev = () => { lightboxIndex.value = (lightboxIndex.value - 1 + props.unitType.images.length) % props.unitType.images.length; };
 const lightboxNext = () => { lightboxIndex.value = (lightboxIndex.value + 1) % props.unitType.images.length; };
 
-const selectedImage = ref(props.unitType.images[0]?.image_path || null);
+const selectedImage = ref(props.unitType.images[0]?.url || null);
 const guests = ref(2);
 const isCheckingAvailability = ref(false);
 const availabilityMessage = ref('');
@@ -266,41 +275,50 @@ const proceedToBooking = () => {
 
             <!-- Image Gallery -->
             <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
-                <div class="grid grid-cols-4 gap-2 rounded-3xl overflow-hidden h-[500px] md:h-[600px]">
-                    <!-- Main Image -->
-                    <div
-                        class="col-span-4 md:col-span-2 md:row-span-2 relative group cursor-pointer"
-                        @click="openLightbox(0)"
-                    >
-                        <img
-                            v-if="unitType.images[0]"
-                            :src="unitType.images[0].image_path"
-                            :alt="unitType.name"
-                            fetchpriority="high"
-                            class="w-full h-full object-cover"
-                        />
-                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-                    </div>
-                    <!-- Thumbnail Grid -->
-                    <template v-if="unitType.images.length > 1">
+                <div class="relative">
+                    <div class="grid grid-cols-4 gap-2 rounded-3xl overflow-hidden h-[420px] mb-10">
+                        <!-- Main Image -->
                         <div
-                            v-for="(image, index) in unitType.images.slice(1, 5)"
-                            :key="image.id"
-                            class="relative group cursor-pointer overflow-hidden"
-                            @click="openLightbox(index + 1)"
+                            class="col-span-4 md:col-span-2 md:row-span-2 relative group cursor-pointer"
+                            @click="openLightbox(0)"
                         >
                             <img
-                                :src="image.image_path"
+                                v-if="unitType.images[0]"
+                                :src="unitType.images[0].url"
                                 :alt="unitType.name"
-                                loading="lazy"
+                                fetchpriority="high"
                                 class="w-full h-full object-cover"
                             />
                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-                            <div v-if="index === 3 && unitType.images.length > 5" class="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                <span class="text-white text-sm font-medium">+{{ unitType.images.length - 5 }} more</span>
-                            </div>
                         </div>
-                    </template>
+                        <!-- Thumbnail Grid -->
+                        <template v-if="unitType.images.length > 1">
+                            <div
+                                v-for="(image, index) in unitType.images.slice(1, 5)"
+                                :key="image.id"
+                                class="relative group cursor-pointer overflow-hidden"
+                                @click="openLightbox(index + 1)"
+                            >
+                                <img
+                                    :src="image.url"
+                                    :alt="unitType.name"
+                                    loading="lazy"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Show all photos button -->
+                    <button
+                        v-if="unitType.images.length > 5"
+                        @click="openGrid"
+                        class="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm font-medium rounded-xl shadow-lg transition-all"
+                    >
+                        <LayoutGrid class="w-4 h-4" />
+                        Show all {{ unitType.images.length }} photos
+                    </button>
                 </div>
             </div>
 
@@ -322,8 +340,8 @@ const proceedToBooking = () => {
                     </button>
                     <!-- Counter -->
                     <span class="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
-            {{ lightboxIndex + 1 }} / {{ unitType.images.length }}
-        </span>
+                        {{ lightboxIndex + 1 }} / {{ unitType.images.length }}
+                    </span>
                     <!-- Prev -->
                     <button
                         v-if="unitType.images.length > 1"
@@ -334,7 +352,7 @@ const proceedToBooking = () => {
                     </button>
                     <!-- Image -->
                     <img
-                        :src="unitType.images[lightboxIndex]?.image_path"
+                        :src="unitType.images[lightboxIndex]?.url"
                         :alt="unitType.name"
                         class="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
                     />
@@ -347,6 +365,68 @@ const proceedToBooking = () => {
                         <ChevronRight class="w-7 h-7" />
                     </button>
                 </div>
+
+                <!-- All Photos Grid Modal -->
+                <Teleport to="body">
+                    <Transition
+                        enter-active-class="transition ease-out duration-200"
+                        enter-from-class="opacity-0"
+                        enter-to-class="opacity-100"
+                        leave-active-class="transition ease-in duration-150"
+                        leave-from-class="opacity-100"
+                        leave-to-class="opacity-0"
+                    >
+                        <div
+                            v-if="gridViewOpen"
+                            class="fixed inset-0 z-50 bg-white dark:bg-gray-950 overflow-y-auto"
+                        >
+                            <!-- Header -->
+                            <div class="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-100 dark:border-gray-900">
+                                <div class="flex items-center gap-3">
+                                    <Images class="w-5 h-5 text-gray-500" />
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ unitType.name }} — {{ unitType.images.length }} photos
+                                    </span>
+                                </div>
+                                <button
+                                    @click="closeGrid"
+                                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+                                >
+                                    <X class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                                </button>
+                            </div>
+
+                            <!-- Grid -->
+                            <div class="max-w-6xl mx-auto px-6 py-8">
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    <div
+                                        v-for="(image, index) in unitType.images"
+                                        :key="image.id"
+                                        @click="openFromGrid(index)"
+                                        class="relative aspect-[4/3] rounded-xl overflow-hidden cursor-pointer group"
+                                    >
+                                        <img
+                                            :src="image.url"
+                                            :alt="unitType.name"
+                                            loading="lazy"
+                                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                            <ChevronRight class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                        <!-- Primary badge -->
+                                        <div v-if="image.is_primary"
+                                             class="absolute top-2 left-2 px-2 py-0.5 bg-amber-400 text-amber-900 text-xs font-semibold rounded-full">
+                                            Cover
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Transition>
+                </Teleport>
+
+
             </Teleport>
 
             <!-- Main Content -->
@@ -460,7 +540,7 @@ const proceedToBooking = () => {
                                     <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-900">
                                         <img
                                             v-if="prop.primary_image"
-                                            :src="prop.primary_image.image_path"
+                                            :src="prop.primary_image.url"
                                             :alt="prop.name"
                                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         />

@@ -72,12 +72,12 @@ class UnitTypeController extends Controller
 
     public function show(Building $building, UnitType $unitType): Response
     {
-        $unitType->load(['building', 'images', 'primaryImage']);
-
         // Check if unit type belongs to building
         if ($unitType->building_id !== $building->id) {
             abort(404);
         }
+
+        $unitType->load(['building.images', 'images', 'primaryImage']);
 
         $userBooking = null;
 
@@ -99,13 +99,19 @@ class UnitTypeController extends Controller
             ->limit(3)
             ->get(['id', 'building_id', 'name', 'slug', 'bedroom_type', 'max_guests', 'base_price_per_night']);
 
-        return Inertia::render('Properties/Show', [
-            'building'           => $building,
-            'unitType'           => $unitType,
-            'userBooking'        => $userBooking,
-            'similarProperties'  => $similarProperties,
-        ]);
+        // Inherit building images if unit type has none
+        $effectiveImages = $unitType->images->isNotEmpty()
+            ? $unitType->images
+            : $unitType->building->images;
 
+        return Inertia::render('Properties/Show', [
+            'building'          => $building,
+            'unitType'          => array_merge($unitType->toArray(), [
+                'images' => $effectiveImages->values(),
+            ]),
+            'userBooking'       => $userBooking,
+            'similarProperties' => $similarProperties,
+        ]);
     }
 
     public function store(Request $request, Building $building)

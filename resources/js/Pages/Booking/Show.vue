@@ -235,7 +235,7 @@ const daysUntilCheckIn = computed(() => {
                                 <div class="sm:w-48 h-48 bg-gray-100 dark:bg-gray-900 flex-shrink-0">
                                     <img
                                         v-if="booking.unit_type.images && booking.unit_type.images[0]"
-                                        :src="booking.unit_type.images[0].image_path"
+                                        :src="booking.unit_type.images[0].url"
                                         :alt="booking.unit_type.name"
                                         class="w-full h-full object-cover"
                                     />

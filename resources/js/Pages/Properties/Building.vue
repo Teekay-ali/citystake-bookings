@@ -5,7 +5,7 @@ import {
     MapPin, Users, Bed, ChevronRight, ArrowLeft,
     Wifi, Wind, Car, Waves, Dumbbell, Shield,
     Coffee, Tv, UtensilsCrossed, WashingMachine,
-    Sparkles, Check, Star
+    Sparkles, Check, Star, LayoutGrid, X
 } from 'lucide-vue-next'
 import { ref, computed } from 'vue'
 
@@ -14,7 +14,9 @@ const props = defineProps({
     otherBuildings: Array,
 })
 
-const selectedImage = ref(props.building.images?.[0]?.image_path ?? null)
+const selectedImage = ref(props.building.images?.[0]?.url ?? null)
+
+const gridViewOpen = ref(false)
 
 const amenityIcon = (amenity) => {
     const a = amenity.toLowerCase()
@@ -49,32 +51,45 @@ const lowestPrice = computed(() =>
 
         <div class="min-h-screen bg-white dark:bg-gray-950">
 
-            <!-- ── Image Gallery ── -->
-            <div class="max-w-7xl mx-auto px-6 lg:px-8 pt-10">
-
-                <!-- Back -->
+            <!-- Back Button -->
+            <div class="max-w-7xl mx-auto px-6 lg:px-8 pt-8">
                 <Link :href="route('properties.index')"
-                      class="inline-flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors group mb-6">
+                      class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors group"
+                >
                     <ArrowLeft class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
                     All properties
                 </Link>
+            </div>
 
-                <!-- Gallery grid -->
-                <div class="grid grid-cols-4 gap-2 rounded-3xl overflow-hidden h-[420px] mb-10">
-                    <div class="col-span-4 md:col-span-2 md:row-span-2 relative">
-                        <img :src="selectedImage ?? building.images?.[0]?.image_path"
-                             :alt="building.name"
-                             class="w-full h-full object-cover" />
-                    </div>
-                    <template v-if="building.images?.length > 1">
-                        <div v-for="(img, i) in building.images.slice(1, 5)" :key="i"
-                             @click="selectedImage = img.image_path"
-                             class="relative cursor-pointer overflow-hidden group hidden md:block">
-                            <img :src="img.image_path" :alt="building.name"
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            <!-- ── Image Gallery ── -->
+            <div class="max-w-7xl mx-auto px-6 lg:px-8 pt-8">
+                <div class="relative">
+                    <div class="grid grid-cols-4 gap-2 rounded-3xl overflow-hidden h-[420px] mb-10">
+                        <div class="col-span-4 md:col-span-2 md:row-span-2 relative">
+                            <img :src="selectedImage ?? building.images?.[0]?.url"
+                                 :alt="building.name"
+                                 class="w-full h-full object-cover" />
                         </div>
-                    </template>
+                        <template v-if="building.images?.length > 1">
+                            <div v-for="(img, i) in building.images.slice(1, 5)" :key="i"
+                                 @click="selectedImage = img.url"
+                                 class="relative cursor-pointer overflow-hidden group hidden md:block">
+                                <img :src="img.url" :alt="building.name"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Show all photos button -->
+                    <button
+                        v-if="building.images?.length > 5"
+                        @click="gridViewOpen = true"
+                        class="absolute bottom-14 right-0 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm font-medium rounded-xl shadow-lg transition-all"
+                    >
+                        <LayoutGrid class="w-4 h-4" />
+                        Show all {{ building.images.length }} photos
+                    </button>
                 </div>
             </div>
 
@@ -113,7 +128,7 @@ const lowestPrice = computed(() =>
                                         <!-- Image -->
                                         <div class="w-full sm:w-48 h-48 sm:h-auto flex-shrink-0 overflow-hidden">
                                             <img v-if="unitType.primary_image"
-                                                 :src="unitType.primary_image.image_path"
+                                                 :src="unitType.primary_image.url"
                                                  :alt="unitType.name"
                                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                             <div v-else class="w-full h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -253,7 +268,7 @@ const lowestPrice = computed(() =>
                               class="group border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden hover:border-gray-300 dark:hover:border-gray-700 transition-all">
                             <div class="h-48 overflow-hidden">
                                 <img v-if="b.images?.[0]"
-                                     :src="b.images[0].image_path"
+                                     :src="b.images[0].url"
                                      :alt="b.name"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                 <div v-else class="w-full h-full bg-gray-100 dark:bg-gray-900" />
@@ -270,5 +285,42 @@ const lowestPrice = computed(() =>
                 </div>
             </div>
         </div>
+
+        <!-- All Photos Grid Modal -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="gridViewOpen" class="fixed inset-0 z-50 bg-white dark:bg-gray-950 overflow-y-auto">
+                    <div class="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-100 dark:border-gray-900">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ building.name }} — {{ building.images.length }} photos
+                </span>
+                        <button @click="gridViewOpen = false" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors">
+                            <X class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                        </button>
+                    </div>
+                    <div class="max-w-6xl mx-auto px-6 py-8">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            <div
+                                v-for="(img, i) in building.images" :key="img.id"
+                                @click="selectedImage = img.url; gridViewOpen = false"
+                                class="relative aspect-[4/3] rounded-xl overflow-hidden cursor-pointer group"
+                            >
+                                <img :src="img.url" :alt="building.name" loading="lazy"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
     </AppLayout>
 </template>

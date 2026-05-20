@@ -10,13 +10,17 @@ import {
     Sparkles,
     ToggleLeft,
     ToggleRight,
-    Trash2
+    Trash2,
+    Images
 } from 'lucide-vue-next';
+import ImageManager from '@/Components/ImageManager.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 
 const props = defineProps({
     building: Object,
 });
+
+const buildingImages = ref(props.building.images ?? []);
 
 const showDeleteModal = ref(false);
 const isDeleting = ref(false);
@@ -269,6 +273,20 @@ const deleteBuilding = () => {
                         <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
                             Select all amenities available at this property
                         </p>
+                    </div>
+
+                    <!-- Images -->
+                    <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                        <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center">
+                            <Images class="w-5 h-5 mr-2" />
+                            Property Images
+                        </h2>
+                        <ImageManager
+                            model-type="building"
+                            :model-id="building.id"
+                            :initial="buildingImages"
+                            @updated="val => buildingImages = val"
+                        />
                     </div>
 
                     <!-- Actions -->

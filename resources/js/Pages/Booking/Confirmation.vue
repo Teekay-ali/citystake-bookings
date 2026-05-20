@@ -209,7 +209,7 @@ const canCancel = computed(() => {
                         <div class="flex items-start space-x-4 pb-6 mb-6 border-b border-gray-100 dark:border-gray-900">
                             <img
                                 v-if="booking.unit_type.images && booking.unit_type.images[0]"
-                                :src="booking.unit_type.images[0].image_path"
+                                :src="booking.unit_type.images[0].url"
                                 :alt="booking.unit_type.name"
                                 class="w-24 h-24 rounded-xl object-cover"
                             />

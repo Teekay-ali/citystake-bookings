@@ -5,6 +5,7 @@ use  App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
+use App\Http\Controllers\Admin\ImageController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\BookingAdjustmentController;
 use App\Http\Controllers\BookingMessageController;
@@ -175,6 +176,12 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
 
     Route::post('/bookings/{booking}/adjustments', [BookingAdjustmentController::class, 'store'])->name('bookings.adjustments.store');
     Route::delete('/bookings/{booking}/adjustments/{adjustment}', [BookingAdjustmentController::class, 'destroy'])->name('bookings.adjustments.destroy');
+
+    // Image management
+    Route::post('/images/{type}/{id}', [ImageController::class, 'store'])->name('images.store');
+    Route::delete('/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy');
+    Route::patch('/images/reorder', [ImageController::class, 'reorder'])->name('images.reorder');
+    Route::patch('/images/{image}/primary', [ImageController::class, 'setPrimary'])->name('images.primary');
 
     // Properties
     Route::get('/properties', [BuildingController::class, 'index'])->name('properties.index');

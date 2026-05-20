@@ -13,13 +13,17 @@ import {
     ToggleLeft,
     ToggleRight,
     Bed,
-    Trash2
+    Trash2,
+    Images
 } from 'lucide-vue-next';
+import ImageManager from '@/Components/ImageManager.vue';
 
 const props = defineProps({
     building: Object,
     unitType: Object,
 });
+
+const unitTypeImages = ref(props.unitType.images ?? []);
 
 const showDeleteModal = ref(false);
 const isDeleting = ref(false);
@@ -37,9 +41,11 @@ const form = useForm({
 });
 
 const bedroomTypes = [
-    { value: '2-bed', label: '2-Bedroom', defaultGuests: 4 },
-    { value: '3-bed', label: '3-Bedroom', defaultGuests: 6 },
-    { value: '4-bed', label: '4-Bedroom', defaultGuests: 8 },
+    { value: 'studio', label: 'Studio',    defaultGuests: 2 },
+    { value: '1-bed',  label: '1-Bedroom', defaultGuests: 2 },
+    { value: '2-bed',  label: '2-Bedroom', defaultGuests: 4 },
+    { value: '3-bed',  label: '3-Bedroom', defaultGuests: 6 },
+    { value: '4-bed',  label: '4-Bedroom', defaultGuests: 8 },
 ];
 
 const specificAmenitiesList = [
@@ -370,6 +376,21 @@ const deleteUnitType = () => {
                         <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
                             Select amenities specific to this unit type (building amenities are inherited)
                         </p>
+                    </div>
+
+                    <!-- Images -->
+                    <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                        <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center">
+                            <Images class="w-5 h-5 mr-2" />
+                            Unit Type Images
+                        </h2>
+                        <ImageManager
+                            model-type="unit-type"
+                            :model-id="unitType.id"
+                            :initial="unitTypeImages"
+                            :inherited-from="unitTypeImages.length === 0 ? building.name : null"
+                            @updated="val => unitTypeImages = val"
+                        />
                     </div>
 
                     <!-- Actions -->

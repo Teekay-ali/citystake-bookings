@@ -43,10 +43,11 @@ class UnitTypeController extends Controller
 
     public function edit(Building $building, UnitType $unitType)
     {
-        // Ensure unit type belongs to building
         if ($unitType->building_id !== $building->id) {
             abort(404);
         }
+
+        $unitType->load(['images' => fn($q) => $q->orderBy('sort_order')]);
 
         return Inertia::render('Admin/Properties/EditUnitType', [
             'building' => $building,
