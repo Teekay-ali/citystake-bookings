@@ -69,24 +69,21 @@ const pricing = computed(() => {
     const subtotal = selectedUnitType.value.base_price_per_night * nights;
     const cleaning = parseFloat(selectedUnitType.value.cleaning_fee) || 0;
     const service  = subtotal * ((parseFloat(selectedUnitType.value.service_charge_percent) || 0) / 100);
+    const deposit = nights === 1 ? selectedUnitType.value.base_price_per_night : 0
 
     // Mirror backend discount rules
     let discountPercent = 0;
     let discountType    = null;
 
     if (nights >= 7) {
-        // Check bulk first (higher discount) — but walk-in is single unit
-        // so only long_stay applies here; bulk handled server-side for group bookings
-    }
-    if (nights >= 5) {
         discountPercent = 5;
         discountType    = 'long_stay';
     }
 
     const discountAmount = discountPercent > 0 ? Math.round(subtotal * (discountPercent / 100) * 100) / 100 : 0;
-    const total = (subtotal - discountAmount) + cleaning + service;
+    const total = (subtotal - discountAmount) + cleaning + service + deposit;
 
-    return { subtotal, cleaning, service, discountAmount, discountPercent, discountType, total };
+    return { subtotal, cleaning, service, deposit, discountAmount, discountPercent, discountType, total };
 });
 
 // Reset unit type when building changes
@@ -475,10 +472,18 @@ const submit = () => {
                                             <span class="text-gray-600 dark:text-gray-400">Service charge</span>
                                             <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.service) }}</span>
                                         </div>
-                                        <!-- After service charge row, before total -->
                                         <div v-if="pricing.discountAmount > 0" class="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
                                             <span>Long stay discount ({{ pricing.discountPercent }}% off)</span>
                                             <span>−{{ formatPrice(pricing.discountAmount) }}</span>
+                                        </div>
+                                        <div v-if="pricing.deposit > 0" class="flex justify-between text-sm">
+                                            <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                                                Security deposit
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                                    Refundable
+                                                </span>
+                                            </span>
+                                            <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.deposit) }}</span>
                                         </div>
                                     </div>
 
