@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DiscountService;
 use App\Traits\HasBuildingScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -57,6 +58,10 @@ class Booking extends Model
         'late_checkout_approved_by',
         'late_checkout_approved_at',
         'late_checkout_settled_at',
+        'security_deposit',
+        'security_deposit_refunded',
+        'security_deposit_refunded_at',
+        'security_deposit_refunded_by',
     ];
 
     protected $casts = [
@@ -76,6 +81,9 @@ class Booking extends Model
         'late_checkout_fee'         => 'decimal:2',
         'late_checkout_approved_at' => 'datetime',
         'late_checkout_settled_at'  => 'datetime',
+        'security_deposit'              => 'decimal:2',
+        'security_deposit_refunded'     => 'boolean',
+        'security_deposit_refunded_at'  => 'datetime',
     ];
 
     public function scopeCheckedIn($query)
@@ -133,20 +141,25 @@ class Booking extends Model
         $this->cleaning_fee   = $unitType->cleaning_fee;
         $this->service_charge = $this->subtotal * ($unitType->service_charge_percent / 100);
 
+        // Security deposit — 1 extra night for 1-night bookings
+        $this->security_deposit = $this->nights === 1
+            ? $unitType->base_price_per_night
+            : 0;
+
         // Resolve discount
-        $discount = \App\Services\DiscountService::resolve($this->nights, $unitCount);
+        $discount = DiscountService::resolve($this->nights, $unitCount);
         $this->discount_type    = $discount['type'];
         $this->discount_percent = $discount['percent'];
         $this->discount_amount  = $discount['percent'] > 0
             ? round($this->subtotal * ($discount['percent'] / 100), 2)
             : 0;
 
-        // Discount applied to subtotal only (not cleaning fee or service charge)
+        // Total includes deposit — deposit is refundable but collected upfront
         $this->total_amount = ($this->subtotal - $this->discount_amount)
             + $this->cleaning_fee
-            + $this->service_charge;
+            + $this->service_charge
+            + $this->security_deposit;
     }
-
     public function isPaid(): bool
     {
         return $this->payment_status === 'paid';

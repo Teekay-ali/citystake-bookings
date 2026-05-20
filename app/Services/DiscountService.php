@@ -5,7 +5,7 @@ namespace App\Services;
 class DiscountService
 {
     // Rule thresholds
-    const LONG_STAY_NIGHTS    = 5;
+    const LONG_STAY_NIGHTS    = 7;
     const LONG_STAY_PERCENT   = 5;
 
     const BULK_UNITS_COUNT    = 7;
@@ -45,7 +45,7 @@ class DiscountService
     public static function label(string $type): string
     {
         return match($type) {
-            'long_stay'  => 'Long stay discount (5+ nights)',
+            'long_stay'  => 'Long stay discount (7+ nights)',
             'bulk_units' => 'Bulk booking discount (7+ units)',
             default      => 'Discount',
         };

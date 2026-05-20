@@ -198,6 +198,16 @@ function submitCheckIn() {
     });
 }
 
+const isRefunding = ref(false)
+
+const refundDeposit = () => {
+    if (!confirm('Mark security deposit as refunded to guest?')) return
+    isRefunding.value = true
+    router.post(route('manage.bookings.deposit.refund', booking.id), {}, {
+        onFinish: () => isRefunding.value = false,
+    })
+}
+
 </script>
 
 <template>
@@ -632,11 +642,23 @@ function submitCheckIn() {
                                         >Service charge</span
                                     >
                                     <span
-                                        class="text-gray-900 dark:text-white"
-                                        >{{
-                                            formatPrice(booking.service_charge)
-                                        }}</span
-                                    >
+                                        class="text-gray-900 dark:text-white">
+                                        {{ formatPrice(booking.service_charge) }}
+                                    </span>
+                                </div>
+                                <!-- Security Deposit -->
+                                <div v-if="booking.security_deposit > 0" class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                        Security deposit
+                                        <span v-if="booking.security_deposit_refunded"
+                                              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                            <CheckCircle class="w-3 h-3" /> Refunded
+                                        </span>
+                                        <span v-else class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                            Held
+                                        </span>
+                                    </span>
+                                    <span class="text-gray-900 dark:text-white">{{ formatPrice(booking.security_deposit) }}</span>
                                 </div>
                                 <div
                                     v-if="booking.discount_amount > 0"
@@ -649,8 +671,7 @@ function submitCheckIn() {
                                             booking.discount_percent
                                         }}% -
                                         {{
-                                            booking.discount_type ===
-                                            "long_stay"
+                                            booking.discount_type === "long_stay"
                                                 ? "Long stay"
                                                 : "Bulk booking"
                                         }})

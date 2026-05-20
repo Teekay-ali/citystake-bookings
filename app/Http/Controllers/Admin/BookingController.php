@@ -148,13 +148,6 @@ class BookingController extends Controller
             }
 
             $nights = $checkIn->diffInDays($checkOut);
-            $minNights = config('booking.min_nights', 1);
-
-            if ($nights < $minNights) {
-                return redirect()->back()
-                    ->with('error', "Minimum stay is {$minNights} night(s).")
-                    ->withInput();
-            }
 
             // Check availability
             if (!$unitType->hasAvailability($validated['check_in'], $validated['check_out'])) {
@@ -179,7 +172,8 @@ class BookingController extends Controller
             $discountAmt   = $discount['percent'] > 0
                 ? round($subtotal * ($discount['percent'] / 100), 2)
                 : 0;
-            $totalAmount   = ($subtotal - $discountAmt) + $unitType->cleaning_fee + $serviceCharge;
+            $securityDeposit = $nights === 1 ? $unitType->base_price_per_night : 0;
+            $totalAmount = ($subtotal - $discountAmt) + $unitType->cleaning_fee + $serviceCharge + $securityDeposit;
 
             // Create booking
             $booking = Booking::create([
@@ -204,6 +198,7 @@ class BookingController extends Controller
                 'discount_type'    => $discount['type'],
                 'discount_percent' => $discount['percent'],
                 'discount_amount'  => $discountAmt,
+                'security_deposit' => $securityDeposit,
                 'status' => 'confirmed',
                 'payment_status' => 'paid',
                 'payment_method' => $validated['payment_method'],
@@ -406,4 +401,28 @@ class BookingController extends Controller
             ],
         ]);
     }
+
+    public function refundDeposit(Booking $booking)
+    {
+        abort_unless(auth()->user()->can('manage-bookings'), 403);
+
+        if ($booking->security_deposit <= 0) {
+            return back()->with('error', 'This booking has no security deposit.');
+        }
+
+        if ($booking->security_deposit_refunded) {
+            return back()->with('error', 'Security deposit already refunded.');
+        }
+
+        $booking->update([
+            'security_deposit_refunded'    => true,
+            'security_deposit_refunded_at' => now(),
+            'security_deposit_refunded_by' => auth()->id(),
+        ]);
+
+        AuditLog::log('booking.deposit_refunded', $booking, ['refunded' => false], ['refunded' => true, 'amount' => $booking->security_deposit]);
+
+        return back()->with('success', 'Security deposit marked as refunded.');
+    }
+
 }

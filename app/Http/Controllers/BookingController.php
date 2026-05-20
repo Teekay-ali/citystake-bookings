@@ -94,6 +94,7 @@ class BookingController extends Controller
                 'subtotal'         => $booking->subtotal,
                 'cleaning_fee'     => $booking->cleaning_fee,
                 'service_charge'   => $booking->service_charge,
+                'security_deposit'  => $booking->security_deposit,
                 'discount_type'    => $booking->discount_type,
                 'discount_percent' => $booking->discount_percent,
                 'discount_amount'  => $booking->discount_amount,
