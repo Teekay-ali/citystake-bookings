@@ -142,7 +142,7 @@ class Booking extends Model
         $this->service_charge = $this->subtotal * ($unitType->service_charge_percent / 100);
 
         // Security deposit — 1 extra night for 1-night bookings
-        $this->security_deposit = $this->nights === 1
+        $this->security_deposit = (int) $this->nights === 1
             ? $unitType->base_price_per_night
             : 0;
 

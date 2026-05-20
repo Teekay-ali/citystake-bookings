@@ -62,16 +62,16 @@ const calculateNights = computed(() => {
 
 const pricing = computed(() => {
     if (!selectedUnitType.value || calculateNights.value === 0) {
-        return { subtotal: 0, cleaning: 0, service: 0, discountAmount: 0, discountPercent: 0, discountType: null, total: 0 };
+        return { subtotal: 0, cleaning: 0, service: 0, deposit: 0, discountAmount: 0, discountPercent: 0, discountType: null, total: 0 };
     }
 
     const nights   = calculateNights.value;
-    const subtotal = selectedUnitType.value.base_price_per_night * nights;
+    const price    = parseFloat(selectedUnitType.value.base_price_per_night) || 0;
+    const subtotal = price * nights;
     const cleaning = parseFloat(selectedUnitType.value.cleaning_fee) || 0;
     const service  = subtotal * ((parseFloat(selectedUnitType.value.service_charge_percent) || 0) / 100);
-    const deposit = nights === 1 ? selectedUnitType.value.base_price_per_night : 0
+    const deposit  = nights === 1 ? price : 0;
 
-    // Mirror backend discount rules
     let discountPercent = 0;
     let discountType    = null;
 
@@ -80,7 +80,10 @@ const pricing = computed(() => {
         discountType    = 'long_stay';
     }
 
-    const discountAmount = discountPercent > 0 ? Math.round(subtotal * (discountPercent / 100) * 100) / 100 : 0;
+    const discountAmount = discountPercent > 0
+        ? Math.round(subtotal * (discountPercent / 100) * 100) / 100
+        : 0;
+
     const total = (subtotal - discountAmount) + cleaning + service + deposit;
 
     return { subtotal, cleaning, service, deposit, discountAmount, discountPercent, discountType, total };
@@ -477,9 +480,9 @@ const submit = () => {
                                             <span>−{{ formatPrice(pricing.discountAmount) }}</span>
                                         </div>
                                         <div v-if="pricing.deposit > 0" class="flex justify-between text-sm">
-                                            <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                                            <span class="text-gray-600 dark:text-gray-400">
                                                 Security deposit
-                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                                <span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
                                                     Refundable
                                                 </span>
                                             </span>
