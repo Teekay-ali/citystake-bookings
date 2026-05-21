@@ -2,13 +2,13 @@
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import {
-    MapPin, Users, Bed, ChevronRight, ArrowLeft,
+    MapPin, Users, Bed, ChevronRight, ChevronLeft, ArrowLeft,
     Wifi, Wind, Car, Waves, Dumbbell, Shield,
     Coffee, Tv, UtensilsCrossed, WashingMachine,
     Sparkles, Check, Star, LayoutGrid, X
 } from 'lucide-vue-next'
 import BookingBanner from '@/Components/BookingBanner.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 
 const props = defineProps({
     building:       Object,
@@ -19,6 +19,30 @@ const props = defineProps({
 const selectedImage = ref(props.building.images?.[0]?.url ?? null)
 
 const gridViewOpen = ref(false)
+
+// Lightbox
+const lightboxOpen  = ref(false)
+const lightboxIndex = ref(0)
+const lightboxEl    = ref(null)
+
+const openLightbox = (index) => {
+    lightboxIndex.value = index
+    lightboxOpen.value  = true
+    nextTick(() => lightboxEl.value?.focus())
+}
+const closeLightbox = () => { lightboxOpen.value = false }
+const lightboxPrev  = () => {
+    lightboxIndex.value = (lightboxIndex.value - 1 + props.building.images.length) % props.building.images.length
+}
+const lightboxNext  = () => {
+    lightboxIndex.value = (lightboxIndex.value + 1) % props.building.images.length
+}
+
+// Grid → lightbox bridge
+const openFromGrid = (index) => {
+    gridViewOpen.value = false
+    setTimeout(() => openLightbox(index), 200)
+}
 
 const amenityIcon = (amenity) => {
     const a = amenity.toLowerCase()
@@ -72,14 +96,16 @@ function bookingForUnitType(unitTypeId) {
             <div class="max-w-7xl mx-auto px-6 lg:px-8 pt-8">
                 <div class="relative">
                     <div class="grid grid-cols-4 gap-2 rounded-3xl overflow-hidden h-[420px] mb-10">
-                        <div class="col-span-4 md:col-span-2 md:row-span-2 relative">
+                        <div class="col-span-4 md:col-span-2 md:row-span-2 relative group cursor-pointer"
+                             @click="openLightbox(0)">
                             <img :src="selectedImage ?? building.images?.[0]?.url"
                                  :alt="building.name"
                                  class="w-full h-full object-cover" />
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                         </div>
                         <template v-if="building.images?.length > 1">
                             <div v-for="(img, i) in building.images.slice(1, 5)" :key="i"
-                                 @click="selectedImage = img.url"
+                                 @click="openLightbox(i + 1)"
                                  class="relative cursor-pointer overflow-hidden group hidden md:block">
                                 <img :src="img.url" :alt="building.name"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -322,7 +348,7 @@ function bookingForUnitType(unitTypeId) {
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             <div
                                 v-for="(img, i) in building.images" :key="img.id"
-                                @click="selectedImage = img.url; gridViewOpen = false"
+                                @click="openFromGrid(i)"
                                 class="relative aspect-[4/3] rounded-xl overflow-hidden cursor-pointer group"
                             >
                                 <img :src="img.url" :alt="building.name" loading="lazy"
@@ -333,6 +359,65 @@ function bookingForUnitType(unitTypeId) {
                     </div>
                 </div>
             </Transition>
+        </Teleport>
+
+        <!-- Lightbox -->
+        <Teleport to="body">
+            <div
+                v-if="lightboxOpen"
+                ref="lightboxEl"
+                tabindex="0"
+                class="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center outline-none"
+                @click.self="closeLightbox"
+                @keydown.right="lightboxNext"
+                @keydown.left="lightboxPrev"
+                @keydown.esc="closeLightbox"
+            >
+                <!-- Close -->
+                <button @click="closeLightbox"
+                        class="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all">
+                    <X class="w-6 h-6" />
+                </button>
+
+                <!-- Counter -->
+                <div class="absolute top-4 left-4 text-white/60 text-sm font-medium">
+                    {{ lightboxIndex + 1 }} / {{ building.images.length }}
+                </div>
+
+                <!-- Prev -->
+                <button @click="lightboxPrev"
+                        class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all">
+                    <ChevronLeft class="w-8 h-8" />
+                </button>
+
+                <!-- Image -->
+                <img
+                    :src="building.images[lightboxIndex]?.url"
+                    :alt="building.name"
+                    class="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+                />
+
+                <!-- Next -->
+                <button @click="lightboxNext"
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all">
+                    <ChevronRight class="w-8 h-8" />
+                </button>
+
+                <!-- Thumbnail strip -->
+                <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto">
+                    <button
+                        v-for="(img, i) in building.images"
+                        :key="i"
+                        @click="lightboxIndex = i"
+                        :class="[
+                    'w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all',
+                    i === lightboxIndex ? 'border-white' : 'border-transparent opacity-50 hover:opacity-75'
+                ]"
+                    >
+                        <img :src="img.url" :alt="building.name" class="w-full h-full object-cover" />
+                    </button>
+                </div>
+            </div>
         </Teleport>
 
         <!-- Mobile sticky bottom bar -->
