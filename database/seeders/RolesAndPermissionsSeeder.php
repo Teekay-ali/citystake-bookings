@@ -26,7 +26,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-adjustments',
 
             // Properties
+            'view-properties',
             'manage-properties',
+            'create-properties',
             'manage-blocked-dates',
 
             // Vendors
@@ -74,6 +76,9 @@ class RolesAndPermissionsSeeder extends Seeder
             // Tasks
             'manage-tasks',
             'view-tasks',
+
+            // Audit
+            'view-audit-logs',
         ];
 
         foreach ($permissions as $permission) {
@@ -82,7 +87,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // ─── Define roles and their permissions ───────────────────
         $rolePermissions = [
-            'super-admin' => $permissions, // all permissions
+            'super-admin' => $permissions,
 
             'manager' => [
                 'view-bookings', 'create-bookings', 'manage-bookings',
@@ -90,81 +95,72 @@ class RolesAndPermissionsSeeder extends Seeder
                 'confirm-checkin', 'manage-availability',
                 'request-late-checkout', 'approve-late-checkout',
                 'manage-blocked-dates',
+                'view-properties', 'manage-properties',
                 'view-vendors', 'manage-vendors',
-                'submit-complaints', 'manage-complaints',
-                'submit-maintenance', 'approve-maintenance-manager',
-                'submit-procurement', 'confirm-procurement-receipt',
+                'submit-complaints', 'manage-complaints', 'view-complaints',
+                'submit-maintenance', 'approve-maintenance-manager', 'view-maintenance',
+                'submit-procurement', 'confirm-procurement-receipt', 'view-procurement',
                 'view-stock', 'manage-stock', 'log-stock-usage',
                 'manage-staff-queries',
                 'view-analytics',
                 'manage-tasks', 'view-tasks',
-                'view-procurement',
-                'view-maintenance',
-                'view-complaints',
+                'view-audit-logs',
             ],
 
             'accountant' => [
                 'view-bookings',
                 'view-vendors',
-                'submit-complaints', 'submit-maintenance',
-                'approve-maintenance-accountant', 'pay-maintenance',
-                'approve-procurement-accountant',
+                'submit-complaints', 'view-complaints',
+                'submit-maintenance', 'approve-maintenance-accountant', 'pay-maintenance', 'view-maintenance',
+                'approve-procurement-accountant', 'view-procurement',
                 'view-stock', 'log-stock-usage',
                 'view-analytics',
-                'view-financials',
-                'manage-financials',
+                'view-financials', 'manage-financials',
                 'view-tasks',
-                'view-procurement',
-                'view-maintenance',
-                'view-complaints',
             ],
 
             'ceo' => [
                 'view-bookings',
                 'manage-adjustments',
+                'view-properties', 'manage-properties', 'create-properties',
                 'view-vendors',
-                'submit-complaints', 'submit-maintenance',
-                'approve-maintenance-ceo',
-                'approve-procurement-ceo',
+                'submit-complaints', 'view-complaints',
+                'submit-maintenance', 'approve-maintenance-ceo', 'view-maintenance',
+                'approve-procurement-ceo', 'view-procurement',
                 'view-stock',
                 'view-analytics',
                 'view-financials',
                 'manage-tasks', 'view-tasks',
-                'view-procurement',
-                'view-maintenance',
-                'view-complaints',
+                'view-audit-logs',
             ],
 
             'head-of-procurement' => [
                 'view-bookings',
                 'view-vendors', 'manage-vendors',
-                'submit-complaints', 'submit-maintenance',
-                'purchase-procurement',
+                'submit-complaints', 'view-complaints',
+                'submit-maintenance', 'view-maintenance',
+                'purchase-procurement', 'view-procurement',
                 'view-stock', 'log-stock-usage',
                 'view-tasks',
-                'view-procurement',
-                'view-maintenance',
-                'view-complaints',
             ],
 
             'receptionist' => [
                 'view-bookings', 'create-bookings',
                 'confirm-checkin', 'manage-availability',
                 'request-late-checkout',
-                'submit-complaints', 'submit-maintenance',
+                'submit-complaints', 'view-complaints',
+                'submit-maintenance', 'view-maintenance',
                 'view-stock', 'log-stock-usage',
                 'view-tasks',
-                'view-maintenance',
-                'view-complaints',
+                'view-properties',
             ],
 
             'staff' => [
                 'view-bookings',
-                'submit-complaints', 'submit-maintenance',
+                'submit-complaints', 'view-complaints',
+                'submit-maintenance', 'view-maintenance',
                 'view-stock', 'log-stock-usage',
                 'view-tasks',
-                'view-maintenance',
-                'view-complaints',
             ],
         ];
 

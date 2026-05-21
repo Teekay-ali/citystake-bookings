@@ -100,7 +100,7 @@ class BookingController extends Controller
 
         $buildings = $this->accessibleBuildings()
             ->with(['unitTypes:id,building_id,name,bedroom_type,base_price_per_night,cleaning_fee,service_charge_percent,max_guests'])
-            ->select('id', 'name')
+            ->select('id', 'name', 'caution_fee_amount')
             ->get();
 
         return Inertia::render('Admin/Bookings/Create', [

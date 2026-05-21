@@ -17,6 +17,8 @@ class BuildingController extends Controller
 
     public function index()
     {
+        abort_unless(auth()->user()->can('view-properties'), 403);
+
         $user = auth()->user();
         $buildings = Building::with(['unitTypes' => function ($query) {
             $query->withCount('units');
@@ -36,12 +38,14 @@ class BuildingController extends Controller
 
     public function create()
     {
+        abort_unless(auth()->user()->can('create-properties'), 403);
+
         return Inertia::render('Admin/Properties/CreateBuilding');
     }
 
     public function store(Request $request)
     {
-        abort_unless(auth()->user()->can('manage-properties'), 403);
+        abort_unless(auth()->user()->can('create-properties'), 403);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -67,6 +71,8 @@ class BuildingController extends Controller
 
     public function edit(Building $building)
     {
+        abort_unless(auth()->user()->can('manage-properties'), 403);
+
         $building->load(['images' => fn($q) => $q->orderBy('sort_order')]);
 
         return Inertia::render('Admin/Properties/EditBuilding', [
@@ -102,7 +108,7 @@ class BuildingController extends Controller
 
     public function destroy(Building $building)
     {
-        abort_unless(auth()->user()->can('manage-properties'), 403);
+        abort_unless(auth()->user()->can('create-properties'), 403);
 
         // Check if building has bookings
         if ($building->bookings()->exists()) {

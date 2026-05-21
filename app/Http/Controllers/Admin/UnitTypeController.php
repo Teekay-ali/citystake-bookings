@@ -92,6 +92,8 @@ class UnitTypeController extends Controller
 
     public function destroy(Building $building, UnitType $unitType)
     {
+        abort_unless(auth()->user()->can('manage-properties'), 403);
+
         // Ensure unit type belongs to building
         if ($unitType->building_id !== $building->id) {
             abort(404);

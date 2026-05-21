@@ -11,7 +11,7 @@ class AuditLogController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless(auth()->user()->can('manage-roles'), 403);
+        abort_unless(auth()->user()->can('view-audit-logs'), 403);
 
         $query = AuditLog::with('user')
             ->latest();

@@ -185,7 +185,7 @@ const navGroups = computed(() => [
     {
         label: 'Properties',
         items: [
-            { label: 'Properties',    icon: Building2, route: 'manage.properties.index',    match: 'manage.properties.*',    permission: 'manage-properties' },
+            { label: 'Properties',    icon: Building2, route: 'manage.properties.index',    match: 'manage.properties.*',    permission: 'view-properties' },
             { label: 'Blocked Dates', icon: Ban,       route: 'manage.blocked-dates.index', match: 'manage.blocked-dates.*', permission: 'manage-blocked-dates' },
         ]
     },
@@ -214,7 +214,7 @@ const navGroups = computed(() => [
             { label: 'Staff Queries', icon: FileText,    route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', permission: 'manage-staff-queries' },
             { label: 'Tasks',         icon: CheckSquare, route: 'manage.tasks.index',         match: 'manage.tasks.*',         permission: 'view-tasks' },
             { label: 'Roles',         icon: ShieldCheck, route: 'manage.roles.index',         match: 'manage.roles.*',         permission: 'manage-roles' },
-            { label: 'Audit Logs',    icon: FileText,    route: 'manage.audit-logs.index',    match: 'manage.audit-logs.*',    permission: 'manage-roles' },
+            { label: 'Audit Logs',    icon: FileText,    route: 'manage.audit-logs.index',    match: 'manage.audit-logs.*',    permission: 'view-audit-logs' },
         ]
     },
 ])
