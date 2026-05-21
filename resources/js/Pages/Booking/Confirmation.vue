@@ -281,15 +281,13 @@ const canCancel = computed(() => {
                                     <span>Service charge</span>
                                     <span>{{ formatPrice(booking.service_charge) }}</span>
                                 </div>
-                            </div>
-                            <div v-if="booking.caution_fee > 0" class="flex justify-between text-sm">
-                                <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                                    Caution Fee
-                                    <span class="text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">(Refundable)</span>
-                                </span>
-                                <span class="text-gray-900 dark:text-white font-medium">
-                                    {{ formatPrice(booking.caution_fee) }}
-                                </span>
+                                <div v-if="booking.caution_fee > 0" class="flex justify-between text-gray-600 dark:text-gray-400">
+        <span class="flex items-center gap-1.5">
+            Caution Fee
+            <span class="text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">(Refundable)</span>
+        </span>
+                                    <span>{{ formatPrice(booking.caution_fee) }}</span>
+                                </div>
                             </div>
                             <div class="pt-4 border-t border-gray-100 dark:border-gray-900">
                                 <div class="flex justify-between items-baseline">
@@ -300,6 +298,7 @@ const canCancel = computed(() => {
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     <!-- Property Contact & Directions -->
