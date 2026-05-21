@@ -75,6 +75,18 @@ const submit = () => {
 
                 <!-- Header -->
                 <div class="mb-12">
+                    <!-- Step indicator -->
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center text-xs font-semibold">1</span>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">Your details</span>
+                        </div>
+                        <div class="flex-1 h-px bg-gray-200 dark:bg-gray-800 max-w-12"></div>
+                        <div class="flex items-center gap-2 opacity-40">
+                            <span class="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-400 flex items-center justify-center text-xs font-semibold">2</span>
+                            <span class="text-sm font-medium text-gray-400">Payment</span>
+                        </div>
+                    </div>
                     <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">
                         Confirm and pay
                     </h1>

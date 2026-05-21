@@ -137,8 +137,6 @@ Route::middleware('auth')->group(function () {
     // My Bookings
     Route::get('/my-bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
-    Route::post('/bookings/{booking}/messages', [App\Http\Controllers\BookingMessageController::class, 'guestSend'])
-        ->name('bookings.messages.send');
 
     // View booking details
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
@@ -198,6 +196,10 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/properties/{building}/unit-types/{unitType}/edit', [AdminUnitTypeController::class, 'edit'])->name('unit-types.edit');
     Route::put('/properties/{building}/unit-types/{unitType}', [AdminUnitTypeController::class, 'update'])->name('unit-types.update');
     Route::delete('/properties/{building}/unit-types/{unitType}', [AdminUnitTypeController::class, 'destroy'])->name('unit-types.destroy');
+
+    // Units
+    Route::post('/properties/{building}/unit-types/{unitType}/units', [App\Http\Controllers\Admin\UnitController::class, 'store'])->name('units.store');
+    Route::delete('/properties/{building}/unit-types/{unitType}/units/{unit}', [App\Http\Controllers\Admin\UnitController::class, 'destroy'])->name('units.destroy');
 
     // Blocked Dates
     Route::get('/blocked-dates', [BlockedDateController::class, 'index'])->name('blocked-dates.index');

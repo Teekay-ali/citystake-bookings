@@ -53,7 +53,7 @@ const openGrid = () => { gridViewOpen.value = true; };
 const closeGrid = () => { gridViewOpen.value = false; };
 const openFromGrid = (index) => {
     gridViewOpen.value = false;
-    openLightbox(index);
+    setTimeout(() => openLightbox(index), 200);
 };
 
 const openLightbox = (index) => {

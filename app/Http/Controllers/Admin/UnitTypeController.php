@@ -47,7 +47,10 @@ class UnitTypeController extends Controller
             abort(404);
         }
 
-        $unitType->load(['images' => fn($q) => $q->orderBy('sort_order')]);
+        $unitType->load([
+            'images'  => fn($q) => $q->orderBy('sort_order'),
+            'units'   => fn($q) => $q->orderBy('unit_number'),
+        ]);
 
         return Inertia::render('Admin/Properties/EditUnitType', [
             'building' => $building,

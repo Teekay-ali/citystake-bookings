@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
@@ -15,12 +15,9 @@ const showCancelModal = ref(false);
 const isCancelling = ref(false);
 
 onMounted(() => {
-    // Show toast after a small delay to ensure page is fully loaded
-    setTimeout(() => {
-        toast.success('🎉 Payment successful! Your booking is confirmed.', {
-            timeout: 6000,
-        });
-    }, 300);
+    if (usePage().props.flash?.success) {
+        setTimeout(() => toast.success(usePage().props.flash.success, { timeout: 6000 }), 300);
+    }
 });
 
 

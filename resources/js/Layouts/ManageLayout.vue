@@ -4,7 +4,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { useToast } from 'vue-toastification'
 import {
     LayoutDashboard, CalendarDays, Building2, Ban, BarChart3,
-    Users, Grid3x3, Clock, Menu, X, LogOut, User,
+    Users, Grid3x3, Clock, Menu, X, LogOut, User, ClipboardList,
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
     ChevronLeft, ChevronRight, FileText, ShieldCheck, ChevronUp, ChevronDown,
@@ -175,10 +175,10 @@ const navGroups = computed(() => [
     {
         label: 'Bookings',
         items: [
-            { label: 'All Bookings',   icon: CalendarDays,   route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
+            { label: 'All Bookings',   icon: ClipboardList,   route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
             { label: 'Availability',   icon: Grid3x3,        route: 'manage.availability.index',           match: 'manage.availability.*',                permission: 'manage-availability' },
             { label: 'Calendar',       icon: CalendarDays,   route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',             permission: 'view-bookings' },
-            { label: 'Messages',          icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                    badge: unreadMessages },
+            { label: 'Messages',       icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                    badge: unreadMessages },
             { label: 'Late Checkouts', icon: Clock,          route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index',  permission: 'view-bookings', badge: pendingCount },
         ]
     },
@@ -213,7 +213,7 @@ const navGroups = computed(() => [
             { label: 'Staff Queries', icon: FileText,    route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', permission: 'manage-staff-queries' },
             { label: 'Tasks',         icon: CheckSquare, route: 'manage.tasks.index',         match: 'manage.tasks.*',         permission: 'view-tasks' },
             { label: 'Roles',         icon: ShieldCheck, route: 'manage.roles.index',         match: 'manage.roles.*',         permission: 'manage-roles' },
-            { label: 'Audit Logs',    icon: ShieldCheck, route: 'manage.audit-logs.index', match: 'manage.audit-logs.*', permission: 'manage-roles' },
+            { label: 'Audit Logs',    icon: FileText,    route: 'manage.audit-logs.index',    match: 'manage.audit-logs.*',    permission: 'manage-roles' },
         ]
     },
 ])

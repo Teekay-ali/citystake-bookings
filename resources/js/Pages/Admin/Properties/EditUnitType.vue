@@ -1,6 +1,6 @@
 <script setup>
 import ManageLayout from '@/Layouts/ManageLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import {
@@ -11,7 +11,7 @@ import {
     Sparkles,
     FileText,
     ToggleLeft,
-    ToggleRight,
+    ToggleRight, Hash, Plus, BedDouble, AlertCircle,
     Bed,
     Trash2,
     Images
@@ -98,6 +98,49 @@ const deleteUnitType = () => {
         }
     });
 };
+
+// Units management
+const units      = ref(props.unitType.units ?? [])
+const newUnits   = ref([{ unit_number: '', floor: '' }])
+const addingUnit = ref(false)
+
+const addUnitRow    = () => newUnits.value.push({ unit_number: '', floor: '' })
+const removeUnitRow = (index) => {
+    if (newUnits.value.length > 1) newUnits.value.splice(index, 1)
+}
+
+const unitsForm = useForm({ units: newUnits })
+
+const submitUnits = () => {
+    unitsForm.units = newUnits.value.filter(u => u.unit_number.trim() !== '')
+    if (!unitsForm.units.length) return
+
+    unitsForm.post(route('manage.units.store', {
+        building: props.building.id,
+        unitType: props.unitType.id,
+    }), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            units.value  = page.props.unitType?.units ?? units.value
+            newUnits.value = [{ unit_number: '', floor: '' }]
+            addingUnit.value = false
+        },
+    })
+}
+
+const deleteUnit = (unit) => {
+    if (!confirm(`Delete unit ${unit.unit_number}? This cannot be undone.`)) return
+    router.delete(route('manage.units.destroy', {
+        building: props.building.id,
+        unitType: props.unitType.id,
+        unit:     unit.id,
+    }), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            units.value = page.props.unitType?.units ?? units.value.filter(u => u.id !== unit.id)
+        },
+    })
+}
 </script>
 
 <template>
@@ -376,6 +419,109 @@ const deleteUnitType = () => {
                         <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
                             Select amenities specific to this unit type (building amenities are inherited)
                         </p>
+                    </div>
+
+                    <!-- Units -->
+                    <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-medium text-gray-900 dark:text-white flex items-center">
+                                <Hash class="w-5 h-5 mr-2" />
+                                Units
+                                <span class="ml-2 px-2 py-0.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full">
+                                    {{ units.length }}
+                                </span>
+                            </h2>
+                            <button
+                                type="button"
+                                @click="addingUnit = !addingUnit"
+                                class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors"
+                            >
+                                <Plus class="w-4 h-4" />
+                                Add units
+                            </button>
+                        </div>
+
+                        <!-- Existing units -->
+                        <div v-if="units.length > 0" class="mb-4">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                <div
+                                    v-for="unit in units"
+                                    :key="unit.id"
+                                    class="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl group"
+                                >
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ unit.unit_number }}</p>
+                                        <p v-if="unit.floor" class="text-xs text-gray-400">Floor {{ unit.floor }}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        @click="deleteUnit(unit)"
+                                        class="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-400 hover:text-red-600"
+                                    >
+                                        <Trash2 class="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else-if="!addingUnit" class="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-700 dark:text-amber-300 mb-4">
+                            <AlertCircle class="w-4 h-4 flex-shrink-0" />
+                            No units yet. This unit type cannot accept bookings until at least one unit is added.
+                        </div>
+
+                        <!-- Add units form -->
+                        <div v-if="addingUnit" class="border-t border-gray-100 dark:border-gray-900 pt-4 space-y-3">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Enter unit numbers to add. Duplicates will be skipped automatically.</p>
+
+                            <div v-for="(row, index) in newUnits" :key="index" class="flex items-center gap-2">
+                                <input
+                                    v-model="row.unit_number"
+                                    type="text"
+                                    placeholder="Unit number e.g. 001"
+                                    class="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                />
+                                <input
+                                    v-model="row.floor"
+                                    type="text"
+                                    placeholder="Floor (optional)"
+                                    class="w-32 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                />
+                                <button
+                                    type="button"
+                                    @click="removeUnitRow(index)"
+                                    :disabled="newUnits.length === 1"
+                                    class="p-2 text-gray-400 hover:text-red-500 disabled:opacity-30 transition-colors"
+                                >
+                                    <Trash2 class="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div class="flex items-center gap-3 pt-1">
+                                <button
+                                    type="button"
+                                    @click="addUnitRow"
+                                    class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                >
+                                    <Plus class="w-4 h-4" /> Add another row
+                                </button>
+                                <div class="flex-1"></div>
+                                <button
+                                    type="button"
+                                    @click="addingUnit = false"
+                                    class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="submitUnits"
+                                    :disabled="unitsForm.processing"
+                                    class="px-5 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                >
+                                    {{ unitsForm.processing ? 'Saving...' : 'Save units' }}
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Images -->

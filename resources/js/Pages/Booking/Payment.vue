@@ -211,6 +211,20 @@ const payWithMonnify = () => {
                         {{ timeRemaining }}
                     </span>
                 </div>
+
+                <!-- Step indicator -->
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="flex items-center gap-2 opacity-40">
+                        <span class="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex items-center justify-center text-xs font-semibold">1</span>
+                        <span class="text-sm font-medium text-gray-400">Your details</span>
+                    </div>
+                    <div class="flex-1 h-px bg-gray-200 dark:bg-gray-800 max-w-12"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center text-xs font-semibold">2</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">Payment</span>
+                    </div>
+                </div>
+
                 <!-- Header -->
                 <div class="text-center mb-12">
                     <div class="w-20 h-20 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center mx-auto mb-6">
@@ -315,34 +329,33 @@ const payWithMonnify = () => {
                 </div>
 
                 <!-- Gateway Selection -->
-                <div class="flex gap-3 mb-6">
+                <div class="flex flex-col sm:flex-row gap-3 mb-6">
                     <button
                         @click="selectedGateway = 'paystack'"
                         :disabled="isProcessing || isExpired"
                         :class="[
-                            'flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2',
-                            selectedGateway === 'paystack'
-                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                : 'border-gray-200 dark:border-gray-700'
-                        ]"
+            'flex-1 py-4 px-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1.5',
+            selectedGateway === 'paystack'
+                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+        ]"
                     >
-                        <!-- Paystack logo -->
                         <img :src="paystackLogo" class="h-6 w-auto" alt="Paystack" />
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Cards & Bank Transfer</span>
                     </button>
 
                     <button
                         @click="selectedGateway = 'monnify'"
                         :disabled="isProcessing || isExpired"
                         :class="[
-                            'flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2',
-                            selectedGateway === 'monnify'
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                : 'border-gray-200 dark:border-gray-700'
-                        ]"
+            'flex-1 py-4 px-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1.5',
+            selectedGateway === 'monnify'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+        ]"
                     >
-                        <!-- Monnify logo -->
                         <img :src="monnifyLogo" class="h-6 w-auto" alt="Monnify" />
-
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Cards, Bank Transfer & USSD</span>
                     </button>
                 </div>
 
