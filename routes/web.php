@@ -287,6 +287,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/financials/manual', [FinancialController::class, 'storeManual'])->name('financials.manual');
     Route::post('/financials/pay/{type}/{id}', [FinancialController::class, 'payExpense'])->name('financials.pay');
     Route::get('/financials/export', [FinancialController::class, 'export'])->name('financials.export');
+    Route::get('/financials/deposits', [FinancialController::class, 'deposits'])->name('financials.deposits');
 
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');

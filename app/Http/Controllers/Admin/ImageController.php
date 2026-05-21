@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\HomeController;
 use App\Models\Building;
 use App\Models\Image;
 use App\Models\UnitType;
@@ -48,6 +49,8 @@ class ImageController extends Controller
             ];
         }
 
+        HomeController::clearPropertyCache();
+
         return response()->json([
             'message' => count($uploaded) . ' image(s) uploaded successfully.',
             'images'  => $uploaded,
@@ -77,6 +80,8 @@ class ImageController extends Controller
             }
         }
 
+        HomeController::clearPropertyCache();
+
         return response()->json(['message' => 'Image deleted.']);
     }
 
@@ -94,6 +99,8 @@ class ImageController extends Controller
         $model->images()->update(['is_primary' => false]);
 
         $image->update(['is_primary' => true]);
+
+        HomeController::clearPropertyCache();
 
         return response()->json(['message' => 'Primary image updated.']);
     }

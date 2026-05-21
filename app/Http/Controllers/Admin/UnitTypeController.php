@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\HomeController;
 use App\Models\Building;
 use App\Models\UnitType;
 use Illuminate\Http\Request;
@@ -36,6 +37,8 @@ class UnitTypeController extends Controller
         $validated['slug'] = Str::slug($validated['name']);
 
         UnitType::create($validated);
+
+        HomeController::clearPropertyCache();
 
         return redirect()->route('manage.properties.index')
             ->with('success', 'Unit type created successfully!');
@@ -81,6 +84,8 @@ class UnitTypeController extends Controller
 
         $unitType->update($validated);
 
+        HomeController::clearPropertyCache();
+
         return redirect()->route('manage.properties.index')
             ->with('success', 'Unit type updated successfully!');
     }
@@ -99,6 +104,8 @@ class UnitTypeController extends Controller
         }
 
         $unitType->delete();
+
+        HomeController::clearPropertyCache();
 
         return redirect()->route('manage.properties.index')
             ->with('success', 'Unit type deleted successfully!');

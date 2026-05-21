@@ -254,6 +254,50 @@ class FinancialController extends Controller
         return $this->exportPdf($transactions, $startDate, $endDate);
     }
 
+    public function deposits(Request $request)
+    {
+        abort_unless(auth()->user()->can('view-financials'), 403);
+
+        $user        = auth()->user();
+        $buildings   = $this->accessibleBuildings()->get(['id', 'name']);
+        $buildingIds = $user->hasGlobalAccess()
+            ? $buildings->pluck('id')->toArray()
+            : $user->accessibleBuildingIds();
+
+        $filter = $request->input('filter', 'outstanding'); // outstanding | refunded | all
+
+        $query = \App\Models\Booking::whereIn('building_id', $buildingIds)
+            ->where('security_deposit', '>', 0)
+            ->with(['building:id,name', 'unitType:id,name', 'unit:id,unit_number'])
+            ->when($filter === 'outstanding', fn($q) => $q->where('security_deposit_refunded', false))
+            ->when($filter === 'refunded',    fn($q) => $q->where('security_deposit_refunded', true))
+            ->latest('check_out');
+
+        $deposits = $query->paginate(30)->withQueryString();
+
+        $summary = [
+            'total_outstanding' => \App\Models\Booking::whereIn('building_id', $buildingIds)
+                ->where('security_deposit', '>', 0)
+                ->where('security_deposit_refunded', false)
+                ->sum('security_deposit'),
+            'total_refunded' => \App\Models\Booking::whereIn('building_id', $buildingIds)
+                ->where('security_deposit', '>', 0)
+                ->where('security_deposit_refunded', true)
+                ->sum('security_deposit'),
+            'count_outstanding' => \App\Models\Booking::whereIn('building_id', $buildingIds)
+                ->where('security_deposit', '>', 0)
+                ->where('security_deposit_refunded', false)
+                ->count(),
+        ];
+
+        return Inertia::render('Admin/Financial/Deposits', [
+            'deposits'  => $deposits,
+            'summary'   => $summary,
+            'buildings' => $buildings,
+            'filters'   => ['filter' => $filter],
+        ]);
+    }
+
     // ── Private helpers ────────────────────────────────────────
 
     private function resolveDateRange(string $period, int $year, int $month, int $quarter, string $date): array

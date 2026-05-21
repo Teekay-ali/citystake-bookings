@@ -101,6 +101,12 @@ const canCancel = computed(() => {
     );
 });
 
+const canBookAgain = computed(() => {
+    return (props.booking.status === 'completed' || props.booking.status === 'cancelled')
+        && props.booking.building?.slug
+        && props.booking.unit_type?.slug
+})
+
 const getStatusBadge = computed(() => {
     return resolveStatusBadge(props.booking.display_status);
 });
@@ -161,6 +167,7 @@ const daysUntilCheckIn = computed(() => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
 });
+
 </script>
 
 <template>
@@ -481,6 +488,16 @@ const daysUntilCheckIn = computed(() => {
                                 <FileText class="w-4 h-4 mr-2" />
                                 Download Invoice
                             </a>
+
+                            <!-- Book Again -->
+                            <Link
+                                v-if="canBookAgain"
+                                :href="route('properties.show', [booking.building.slug, booking.unit_type.slug])"
+                                class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium rounded-full hover:bg-gray-800 dark:hover:bg-gray-100 transition-all no-print"
+                            >
+                                <HomeIcon class="w-4 h-4" />
+                                Book this property again
+                            </Link>
 
                             <button
                                 v-if="canCancel"

@@ -9,6 +9,13 @@ use Inertia\Inertia;
 
 class HomeController extends Controller
 {
+
+    public static function clearPropertyCache(): void
+    {
+        Cache::forget('home_buildings');
+        Cache::forget('home_stats');
+    }
+
     public function index()
     {
         $buildings = Cache::remember('home_buildings', 3600, function () {

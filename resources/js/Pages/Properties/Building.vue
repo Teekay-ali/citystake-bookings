@@ -335,5 +335,22 @@ function bookingForUnitType(unitTypeId) {
             </Transition>
         </Teleport>
 
+        <!-- Mobile sticky bottom bar -->
+        <div class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shadow-lg">
+            <div>
+                <p class="text-lg font-medium text-gray-900 dark:text-white">
+                    {{ formatPrice(lowestPrice) }}
+                    <span class="text-sm font-normal text-gray-500 dark:text-gray-400">/ night</span>
+                </p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">Apartments from</p>
+            </div>
+            <Link
+                :href="route('properties.show', [building.slug, building.unit_types?.[0]?.slug])"
+                class="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-full hover:bg-gray-800 dark:hover:bg-gray-100 transition-all"
+            >
+                View apartments
+            </Link>
+        </div>
+
     </AppLayout>
 </template>

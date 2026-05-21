@@ -8,7 +8,7 @@ import {
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
     ChevronLeft, ChevronRight, FileText, ShieldCheck, ChevronUp, ChevronDown,
-    Search, Plus
+    Search, Plus, Banknote
 } from 'lucide-vue-next'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
@@ -204,6 +204,7 @@ const navGroups = computed(() => [
         items: [
             { label: 'Analytics',  icon: BarChart3,  route: 'manage.analytics.index',  match: 'manage.analytics.*',  permission: 'view-analytics' },
             { label: 'Financials', icon: DollarSign, route: 'manage.financials.index', match: 'manage.financials.*', permission: 'view-financials' },
+            { label: 'Deposits',   icon: Banknote,   route: 'manage.financials.deposits', match: 'manage.financials.deposits', permission: 'view-financials' },
         ]
     },
     {

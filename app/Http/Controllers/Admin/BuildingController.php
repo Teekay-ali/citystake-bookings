@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\HomeController;
 use App\Models\AuditLog;
 use App\Traits\ScopedByBuilding;
 use App\Http\Controllers\Controller;
@@ -57,6 +58,8 @@ class BuildingController extends Controller
 
         AuditLog::log('building.created', $building, null, ['name' => $building->name]);
 
+        HomeController::clearPropertyCache();
+
         return redirect()->route('manage.properties.index')
             ->with('success', 'Property created successfully!');
     }
@@ -89,6 +92,8 @@ class BuildingController extends Controller
 
         AuditLog::log('building.updated', $building, ['name' => $building->getOriginal('name')], ['name' => $building->name]);
 
+        HomeController::clearPropertyCache();
+
         return redirect()->route('manage.properties.index')
             ->with('success', 'Property updated successfully!');
     }
@@ -106,6 +111,8 @@ class BuildingController extends Controller
         AuditLog::log('building.deleted', $building, ['name' => $building->name], null);
 
         $building->delete();
+
+        HomeController::clearPropertyCache();
 
         return redirect()->route('manage.properties.index')
             ->with('success', 'Property deleted successfully!');
