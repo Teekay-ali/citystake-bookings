@@ -22,12 +22,14 @@ class Building extends Model
         'description',
         'address',
         'city',
+        'caution_fee_amount',
         'amenities',
         'house_rules',
         'is_active',
     ];
 
     protected $casts = [
+        'caution_fee_amount' => 'decimal:2',
         'amenities' => 'array',
         'house_rules' => 'array',
         'is_active' => 'boolean',

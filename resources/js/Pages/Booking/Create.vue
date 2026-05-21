@@ -266,16 +266,16 @@ const submit = () => {
                                         <span>{{ formatPrice(bookingData.service_charge) }}</span>
                                     </div>
 
-                                    <!-- Security Deposit -->
-                                    <div v-if="bookingData.security_deposit > 0" class="flex justify-between text-sm">
+                                    <!-- Caution Fee  -->
+                                    <div v-if="bookingData.caution_fee > 0" class="flex justify-between text-sm">
                                         <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                                            Security deposit
+                                            Caution Fee
                                             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                                                 Refundable
                                             </span>
                                         </span>
                                         <span class="text-gray-900 dark:text-white">
-                                            {{ formatPrice(bookingData.security_deposit) }}
+                                            {{ formatPrice(bookingData.caution_fee) }}
                                         </span>
                                     </div>
 

@@ -48,6 +48,7 @@ class BuildingController extends Controller
             'address' => 'required|string|max:500',
             'city' => 'required|string|max:100',
             'description' => 'nullable|string',
+            'caution_fee_amount' => 'required|numeric|min:0',
             'amenities' => 'nullable|array',
             'is_active' => 'boolean',
         ]);
@@ -82,6 +83,7 @@ class BuildingController extends Controller
             'address' => 'required|string|max:500',
             'city' => 'required|string|max:100',
             'description' => 'nullable|string',
+            'caution_fee_amount' => 'required|numeric|min:0',
             'amenities' => 'nullable|array',
             'is_active' => 'boolean',
         ]);

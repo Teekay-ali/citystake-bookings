@@ -29,10 +29,12 @@ const form = useForm({
     name: props.building.name,
     address: props.building.address,
     city: props.building.city,
-    description: props.building.description || '',
-    amenities: props.building.amenities || [],
+    description: props.building.description ?? '',
+    amenities: props.building.amenities ?? [],
+    house_rules: props.building.house_rules ?? [],
     is_active: props.building.is_active,
-});
+    caution_fee_amount: props.building.caution_fee_amount ?? 70000,
+})
 
 const amenitiesList = [
     '24/7 Security',
@@ -178,6 +180,32 @@ const deleteBuilding = () => {
                                         {{ form.errors.city }}
                                     </p>
                                 </div>
+
+                                <!-- Caution Fee -->
+                                <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                                    <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
+                                        Booking Policy
+                                    </h2>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Caution Fee (₦)
+                                        </label>
+                                        <input
+                                            v-model="form.caution_fee_amount"
+                                            type="number"
+                                            min="0"
+                                            step="1000"
+                                            class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                        />
+                                        <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                            Charged on every booking and refunded at check-out if no damage. For 1-night bookings, the caution fee is equal to 1 night's rate instead.
+                                        </p>
+                                        <p v-if="form.errors.caution_fee_amount" class="mt-1 text-sm text-red-600">
+                                            {{ form.errors.caution_fee_amount }}
+                                        </p>
+                                    </div>
+                                </div>
+
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

@@ -163,13 +163,13 @@
             <td class="right">−₦{{ number_format($booking->discount_amount, 0) }}</td>
         </tr>
     @endif
-    @if($booking->security_deposit > 0)
+    @if($booking->caution_fee > 0)
         <tr>
             <td>
-                Security Deposit (Refundable)
-                <br><span style="font-size:11px;color:#9ca3af;">Returned after checkout</span>
+                Caution Fee (Refundable)
+                <br><span style="font-size:11px;color:#9ca3af;">Returned at check-out if no damage</span>
             </td>
-            <td class="right">₦{{ number_format($booking->security_deposit, 0) }}</td>
+            <td class="right">₦{{ number_format($booking->caution_fee, 0) }}</td>
         </tr>
     @endif
     <tr class="total-row">

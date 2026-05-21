@@ -62,7 +62,7 @@ const calculateNights = computed(() => {
 
 const pricing = computed(() => {
     if (!selectedUnitType.value || calculateNights.value === 0) {
-        return { subtotal: 0, cleaning: 0, service: 0, deposit: 0, discountAmount: 0, discountPercent: 0, discountType: null, total: 0 };
+        return { subtotal: 0, cleaning: 0, service: 0, cautionFee: 0, discountAmount: 0, discountPercent: 0, discountType: null, total: 0 };
     }
 
     const nights   = calculateNights.value;
@@ -70,7 +70,9 @@ const pricing = computed(() => {
     const subtotal = price * nights;
     const cleaning = parseFloat(selectedUnitType.value.cleaning_fee) || 0;
     const service  = subtotal * ((parseFloat(selectedUnitType.value.service_charge_percent) || 0) / 100);
-    const deposit  = nights === 1 ? price : 0;
+    const cautionFee = nights === 1
+        ? price
+        : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000)
 
     let discountPercent = 0;
     let discountType    = null;
@@ -84,9 +86,9 @@ const pricing = computed(() => {
         ? Math.round(subtotal * (discountPercent / 100) * 100) / 100
         : 0;
 
-    const total = (subtotal - discountAmount) + cleaning + service + deposit;
+    const total = (subtotal - discountAmount) + cleaning + service + cautionFee;
 
-    return { subtotal, cleaning, service, deposit, discountAmount, discountPercent, discountType, total };
+    return { subtotal, cleaning, service, cautionFee, discountAmount, discountPercent, discountType, total };
 });
 
 // Reset unit type when building changes
@@ -479,14 +481,14 @@ const submit = () => {
                                             <span>Long stay discount ({{ pricing.discountPercent }}% off)</span>
                                             <span>−{{ formatPrice(pricing.discountAmount) }}</span>
                                         </div>
-                                        <div v-if="pricing.deposit > 0" class="flex justify-between text-sm">
+                                        <div v-if="pricing.cautionFee > 0" class="flex justify-between text-sm">
                                             <span class="text-gray-600 dark:text-gray-400">
-                                                Security deposit
+                                                Caution Fee
                                                 <span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
                                                     Refundable
                                                 </span>
                                             </span>
-                                            <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.deposit) }}</span>
+                                            <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.cautionFee) }}</span>
                                         </div>
                                     </div>
 

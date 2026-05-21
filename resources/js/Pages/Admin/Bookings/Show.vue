@@ -203,7 +203,7 @@ const isRefunding = ref(false)
 const refundDeposit = () => {
     if (!confirm('Mark security deposit as refunded to guest?')) return
     isRefunding.value = true
-    router.post(route('manage.bookings.deposit.refund', booking.id), {}, {
+    router.post(route('manage.bookings.caution-fee.refund', booking.id), {}, {
         onFinish: () => isRefunding.value = false,
     })
 }
@@ -600,10 +600,10 @@ const refundDeposit = () => {
                                     </span>
                                 </div>
                                 <!-- Security Deposit -->
-                                <div v-if="booking.security_deposit > 0" class="flex justify-between items-center text-sm">
+                                <div v-if="booking.caution_fee > 0" class="flex justify-between items-center text-sm">
                                     <span class="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                        Security deposit
-                                        <span v-if="booking.security_deposit_refunded"
+                                        Caution Fee
+                                        <span v-if="booking.caution_fee_refunded"
                                               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
                                             <CheckCircle class="w-3 h-3" /> Refunded
                                         </span>

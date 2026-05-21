@@ -282,13 +282,13 @@ const canCancel = computed(() => {
                                     <span>{{ formatPrice(booking.service_charge) }}</span>
                                 </div>
                             </div>
-                            <div v-if="booking.security_deposit > 0" class="flex justify-between text-sm">
+                            <div v-if="booking.caution_fee > 0" class="flex justify-between text-sm">
                                 <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                                    Security deposit
+                                    Caution Fee
                                     <span class="text-xs text-amber-600 dark:text-amber-400">(Refundable)</span>
                                 </span>
                                 <span class="text-gray-900 dark:text-white font-medium">
-                                    {{ formatPrice(booking.security_deposit) }}
+                                    {{ formatPrice(booking.caution_fee) }}
                                 </span>
                             </div>
                             <div class="pt-4 border-t border-gray-100 dark:border-gray-900">

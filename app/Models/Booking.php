@@ -58,10 +58,10 @@ class Booking extends Model
         'late_checkout_approved_by',
         'late_checkout_approved_at',
         'late_checkout_settled_at',
-        'security_deposit',
-        'security_deposit_refunded',
-        'security_deposit_refunded_at',
-        'security_deposit_refunded_by',
+        'caution_fee',
+        'caution_fee_refunded',
+        'caution_fee_refunded_at',
+        'caution_fee_refunded_by',
     ];
 
     protected $casts = [
@@ -81,9 +81,9 @@ class Booking extends Model
         'late_checkout_fee'         => 'decimal:2',
         'late_checkout_approved_at' => 'datetime',
         'late_checkout_settled_at'  => 'datetime',
-        'security_deposit'              => 'decimal:2',
-        'security_deposit_refunded'     => 'boolean',
-        'security_deposit_refunded_at'  => 'datetime',
+        'caution_fee'              => 'decimal:2',
+        'caution_fee_refunded'     => 'boolean',
+        'caution_fee_refunded_at'  => 'datetime',
     ];
 
     public function scopeCheckedIn($query)
@@ -134,32 +134,36 @@ class Booking extends Model
         return 'CS-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
     }
 
-    public function calculateTotal(UnitType $unitType, int $unitCount = 1): void
+    public function calculateTotal(UnitType $unitType): void
     {
         $this->nights         = Carbon::parse($this->check_in)->diffInDays($this->check_out);
         $this->subtotal       = $this->nights * $unitType->base_price_per_night;
         $this->cleaning_fee   = $unitType->cleaning_fee;
         $this->service_charge = $this->subtotal * ($unitType->service_charge_percent / 100);
 
-        // Security deposit — 1 extra night for 1-night bookings
-        $this->security_deposit = (int) $this->nights === 1
-            ? $unitType->base_price_per_night
-            : 0;
+        // Caution fee — 1-night bookings pay 1 night price, all others pay building's caution fee amount
+        $building = $unitType->building ?? $unitType->building()->first();
+        $defaultCautionFee = (float) ($building->caution_fee_amount ?? 70000);
+
+        $this->caution_fee = (int) $this->nights === 1
+            ? (float) $unitType->base_price_per_night
+            : $defaultCautionFee;
 
         // Resolve discount
-        $discount = DiscountService::resolve($this->nights, $unitCount);
+        $discount = DiscountService::resolve((int) $this->nights);
         $this->discount_type    = $discount['type'];
         $this->discount_percent = $discount['percent'];
         $this->discount_amount  = $discount['percent'] > 0
             ? round($this->subtotal * ($discount['percent'] / 100), 2)
             : 0;
 
-        // Total includes deposit — deposit is refundable but collected upfront
+        // Total includes caution fee
         $this->total_amount = ($this->subtotal - $this->discount_amount)
             + $this->cleaning_fee
             + $this->service_charge
-            + $this->security_deposit;
+            + $this->caution_fee;
     }
+
     public function isPaid(): bool
     {
         return $this->payment_status === 'paid';

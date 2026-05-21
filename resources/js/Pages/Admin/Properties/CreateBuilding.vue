@@ -19,6 +19,7 @@ const form = useForm({
     description: '',
     amenities: [],
     is_active: true,
+    caution_fee_amount: 70000,
 });
 
 const amenitiesList = [

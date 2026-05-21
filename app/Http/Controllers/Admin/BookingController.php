@@ -172,8 +172,14 @@ class BookingController extends Controller
             $discountAmt   = $discount['percent'] > 0
                 ? round($subtotal * ($discount['percent'] / 100), 2)
                 : 0;
-            $securityDeposit = $nights === 1 ? $unitType->base_price_per_night : 0;
-            $totalAmount = ($subtotal - $discountAmt) + $unitType->cleaning_fee + $serviceCharge + $securityDeposit;
+            $cautionFee = $nights === 1
+                ? (float) $unitType->base_price_per_night
+                : (float) ($building->caution_fee_amount ?? 70000);
+
+            $totalAmount = ($subtotal - $discountAmt)
+                + $unitType->cleaning_fee
+                + $serviceCharge
+                + $cautionFee;
 
             // Create booking
             $booking = Booking::create([
@@ -198,7 +204,7 @@ class BookingController extends Controller
                 'discount_type'    => $discount['type'],
                 'discount_percent' => $discount['percent'],
                 'discount_amount'  => $discountAmt,
-                'security_deposit' => $securityDeposit,
+                'caution_fee' => $cautionFee,
                 'status' => 'confirmed',
                 'payment_status' => 'paid',
                 'payment_method' => $validated['payment_method'],
@@ -402,27 +408,27 @@ class BookingController extends Controller
         ]);
     }
 
-    public function refundDeposit(Booking $booking)
+    public function refundCautionFee(Booking $booking)
     {
         abort_unless(auth()->user()->can('manage-bookings'), 403);
 
-        if ($booking->security_deposit <= 0) {
-            return back()->with('error', 'This booking has no security deposit.');
+        if ($booking->caution_fee <= 0) {
+            return back()->with('error', 'This booking has no caution fee.');
         }
 
-        if ($booking->security_deposit_refunded) {
-            return back()->with('error', 'Security deposit already refunded.');
+        if ($booking->caution_fee_refunded) {
+            return back()->with('error', 'Caution fee already refunded.');
         }
 
         $booking->update([
-            'security_deposit_refunded'    => true,
-            'security_deposit_refunded_at' => now(),
-            'security_deposit_refunded_by' => auth()->id(),
+            'caution_fee_refunded'    => true,
+            'caution_fee_refunded_at' => now(),
+            'caution_fee_refunded_by' => auth()->id(),
         ]);
 
-        AuditLog::log('booking.deposit_refunded', $booking, ['refunded' => false], ['refunded' => true, 'amount' => $booking->security_deposit]);
+        AuditLog::log('booking.caution_fee_refunded', $booking, ['refunded' => false], ['refunded' => true, 'amount' => $booking->caution_fee]);
 
-        return back()->with('success', 'Security deposit marked as refunded.');
+        return back()->with('success', 'Caution fee marked as refunded.');
     }
 
 }

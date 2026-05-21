@@ -132,12 +132,14 @@ const estimatedTotal = computed(() => {
     const subtotal = calculateNights.value * parseFloat(props.unitType.base_price_per_night)
     const cleaning = parseFloat(props.unitType.cleaning_fee) || 0
     const service  = subtotal * ((parseFloat(props.unitType.service_charge_percent) || 0) / 100)
-    const deposit  = calculateNights.value === 1 ? parseFloat(props.unitType.base_price_per_night) : 0
+    const cautionFee = calculateNights.value === 1
+        ? parseFloat(props.unitType.base_price_per_night)
+        : parseFloat(props.building.caution_fee_amount ?? 70000)
     let discountAmount = 0
     if (calculateNights.value >= 7) {
         discountAmount = Math.round(subtotal * 0.05 * 100) / 100
     }
-    return (subtotal - discountAmount) + cleaning + service + deposit
+    return (subtotal - discountAmount) + cleaning + service + cautionFee
 })
 
 const allAmenities = computed(() => {
@@ -622,17 +624,21 @@ const proceedToBooking = () => {
                                         <span>Service charge</span>
                                         <span>{{ formatPrice((calculateNights * parseFloat(unitType.base_price_per_night)) * (parseFloat(unitType.service_charge_percent) / 100)) }}</span>
                                     </div>
-                                    <div v-if="calculateNights === 1" class="flex justify-between text-sm">
+
+                                    <div v-if="calculateNights > 0" class="flex justify-between text-sm">
                                         <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                                            Security deposit
-                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                            Caution Fee
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
                                                 Refundable
                                             </span>
                                         </span>
                                         <span class="text-gray-600 dark:text-gray-400">
-                                            {{ formatPrice(unitType.base_price_per_night) }}
+                                            {{ calculateNights === 1
+                                            ? formatPrice(unitType.base_price_per_night)
+                                            : formatPrice(building.caution_fee_amount ?? 70000) }}
                                         </span>
                                     </div>
+
                                     <div v-if="calculateNights >= 7" class="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
                                         <span>Long stay discount (5% off)</span>
                                         <span>−{{ formatPrice(calculateNights * parseFloat(unitType.base_price_per_night) * 0.05) }}</span>
