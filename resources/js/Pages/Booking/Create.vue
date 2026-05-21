@@ -20,7 +20,7 @@ const form = useForm({
     guests: props.bookingData.guests,
     guest_name: user?.name ?? '',
     guest_email: user?.email ?? '',
-    guest_phone: '',
+    guest_phone: user?.phone ?? '',
     special_requests: '',
 });
 
