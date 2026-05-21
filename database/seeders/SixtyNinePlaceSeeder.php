@@ -40,9 +40,7 @@ class SixtyNinePlaceSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // ── Studio Apartments ─────────────────────────────────────────
-        // TODO: Confirm with client whether ₦115,000 is base price (VAT added at checkout)
-        // or VAT-inclusive. Using as base price for now per standard accounting practice.
+
         $studio = UnitType::create([
             'building_id'            => $building->id,
             'name'                   => 'Studio Apartment',
@@ -65,7 +63,6 @@ class SixtyNinePlaceSeeder extends Seeder
         }
 
         // ── 1-Bedroom Apartments ──────────────────────────────────────
-        // TODO: Same VAT confirmation needed for ₦130,000
         $oneBed = UnitType::create([
             'building_id'            => $building->id,
             'name'                   => '1-Bedroom Apartment',
@@ -88,7 +85,6 @@ class SixtyNinePlaceSeeder extends Seeder
         }
 
         // ── 2-Bedroom Apartments ──────────────────────────────────────
-        // TODO: Same VAT confirmation needed for ₦150,000
         $twoBed = UnitType::create([
             'building_id'            => $building->id,
             'name'                   => '2-Bedroom Apartment',
