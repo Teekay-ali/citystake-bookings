@@ -264,29 +264,29 @@ class FinancialController extends Controller
             ? $buildings->pluck('id')->toArray()
             : $user->accessibleBuildingIds();
 
-        $filter = $request->input('filter', 'outstanding'); // outstanding | refunded | all
+        $filter = $request->input('filter', 'outstanding');
 
         $query = \App\Models\Booking::whereIn('building_id', $buildingIds)
-            ->where('security_deposit', '>', 0)
+            ->where('caution_fee', '>', 0)
             ->with(['building:id,name', 'unitType:id,name', 'unit:id,unit_number'])
-            ->when($filter === 'outstanding', fn($q) => $q->where('security_deposit_refunded', false))
-            ->when($filter === 'refunded',    fn($q) => $q->where('security_deposit_refunded', true))
+            ->when($filter === 'outstanding', fn($q) => $q->where('caution_fee_refunded', false))
+            ->when($filter === 'refunded',    fn($q) => $q->where('caution_fee_refunded', true))
             ->latest('check_out');
 
         $deposits = $query->paginate(30)->withQueryString();
 
         $summary = [
             'total_outstanding' => \App\Models\Booking::whereIn('building_id', $buildingIds)
-                ->where('security_deposit', '>', 0)
-                ->where('security_deposit_refunded', false)
-                ->sum('security_deposit'),
+                ->where('caution_fee', '>', 0)
+                ->where('caution_fee_refunded', false)
+                ->sum('caution_fee'),
             'total_refunded' => \App\Models\Booking::whereIn('building_id', $buildingIds)
-                ->where('security_deposit', '>', 0)
-                ->where('security_deposit_refunded', true)
-                ->sum('security_deposit'),
+                ->where('caution_fee', '>', 0)
+                ->where('caution_fee_refunded', true)
+                ->sum('caution_fee'),
             'count_outstanding' => \App\Models\Booking::whereIn('building_id', $buildingIds)
-                ->where('security_deposit', '>', 0)
-                ->where('security_deposit_refunded', false)
+                ->where('caution_fee', '>', 0)
+                ->where('caution_fee_refunded', false)
                 ->count(),
         ];
 

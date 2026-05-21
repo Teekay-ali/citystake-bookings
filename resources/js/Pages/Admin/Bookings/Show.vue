@@ -496,12 +496,12 @@ const refundDeposit = () => {
                                     :class="msg.sender_type === 'guest' ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900/60'"
                                 >
                                     <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-semibold" :class="msg.sender_type === 'guest' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'">
-                    {{ msg.sender_type === 'guest' ? booking.guest_name : 'Staff' }}
-                </span>
-                                        <span class="text-[10px] text-gray-400 dark:text-gray-500">
-                    {{ new Date(msg.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }}
-                </span>
+                                        <span class="text-xs font-semibold" :class="msg.sender_type === 'guest' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'">
+                                            {{ msg.sender_type === 'guest' ? booking.guest_name : 'Staff' }}
+                                        </span>
+                                                                <span class="text-[10px] text-gray-400 dark:text-gray-500">
+                                            {{ new Date(msg.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }}
+                                        </span>
                                         <span v-if="msg.sender_type === 'guest' && !msg.read_at" class="ml-auto text-[9px] font-bold text-red-500 uppercase tracking-wider">Unread</span>
                                     </div>
                                     <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed truncate">{{ msg.body }}</p>
@@ -519,12 +519,12 @@ const refundDeposit = () => {
                             <!-- Quick reply -->
                             <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800">
                                 <form @submit.prevent="sendReply">
-            <textarea
-                v-model="replyBody"
-                rows="2"
-                placeholder="Quick reply to guest..."
-                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none transition-all"
-            />
+                                    <textarea
+                                        v-model="replyBody"
+                                        rows="2"
+                                        placeholder="Quick reply to guest..."
+                                        class="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none transition-all"
+                                    />
                                     <div class="flex items-center justify-between mt-2">
                                         <Link
                                             :href="route('manage.messages.index', { booking: booking.booking_reference })"
@@ -599,7 +599,7 @@ const refundDeposit = () => {
                                         {{ formatPrice(booking.service_charge) }}
                                     </span>
                                 </div>
-                                <!-- Security Deposit -->
+                                <!-- Caution Fee -->
                                 <div v-if="booking.caution_fee > 0" class="flex justify-between items-center text-sm">
                                     <span class="text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                         Caution Fee
@@ -611,7 +611,7 @@ const refundDeposit = () => {
                                             Held
                                         </span>
                                     </span>
-                                    <span class="text-gray-900 dark:text-white">{{ formatPrice(booking.security_deposit) }}</span>
+                                    <span class="text-gray-900 dark:text-white">{{ formatPrice(booking.caution_fee) }}</span>
                                 </div>
                                 <div
                                     v-if="booking.discount_amount > 0"

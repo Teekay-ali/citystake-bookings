@@ -283,9 +283,9 @@ const canCancel = computed(() => {
                                 </div>
                             </div>
                             <div v-if="booking.caution_fee > 0" class="flex justify-between text-sm">
-                                <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                                     Caution Fee
-                                    <span class="text-xs text-amber-600 dark:text-amber-400">(Refundable)</span>
+                                    <span class="text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">(Refundable)</span>
                                 </span>
                                 <span class="text-gray-900 dark:text-white font-medium">
                                     {{ formatPrice(booking.caution_fee) }}

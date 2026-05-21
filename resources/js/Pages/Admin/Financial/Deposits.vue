@@ -34,8 +34,8 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Security Deposits</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Track collected and refunded deposits across all bookings</p>
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Caution Fees</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Track collected and refunded caution fees across all bookings</p>
             </div>
         </div>
 
@@ -87,7 +87,7 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
                         <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Guest</th>
                         <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Property</th>
                         <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Checkout</th>
-                        <th class="px-5 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Deposit</th>
+                        <th class="px-5 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Caution Fee</th>
                         <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
                         <th class="px-5 py-3"></th>
                     </tr>
@@ -115,10 +115,10 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
                             {{ formatDate(booking.check_out) }}
                         </td>
                         <td class="px-5 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                            {{ formatPrice(booking.security_deposit) }}
+                            {{ formatPrice(booking.caution_fee) }}
                         </td>
                         <td class="px-5 py-3.5">
-                                <span v-if="booking.security_deposit_refunded"
+                                <span v-if="booking.caution_fee_refunded"
                                       class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400">
                                     <CheckCircle class="w-3 h-3" />
                                     Refunded
@@ -152,12 +152,12 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
                         <p class="text-xs text-gray-400">{{ booking.building?.name }} · Checkout {{ formatDate(booking.check_out) }}</p>
                     </div>
                     <div class="flex flex-col items-end gap-1.5 flex-shrink-0 ml-4">
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatPrice(booking.security_deposit) }}</p>
-                        <span :class="booking.security_deposit_refunded
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatPrice(booking.caution_fee) }}</p>
+                        <span :class="booking.caution_fee_refunded
                             ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                             : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'"
                               class="text-xs px-2 py-0.5 rounded-lg font-medium">
-                            {{ booking.security_deposit_refunded ? 'Refunded' : 'Outstanding' }}
+                            {{ booking.caution_fee_refunded ? 'Refunded' : 'Outstanding' }}
                         </span>
                     </div>
                 </Link>
