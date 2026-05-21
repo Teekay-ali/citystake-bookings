@@ -14,6 +14,7 @@ import {
     BedDouble,
     Calendar
 } from 'lucide-vue-next';
+import BookingBanner from '@/Components/BookingBanner.vue'
 import { ref, computed } from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
@@ -21,6 +22,7 @@ import 'flatpickr/dist/flatpickr.css';
 const props = defineProps({
     buildings: Array,
     stats: Object,
+    activeBookings: { type: Array, default: () => [] },
 });
 
 const formatPrice = (price) => {
@@ -79,6 +81,14 @@ const featuredDestinations = computed(() => {
 });
 
 const featuredProperties = computed(() => props.buildings.slice(0, 3));
+
+const prominentBooking = computed(() => {
+    if (!props.activeBookings?.length) return null
+    return props.activeBookings.find(b => b.payment_status === 'pending')
+        ?? props.activeBookings.find(b => b.status === 'confirmed')
+        ?? props.activeBookings.find(b => b.status === 'checked_in')
+        ?? null
+})
 </script>
 
 <template>

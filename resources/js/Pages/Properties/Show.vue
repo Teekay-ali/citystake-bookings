@@ -28,6 +28,7 @@ import {
     Volume2,       // For noise/quiet hours
     Baby           // For children rules
 } from 'lucide-vue-next';
+import BookingBanner from '@/Components/BookingBanner.vue';
 import {ref, computed, nextTick, onMounted} from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
@@ -559,50 +560,9 @@ const proceedToBooking = () => {
                     <!-- Right Column: Booking Card (Sticky) -->
                     <div class="lg:col-span-1">
                         <div class="sticky top-24">
-                            <!-- Existing Booking Notice -->
-                            <div
-                                v-if="userBooking && userBookingBanner"
-                                :class="userBookingBanner.isPending
-        ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800'
-        : 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'"
-                                class="border rounded-2xl p-5 mb-6"
-                            >
-                                <div class="flex items-start gap-3">
-                                    <div
-                                        :class="userBookingBanner.isPending ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'"
-                                        class="mt-0.5 flex-shrink-0"
-                                    >
-                                        <AlertCircle v-if="userBookingBanner.isPending" class="w-5 h-5" />
-                                        <CheckCircle v-else class="w-5 h-5" />
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p
-                                            :class="userBookingBanner.isPending ? 'text-yellow-800 dark:text-yellow-300' : 'text-green-800 dark:text-green-300'"
-                                            class="text-sm font-medium mb-1"
-                                        >
-                                            {{ userBookingBanner.isPending ? 'You have a pending booking' : 'You have a confirmed booking' }}
-                                        </p>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                                            {{ userBookingBanner.checkIn }} → {{ userBookingBanner.checkOut }}
-                                        </p>
-                                        <div class="flex gap-2 flex-wrap">
-                                            <Link
-                                                v-if="userBookingBanner.isPending"
-                                                :href="route('bookings.payment', userBooking.booking_reference)"
-                                                class="inline-flex items-center px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium rounded-lg transition-all"
-                                            >
-                                                Complete Payment
-                                            </Link>
-                                            <Link
-                                                :href="route('bookings.show', userBooking.id)"
-                                                class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-600 text-xs font-medium rounded-lg transition-all"
-                                            >
-                                                View Booking
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Active Booking Banner -->
+                            <BookingBanner v-if="userBooking" :booking="userBooking" class="mb-6" />
+
                             <div class="border border-gray-200 dark:border-gray-800 rounded-3xl p-8 bg-white dark:bg-gray-900 shadow-sm">
                                 <!-- Price -->
                                 <div class="mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">

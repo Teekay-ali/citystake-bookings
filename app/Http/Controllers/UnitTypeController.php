@@ -270,9 +270,22 @@ class UnitTypeController extends Controller
             ->withCount('unitTypes')
             ->get(['id', 'name', 'slug', 'city', 'address']);
 
+        // Active bookings for this building's unit types — guest-specific, not cached
+        $userBuildingBookings = [];
+        if (auth()->check()) {
+            $unitTypeIds = $building->unitTypes->pluck('id');
+            $userBuildingBookings = Booking::where('user_id', auth()->id())
+                ->whereIn('unit_type_id', $unitTypeIds)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->latest()
+                ->get(['id', 'booking_reference', 'unit_type_id', 'status', 'payment_status', 'check_in', 'check_out'])
+                ->toArray();
+        }
+
         return Inertia::render('Properties/Building', [
-            'building'       => $building,
-            'otherBuildings' => $otherBuildings,
+            'building'            => $building,
+            'otherBuildings'      => $otherBuildings,
+            'userBuildingBookings' => $userBuildingBookings,
         ]);
     }
 

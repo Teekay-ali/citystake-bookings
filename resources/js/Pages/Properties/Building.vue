@@ -7,11 +7,13 @@ import {
     Coffee, Tv, UtensilsCrossed, WashingMachine,
     Sparkles, Check, Star, LayoutGrid, X
 } from 'lucide-vue-next'
+import BookingBanner from '@/Components/BookingBanner.vue'
 import { ref, computed } from 'vue'
 
 const props = defineProps({
     building:       Object,
     otherBuildings: Array,
+    userBuildingBookings: { type: Array, default: () => [] },
 })
 
 const selectedImage = ref(props.building.images?.[0]?.url ?? null)
@@ -43,6 +45,11 @@ const lowestPrice = computed(() =>
         ? Math.min(...props.building.unit_types.map(ut => parseFloat(ut.base_price_per_night)))
         : 0
 )
+
+function bookingForUnitType(unitTypeId) {
+    return props.userBuildingBookings?.find(b => b.unit_type_id === unitTypeId) ?? null
+}
+
 </script>
 
 <template>
@@ -170,6 +177,12 @@ const lowestPrice = computed(() =>
                                                     </span>
                                                 </div>
                                             </div>
+
+                                            <BookingBanner
+                                                v-if="bookingForUnitType(unitType.id)"
+                                                :booking="bookingForUnitType(unitType.id)"
+                                                class="mb-4"
+                                            />
 
                                             <div class="flex items-center justify-between">
                                                 <p class="text-xs text-gray-400">
