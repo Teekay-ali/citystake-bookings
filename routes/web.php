@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
 use App\Http\Controllers\Admin\ImageController;
+use App\Http\Controllers\Admin\PaymentApprovalController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\BookingAdjustmentController;
 use App\Http\Controllers\BookingMessageController;
@@ -281,7 +282,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('roles.update-permissions');
 
     //  Audit Logs
-    Route::get('/audit-logs', [App\Http\Controllers\Admin\AuditLogController::class, 'index'])
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])
         ->name('audit-logs.index');
 
     // Financial Reports
@@ -290,6 +291,14 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/financials/pay/{type}/{id}', [FinancialController::class, 'payExpense'])->name('financials.pay');
     Route::get('/financials/export', [FinancialController::class, 'export'])->name('financials.export');
     Route::get('/financials/deposits', [FinancialController::class, 'deposits'])->name('financials.deposits');
+
+    // Payment Approvals
+    Route::get('/payment-approvals', [PaymentApprovalController::class, 'index'])->name('payment-approvals.index');
+    Route::get('/payment-approvals/create', [PaymentApprovalController::class, 'create'])->name('payment-approvals.create');
+    Route::post('/payment-approvals', [PaymentApprovalController::class, 'store'])->name('payment-approvals.store');
+    Route::get('/payment-approvals/{paymentApproval}', [PaymentApprovalController::class, 'show'])->name('payment-approvals.show');
+    Route::post('/payment-approvals/{paymentApproval}/decide', [PaymentApprovalController::class, 'decide'])->name('payment-approvals.decide');
+    Route::post('/payment-approvals/{paymentApproval}/mark-paid', [PaymentApprovalController::class, 'markPaid'])->name('payment-approvals.mark-paid');
 
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');

@@ -72,6 +72,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // Finance
             'view-financials',
             'manage-financials',
+            'manage-payment-approvals',
 
             // Tasks
             'manage-tasks',
@@ -115,7 +116,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'approve-procurement-accountant', 'view-procurement',
                 'view-stock', 'log-stock-usage',
                 'view-analytics',
-                'view-financials', 'manage-financials',
+                'view-financials', 'manage-financials', 'manage-payment-approvals',
                 'view-tasks',
             ],
 
@@ -129,7 +130,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'approve-procurement-ceo', 'view-procurement',
                 'view-stock',
                 'view-analytics',
-                'view-financials',
+                'view-financials', 'manage-financials', 'manage-payment-approvals',
                 'manage-tasks', 'view-tasks',
                 'view-audit-logs',
             ],
