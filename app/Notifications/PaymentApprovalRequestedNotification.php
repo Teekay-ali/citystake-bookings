@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\PaymentApproval;
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class PaymentApprovalRequestedNotification extends Notification
@@ -14,7 +15,7 @@ class PaymentApprovalRequestedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
     }
 
     public function toDatabase(object $notifiable): array
@@ -30,5 +31,15 @@ class PaymentApprovalRequestedNotification extends Notification
                 'type'        => $this->approval->type_label,
             ],
         ];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('Payment Approval Request - ' . $this->approval->type_label)
+            ->view('emails.payment-approvals.requested', [
+                'approval'  => $this->approval,
+                'notifiable' => $notifiable,
+            ]);
     }
 }

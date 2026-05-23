@@ -14,7 +14,7 @@ class PaymentApprovalDecisionNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
     }
 
     public function toDatabase(object $notifiable): array
@@ -34,4 +34,15 @@ class PaymentApprovalDecisionNotification extends Notification
             ],
         ];
     }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('Payment Request ' . ($this->approval->isApproved() ? 'Approved' : 'Declined') . ' - ' . $this->approval->type_label)
+            ->view('emails.payment-approvals.decision', [
+                'approval'   => $this->approval,
+                'notifiable' => $notifiable,
+            ]);
+    }
+
 }
