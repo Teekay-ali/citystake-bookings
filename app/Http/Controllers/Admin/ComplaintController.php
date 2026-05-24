@@ -148,6 +148,11 @@ class ComplaintController extends Controller
             'resolved_at'      => $validated['status'] === 'resolved' ? now() : null,
         ]);
 
+        $submitter = User::find($complaint->submitted_by);
+        if ($submitter && $submitter->id !== auth()->id()) {
+            $submitter->notify(new ComplaintUpdatedNotification($complaint));
+        }
+
         AuditLog::log('complaint.updated', $complaint, ['status' => $complaint->getOriginal('status')], ['status' => $validated['status']]);
 
         return back()->with('success', 'Complaint updated successfully.');

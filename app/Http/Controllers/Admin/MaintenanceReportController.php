@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AuditLog;
+use App\Models\User;
 use App\Services\NotificationService;
 use App\Notifications\MaintenanceStatusNotification;
 use Illuminate\Support\Facades\Notification;
@@ -158,11 +159,21 @@ class MaintenanceReportController extends Controller
         ]);
 
         if ($validated['action'] === 'reject') {
+
             $maintenance->update([
                 'status'           => 'rejected',
                 'rejection_reason' => $validated['notes'],
                 'rejected_by_role' => $user->getRoleNames()->first(),
             ]);
+
+            $submitter = User::find($maintenance->submitted_by);
+            if ($submitter && $submitter->id !== auth()->id()) {
+                $submitter->notify(new MaintenanceStatusNotification(
+                    $maintenance,
+                    'Maintenance Report Rejected',
+                    "\"{$maintenance->title}\" has been rejected. Reason: {$validated['notes']}"
+                ));
+            }
 
             AuditLog::log('maintenance.rejected', $maintenance, null, ['reason' => $validated['notes']]);
 
@@ -226,6 +237,14 @@ class MaintenanceReportController extends Controller
                 'payment_made_by' => $user->id,
                 'payment_made_at' => now(),
             ]);
+
+            $recipients = NotificationService::getUsersByRoles(['manager'], $maintenance->building_id);
+            Notification::send($recipients, new MaintenanceStatusNotification(
+                $maintenance,
+                'Maintenance Completed',
+                "\"{$maintenance->title}\" has been paid and marked complete."
+            ));
+
         } else {
             return back()->with('error', 'You are not authorized to perform this action.');
         }

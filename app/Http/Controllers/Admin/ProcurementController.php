@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\AuditLog;
 use App\Models\StockItem;
 use App\Models\StockLog;
+use App\Models\User;
 use App\Notifications\ProcurementStatusNotification;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Notification;
@@ -164,11 +165,22 @@ class ProcurementController extends Controller
         ]);
 
         if ($validated['action'] === 'reject') {
+
             $procurement->update([
                 'status'           => 'rejected',
                 'rejection_reason' => $validated['notes'],
                 'rejected_by_role' => $user->getRoleNames()->first(),
             ]);
+
+            $submitter = User::find($procurement->submitted_by);
+            if ($submitter && $submitter->id !== auth()->id()) {
+                $submitter->notify(new ProcurementStatusNotification(
+                    $procurement,
+                    'Procurement Request Rejected',
+                    "\"{$procurement->title}\" has been rejected. Reason: {$validated['notes'] ?? 'No reason provided.'}"
+                ));
+            }
+
             return back()->with('success', 'Request rejected.');
         }
 

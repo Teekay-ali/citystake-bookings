@@ -9,6 +9,7 @@ use App\Models\Building;
 use App\Models\Task;
 use App\Models\TaskSubtask;
 use App\Models\User;
+use App\Notifications\TaskCompletedNotification;
 use App\Traits\ScopedByBuilding;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -263,6 +264,13 @@ class TaskController extends Controller
         }
 
         $task->update($validated);
+
+        if ($validated['status'] === 'completed') {
+            $creator = User::find($task->created_by);
+            if ($creator && $creator->id !== auth()->id()) {
+                $creator->notify(new TaskCompletedNotification($task));
+            }
+        }
 
         AuditLog::log('task.status_changed', $task,
             ['status' => $task->getOriginal('status')],

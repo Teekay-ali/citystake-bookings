@@ -21,7 +21,7 @@ class ComplaintSubmittedNotification extends Notification
     {
         return [
             'title'   => 'New Complaint',
-            'message' => "A new complaint was submitted for {$this->complaint->building->name}: {$this->complaint->subject}",
+            'message' => "A new complaint was submitted for {$this->complaint->building->name}: {$this->complaint->title}",
             'url'     => route('manage.complaints.show', $this->complaint->id),
             'icon'    => 'complaint',
         ];

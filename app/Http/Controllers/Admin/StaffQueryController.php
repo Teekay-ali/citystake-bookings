@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Building;
 use App\Models\StaffQuery;
 use App\Models\User;
+use App\Notifications\StaffQueryIssuedNotification;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -110,10 +111,15 @@ class StaffQueryController extends Controller
             'type'        => 'required|in:' . implode(',', array_keys(StaffQuery::types())),
         ]);
 
-        StaffQuery::create([
+        $staffQuery = StaffQuery::create([
             ...$validated,
             'issued_by' => $user->id,
         ]);
+
+        $staffMember = User::find($validated['staff_id']);
+        if ($staffMember) {
+            $staffMember->notify(new StaffQueryIssuedNotification($staffQuery));
+        }
 
         AuditLog::log('staff_query.issued', null, null, ['subject' => $validated['subject'], 'type' => $validated['type'], 'staff_id' => $validated['staff_id']]);
 

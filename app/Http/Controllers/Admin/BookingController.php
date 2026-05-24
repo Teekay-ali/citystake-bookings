@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AuditLog;
+use App\Notifications\GuestCheckedInNotification;
+use App\Notifications\LateCheckoutDecisionNotification;
 use App\Notifications\NewBookingNotification;
 use App\Notifications\LateCheckoutRequestedNotification;
 use App\Services\NotificationService;
@@ -311,6 +313,9 @@ class BookingController extends Controller
 
         AuditLog::log('booking.checked_in', $booking, ['status' => 'confirmed'], ['status' => 'checked_in', 'checked_in_by' => auth()->id()]);
 
+        $recipients = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
+        Notification::send($recipients, new GuestCheckedInNotification($booking));
+
         return back()->with('success', 'Guest checked in successfully.');
     }
 
@@ -355,6 +360,12 @@ class BookingController extends Controller
                 ? $booking->total_amount + $booking->late_checkout_fee
                 : $booking->total_amount,
         ]);
+
+        // Notify the receptionist/staff who requested it
+        $booking->load('checkedInBy');
+        if ($booking->checkedInBy && $booking->checkedInBy->id !== auth()->id()) {
+            $booking->checkedInBy->notify(new LateCheckoutDecisionNotification($booking, $validated['action']));
+        }
 
         $message = $validated['action'] === 'approved'
             ? 'Late checkout approved. Fee added to booking total.'
