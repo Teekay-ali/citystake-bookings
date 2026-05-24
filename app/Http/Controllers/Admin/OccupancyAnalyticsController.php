@@ -83,17 +83,18 @@ class OccupancyAnalyticsController extends Controller
 
         $totalAvailableNights = $totalUnits * $daysInMonth;
 
-        $bookedNights = Booking::where('status', '!=', 'cancelled')
+        $bookedNights = (int) DB::table('bookings')
+            ->where('status', '!=', 'cancelled')
             ->when($buildingId, fn($q) => $q->where('building_id', $buildingId))
             ->when($scopedBuildingIds && !$buildingId, fn($q) => $q->whereIn('building_id', $scopedBuildingIds))
-            ->where('check_in', '<', $endDate->copy()->addDay())
-            ->where('check_out', '>', $startDate)
-            ->get()
-            ->sum(function ($booking) use ($startDate, $endDate) {
-                $checkIn  = max($booking->check_in, $startDate);
-                $checkOut = min($booking->check_out, $endDate->copy()->addDay());
-                return max(0, $checkIn->diffInDays($checkOut));
-            });
+            ->where('check_in', '<', $endDate->copy()->addDay()->toDateString())
+            ->where('check_out', '>', $startDate->toDateString())
+            ->whereNull('deleted_at')
+            ->selectRaw('SUM(DATEDIFF(LEAST(check_out, ?), GREATEST(check_in, ?))) as nights', [
+                $endDate->copy()->addDay()->toDateString(),
+                $startDate->toDateString(),
+            ])
+            ->value('nights') ?? 0;
 
         $occupancyRate = $totalAvailableNights > 0
             ? round(($bookedNights / $totalAvailableNights) * 100, 1)
@@ -151,21 +152,12 @@ class OccupancyAnalyticsController extends Controller
         $endDate   = Carbon::create($year, $month, 1)->endOfMonth();
 
         // Correct overlap: fetch all bookings that touch this month
-        $totalRevenue = Booking::where('payment_status', 'paid')
+        $totalRevenue = (float) DB::table('financial_transactions')
             ->when($buildingId, fn($q) => $q->where('building_id', $buildingId))
             ->when($scopedBuildingIds && !$buildingId, fn($q) => $q->whereIn('building_id', $scopedBuildingIds))
-            ->where('check_in', '<', $endDate->copy()->addDay())
-            ->where('check_out', '>', $startDate)
-            ->get()
-            ->sum(function ($booking) use ($startDate, $endDate) {
-                $totalNights = $booking->check_in->diffInDays($booking->check_out);
-                if ($totalNights === 0) return 0;
-                // Pro-rate for bookings spanning across month boundaries
-                $effectiveCheckIn  = max($booking->check_in, $startDate);
-                $effectiveCheckOut = min($booking->check_out, $endDate->copy()->addDay());
-                $nightsInMonth     = max(0, $effectiveCheckIn->diffInDays($effectiveCheckOut));
-                return ($nightsInMonth / $totalNights) * $booking->total_amount;
-            });
+            ->where('type', 'income')
+            ->whereBetween('transaction_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('amount') ?? 0;
 
         $occupancy       = $this->calculateOverallOccupancy($year, $month, $buildingId, $scopedBuildingIds);
         $availableNights = $occupancy['available_nights'];

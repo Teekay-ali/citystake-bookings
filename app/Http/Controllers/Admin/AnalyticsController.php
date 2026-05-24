@@ -190,17 +190,17 @@ class AnalyticsController extends Controller
     private function avgLeadTime(int $year, int $month, ?int $buildingId, ?array $scopedBuildingIds): float
     {
         // Lead time = days between booking creation and check-in date
-        $bookings = Booking::where('payment_status', 'paid')
-            ->whereYear('check_in', $year)->whereMonth('check_in', $month)
+        $avg = DB::table('bookings')
+            ->where('payment_status', 'paid')
+            ->whereYear('check_in', $year)
+            ->whereMonth('check_in', $month)
             ->when($buildingId, fn($q) => $q->where('building_id', $buildingId))
             ->when($scopedBuildingIds && !$buildingId, fn($q) => $q->whereIn('building_id', $scopedBuildingIds))
-            ->get(['created_at', 'check_in']);
+            ->whereNull('deleted_at')
+            ->selectRaw('AVG(GREATEST(0, DATEDIFF(check_in, created_at))) as avg_lead')
+            ->value('avg_lead') ?? 0;
 
-        if ($bookings->isEmpty()) return 0;
-
-        $avg = $bookings->avg(fn($b) => max(0, Carbon::parse($b->created_at)->diffInDays($b->check_in)));
-
-        return round((float)$avg, 1);
+        return round((float) $avg, 1);
     }
 
     // ─────────────────────────────────────────────────────────────
