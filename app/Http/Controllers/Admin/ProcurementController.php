@@ -165,19 +165,21 @@ class ProcurementController extends Controller
         ]);
 
         if ($validated['action'] === 'reject') {
-
             $procurement->update([
                 'status'           => 'rejected',
                 'rejection_reason' => $validated['notes'],
                 'rejected_by_role' => $user->getRoleNames()->first(),
             ]);
 
+            AuditLog::log('procurement.rejected', $procurement, null, ['reason' => $validated['notes']]);
+
             $submitter = User::find($procurement->submitted_by);
             if ($submitter && $submitter->id !== auth()->id()) {
+                $rejectionReason = $validated['notes'] ?? 'No reason provided.';
                 $submitter->notify(new ProcurementStatusNotification(
                     $procurement,
                     'Procurement Request Rejected',
-                    "\"{$procurement->title}\" has been rejected. Reason: {$validated['notes'] ?? 'No reason provided.'}"
+                    "\"{$procurement->title}\" has been rejected. Reason: {$rejectionReason}"
                 ));
             }
 

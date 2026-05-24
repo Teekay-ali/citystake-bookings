@@ -159,23 +159,23 @@ class MaintenanceReportController extends Controller
         ]);
 
         if ($validated['action'] === 'reject') {
-
             $maintenance->update([
                 'status'           => 'rejected',
                 'rejection_reason' => $validated['notes'],
                 'rejected_by_role' => $user->getRoleNames()->first(),
             ]);
 
+            AuditLog::log('maintenance.rejected', $maintenance, null, ['reason' => $validated['notes']]);
+
             $submitter = User::find($maintenance->submitted_by);
             if ($submitter && $submitter->id !== auth()->id()) {
+                $rejectionReason = $validated['notes'] ?? 'No reason provided.';
                 $submitter->notify(new MaintenanceStatusNotification(
                     $maintenance,
                     'Maintenance Report Rejected',
-                    "\"{$maintenance->title}\" has been rejected. Reason: {$validated['notes']}"
+                    "\"{$maintenance->title}\" has been rejected. Reason: {$rejectionReason}"
                 ));
             }
-
-            AuditLog::log('maintenance.rejected', $maintenance, null, ['reason' => $validated['notes']]);
 
             return back()->with('success', 'Report rejected.');
         }
