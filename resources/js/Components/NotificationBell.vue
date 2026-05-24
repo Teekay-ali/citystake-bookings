@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { Bell } from 'lucide-vue-next'
+import axios from 'axios'
 
 const page = usePage()
 const open = ref(false)
@@ -67,15 +68,7 @@ async function fetchUnreadCount() {
 
 async function markRead(notification) {
     if (!notification.read_at) {
-        await fetch(route('manage.notifications.read', notification.id), {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1]
-                    ? decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)[1])
-                    : '',
-                'Accept': 'application/json',
-            }
-        })
+        await axios.post(route('manage.notifications.read', notification.id))
         notification.read_at = new Date().toISOString()
         unreadCount.value = Math.max(0, unreadCount.value - 1)
     }
@@ -88,15 +81,7 @@ async function markRead(notification) {
 }
 
 async function markAllRead() {
-    await fetch(route('manage.notifications.read-all'), {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1]
-                ? decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)[1])
-                : '',
-            'Accept': 'application/json',
-        }
-    })
+    await axios.post(route('manage.notifications.read-all'))
     notifications.value.forEach(n => n.read_at = n.read_at ?? new Date().toISOString())
     unreadCount.value = 0
 }
