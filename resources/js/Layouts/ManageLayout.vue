@@ -9,7 +9,7 @@ import {
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
     ChevronLeft, ChevronRight, FileText, ShieldCheck, ChevronUp, ChevronDown,
     Search, Plus, Banknote, BadgeCheck
-} from 'lucide-vue-next'
+} from 'u'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
 import { useFloating, offset, shift, flip } from '@floating-ui/vue'
