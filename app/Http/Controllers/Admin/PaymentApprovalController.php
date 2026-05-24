@@ -141,9 +141,11 @@ class PaymentApprovalController extends Controller
             'canMarkPaid' => auth()->user()->hasRole(['accountant', 'super-admin']) &&
                 $paymentApproval->isApproved() &&
                 $paymentApproval->requested_by === auth()->id(),
+
             'canManageDocuments' => auth()->user()->hasRole(['accountant', 'super-admin']) &&
                 $paymentApproval->requested_by === auth()->id() &&
                 !$paymentApproval->isPaid(),
+
             'canDelete' => auth()->user()->can('manage-payment-approvals') &&
                 $paymentApproval->isPending() &&
                 ($paymentApproval->requested_by === auth()->id() || auth()->user()->hasRole('super-admin')),

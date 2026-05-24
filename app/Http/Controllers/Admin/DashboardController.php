@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Building;
+use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Traits\ScopedByBuilding;
 use Illuminate\Support\Facades\DB;
@@ -37,19 +38,18 @@ class DashboardController extends Controller
             'total_users'      => User::count(),
         ];
 
+        $scopedIds = $isGlobal ? Building::pluck('id')->toArray() : ($buildingIds ?? []);
+
         $revenue = [
-            'total'      => $bookings()->where('payment_status', 'paid')->sum('total_amount'),
-            'this_month' => $bookings()->where('payment_status', 'paid')
-                ->whereYear('created_at', now()->year)
-                ->whereMonth('created_at', now()->month)
-                ->sum('total_amount'),
-            'this_year'  => $bookings()->where('payment_status', 'paid')
-                ->whereYear('created_at', now()->year)
-                ->sum('total_amount'),
-            'last_month' => $bookings()->where('payment_status', 'paid')
-                ->whereYear('created_at', now()->subMonth()->year)
-                ->whereMonth('created_at', now()->subMonth()->month)
-                ->sum('total_amount'),
+            'total'      => FinancialTransaction::whereIn('building_id', $scopedIds)->where('type', 'income')->sum('amount'),
+            'this_month' => FinancialTransaction::whereIn('building_id', $scopedIds)->where('type', 'income')
+                ->whereYear('transaction_date', now()->year)
+                ->whereMonth('transaction_date', now()->month)->sum('amount'),
+            'this_year'  => FinancialTransaction::whereIn('building_id', $scopedIds)->where('type', 'income')
+                ->whereYear('transaction_date', now()->year)->sum('amount'),
+            'last_month' => FinancialTransaction::whereIn('building_id', $scopedIds)->where('type', 'income')
+                ->whereYear('transaction_date', now()->subMonth()->year)
+                ->whereMonth('transaction_date', now()->subMonth()->month)->sum('amount'),
         ];
 
         $revenue['growth_percentage'] = $revenue['last_month'] > 0
@@ -119,4 +119,5 @@ class DashboardController extends Controller
             'upcomingCheckIns'   => $upcomingCheckIns,
         ]);
     }
+
 }
