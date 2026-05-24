@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
+import axios from 'axios';
 import {
     Calendar,
     Users, AlertCircle,
@@ -192,43 +193,35 @@ const getHouseRuleIcon = (rule) => {
 
 const checkAvailability = async () => {
     if (!checkIn.value || !checkOut.value) {
-        availabilityMessage.value = 'Please select check-in and check-out dates';
-        toast.warning('Please select your dates first');
-        return;
+        availabilityMessage.value = 'Please select check-in and check-out dates'
+        toast.warning('Please select your dates first')
+        return
     }
 
-    isCheckingAvailability.value = true;
-    availabilityMessage.value = '';
+    isCheckingAvailability.value = true
+    availabilityMessage.value = ''
 
     try {
-        const response = await fetch(route('properties.check-availability', [props.building.slug, props.unitType.slug]), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify({
-                check_in: checkIn.value,
-                check_out: checkOut.value,
-            }),
-        });
+        const { data } = await axios.post(
+            route('properties.check-availability', [props.building.slug, props.unitType.slug]),
+            { check_in: checkIn.value, check_out: checkOut.value }
+        )
 
-        const data = await response.json();
-        availabilityMessage.value = data.message;
-        availableUnitsCount.value = data.available_units || 0;
+        availabilityMessage.value = data.message
+        availableUnitsCount.value = data.available_units || 0
 
         if (data.available_units > 0) {
-            toast.success(`Great! ${data.available_units} unit(s) available for your dates`);
+            toast.success(`Great! ${data.available_units} unit(s) available for your dates`)
         } else {
-            toast.error('Sorry, no units available for selected dates');
+            toast.error('Sorry, no units available for selected dates')
         }
-    } catch (error) {
-        availabilityMessage.value = 'Error checking availability';
-        toast.error('Failed to check availability. Please try again.');
+    } catch {
+        availabilityMessage.value = 'Error checking availability'
+        toast.error('Failed to check availability. Please try again.')
     } finally {
-        isCheckingAvailability.value = false;
+        isCheckingAvailability.value = false
     }
-};
+}
 
 const proceedToBooking = () => {
     if (!checkIn.value || !checkOut.value || guests.value < 1) {
