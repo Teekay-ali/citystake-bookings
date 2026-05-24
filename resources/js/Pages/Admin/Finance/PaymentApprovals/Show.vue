@@ -3,10 +3,11 @@ import { ref } from 'vue'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import DocumentManager from '@/Components/DocumentManager.vue'
+import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import {
     ArrowLeft, Clock, CheckCircle, XCircle, Banknote,
     User, Building2, Calendar, MessageSquare, Upload,
-    FileText, ExternalLink
+    FileText, ExternalLink, Trash2
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -16,7 +17,11 @@ const props = defineProps({
     canDecide:           Boolean,
     canMarkPaid:         Boolean,
     canManageDocuments:  Boolean,
+    canDelete:           Boolean,
 })
+
+const showDeleteModal = ref(false)
+const isDeleting      = ref(false)
 
 const approvalDocuments = ref(props.approval.documents ?? [])
 
@@ -47,6 +52,14 @@ const decideForm = useForm({
     decision:    '',
     ceo_comment: '',
 })
+
+const deleteRequest = () => {
+    router.delete(route('manage.payment-approvals.destroy', props.approval.id), {
+        onStart:  () => isDeleting.value = true,
+        onFinish: () => isDeleting.value = false,
+        onSuccess: () => showDeleteModal.value = false,
+    })
+}
 
 function decide(decision) {
     decideForm.decision = decision
@@ -101,14 +114,23 @@ function submitPaid() {
                             {{ approval.type_label }} Payment
                         </h1>
                         <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border', statusClass(approval.status)]">
-                            <component :is="statusConfig[approval.status]?.icon" class="w-3 h-3" />
-                            {{ statusConfig[approval.status]?.label }}
-                        </span>
+                    <component :is="statusConfig[approval.status]?.icon" class="w-3 h-3" />
+                    {{ statusConfig[approval.status]?.label }}
+                </span>
                     </div>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                         Requested by {{ approval.requested_by?.name }} · {{ formatDate(approval.created_at) }}
                     </p>
                 </div>
+
+                <button
+                    v-if="canDelete"
+                    @click="showDeleteModal = true"
+                    class="flex items-center gap-2 px-4 py-2 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0"
+                >
+                    <Trash2 class="w-4 h-4" />
+                    Delete Request
+                </button>
             </div>
 
             <!-- Details Card -->
@@ -321,5 +343,17 @@ function submitPaid() {
             </div>
 
         </div>
+
+        <ConfirmationModal
+            :show="showDeleteModal"
+            title="Delete Payment Request"
+            message="Are you sure you want to delete this payment request? This action cannot be undone."
+            confirm-text="Delete Request"
+            cancel-text="Cancel"
+            variant="danger"
+            :processing="isDeleting"
+            @confirm="deleteRequest"
+            @close="showDeleteModal = false"
+        />
 
 </template>

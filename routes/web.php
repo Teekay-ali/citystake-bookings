@@ -302,6 +302,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/payment-approvals/create', [PaymentApprovalController::class, 'create'])->name('payment-approvals.create');
     Route::post('/payment-approvals', [PaymentApprovalController::class, 'store'])->name('payment-approvals.store');
     Route::get('/payment-approvals/{paymentApproval}', [PaymentApprovalController::class, 'show'])->name('payment-approvals.show');
+    Route::delete('/payment-approvals/{paymentApproval}', [PaymentApprovalController::class, 'destroy'])->name('payment-approvals.destroy');
     Route::post('/payment-approvals/{paymentApproval}/decide', [PaymentApprovalController::class, 'decide'])->name('payment-approvals.decide');
     Route::post('/payment-approvals/{paymentApproval}/mark-paid', [PaymentApprovalController::class, 'markPaid'])->name('payment-approvals.mark-paid');
 

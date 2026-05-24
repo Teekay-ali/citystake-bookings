@@ -144,7 +144,42 @@ class PaymentApprovalController extends Controller
             'canManageDocuments' => auth()->user()->hasRole(['accountant', 'super-admin']) &&
                 $paymentApproval->requested_by === auth()->id() &&
                 !$paymentApproval->isPaid(),
+            'canDelete' => auth()->user()->can('manage-payment-approvals') &&
+                $paymentApproval->isPending() &&
+                ($paymentApproval->requested_by === auth()->id() || auth()->user()->hasRole('super-admin')),
         ]);
+    }
+
+    public function destroy(PaymentApproval $paymentApproval)
+    {
+        abort_unless(auth()->user()->can('manage-payment-approvals'), 403);
+        abort_unless(
+            $paymentApproval->requested_by === auth()->id() || auth()->user()->hasRole('super-admin'),
+            403
+        );
+        abort_unless($paymentApproval->isPending(), 403, 'Only pending requests can be deleted.');
+
+        // Delete associated documents
+        foreach ($paymentApproval->documents as $doc) {
+            Storage::disk('public')->delete($doc->file_path);
+            $doc->delete();
+        }
+
+        // Delete payment evidence if any
+        if ($paymentApproval->payment_evidence) {
+            Storage::disk('public')->delete($paymentApproval->payment_evidence);
+        }
+
+        AuditLog::log('payment_approval.deleted', $paymentApproval, [
+            'type'      => $paymentApproval->type_label,
+            'amount'    => $paymentApproval->amount,
+            'recipient' => $paymentApproval->recipient_name,
+        ], null);
+
+        $paymentApproval->delete();
+
+        return redirect()->route('manage.payment-approvals.index')
+            ->with('success', 'Payment request deleted.');
     }
 
     public function decide(Request $request, PaymentApproval $paymentApproval)
