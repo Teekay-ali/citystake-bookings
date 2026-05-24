@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Building;
 use App\Models\UnitType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -111,7 +112,6 @@ class UnitTypeController extends Controller
             abort(404);
         }
 
-        // Get total units available for this type
         $totalUnits = $unitType->units()
             ->where('status', 'available')
             ->where('is_available', true)
@@ -121,46 +121,55 @@ class UnitTypeController extends Controller
             return response()->json(['unavailable' => []]);
         }
 
-        // Look 12 months ahead
         $start = now()->toDateString();
         $end   = now()->addMonths(12)->toDateString();
 
-        // Get all active bookings in the window
-        $bookings = Booking::whereHas('unit', fn($q) => $q->where('unit_type_id', $unitType->id))
+        // Get unit IDs for this type
+        $unitIds = $unitType->units()->pluck('id');
+
+        // Collect all occupied ranges per unit (bookings + blocked dates)
+        $ranges = collect();
+
+        DB::table('bookings')
+            ->whereIn('unit_id', $unitIds)
             ->whereNotIn('status', ['cancelled'])
             ->where('check_in', '<', $end)
             ->where('check_out', '>', $start)
-            ->get(['check_in', 'check_out', 'unit_id']);
+            ->whereNull('deleted_at')
+            ->select('unit_id', 'check_in as from', 'check_out as to')
+            ->get()
+            ->each(fn($r) => $ranges->push($r));
 
-        // Get all blocked dates in the window
-        $blocked = \App\Models\BlockedDate::whereHas('unit', fn($q) => $q->where('unit_type_id', $unitType->id))
+        DB::table('blocked_dates')
+            ->whereIn('unit_id', $unitIds)
             ->where('blocked_from', '<', $end)
             ->where('blocked_to', '>', $start)
-            ->get(['blocked_from', 'blocked_to', 'unit_id']);
+            ->select('unit_id', 'blocked_from as from', 'blocked_to as to')
+            ->get()
+            ->each(fn($r) => $ranges->push($r));
 
-        // For each date, count how many units are occupied
-        // A date is unavailable when occupied units >= total units
+        // Group ranges by unit_id for fast lookup
+        $byUnit = $ranges->groupBy('unit_id');
+
+        // Walk each day — but skip days where even one unit is free
         $unavailable = [];
-        $current = new \DateTime($start);
-        $endDt   = new \DateTime($end);
+        $current     = new \DateTime($start);
+        $endDt       = new \DateTime($end);
 
         while ($current <= $endDt) {
-            $dateStr  = $current->format('Y-m-d');
-            $occupied = collect();
+            $dateStr      = $current->format('Y-m-d');
+            $occupiedUnits = [];
 
-            foreach ($bookings as $booking) {
-                if ($booking->check_in <= $dateStr && $booking->check_out > $dateStr) {
-                    $occupied->push($booking->unit_id);
+            foreach ($byUnit as $unitId => $unitRanges) {
+                foreach ($unitRanges as $range) {
+                    if ($range->from <= $dateStr && $range->to > $dateStr) {
+                        $occupiedUnits[$unitId] = true;
+                        break; // no need to check other ranges for this unit
+                    }
                 }
             }
 
-            foreach ($blocked as $block) {
-                if ($block->blocked_from <= $dateStr && $block->blocked_to > $dateStr) {
-                    $occupied->push($block->unit_id);
-                }
-            }
-
-            if ($occupied->unique()->count() >= $totalUnits) {
+            if (count($occupiedUnits) >= $totalUnits) {
                 $unavailable[] = $dateStr;
             }
 

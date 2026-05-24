@@ -10,6 +10,7 @@ use App\Models\Unit;
 use App\Traits\ScopedByBuilding;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class AnalyticsController extends Controller
@@ -116,17 +117,18 @@ class AnalyticsController extends Controller
 
         $totalAvailableNights = $totalUnits * $daysInMonth;
 
-        $bookedNights = Booking::where('status', '!=', 'cancelled')
+        $bookedNights = (int) DB::table('bookings')
+            ->where('status', '!=', 'cancelled')
             ->when($buildingId, fn($q) => $q->where('building_id', $buildingId))
             ->when($scopedBuildingIds && !$buildingId, fn($q) => $q->whereIn('building_id', $scopedBuildingIds))
-            ->where('check_in', '<', $endDate->copy()->addDay())
-            ->where('check_out', '>', $startDate)
-            ->get()
-            ->sum(function ($booking) use ($startDate, $endDate) {
-                $checkIn  = max($booking->check_in, $startDate);
-                $checkOut = min($booking->check_out, $endDate->copy()->addDay());
-                return max(0, (int) round($checkIn->diffInDays($checkOut)));
-            });
+            ->where('check_in', '<', $endDate->copy()->addDay()->toDateString())
+            ->where('check_out', '>', $startDate->toDateString())
+            ->whereNull('deleted_at')
+            ->selectRaw('SUM(DATEDIFF(LEAST(check_out, ?), GREATEST(check_in, ?))) as nights', [
+                $endDate->copy()->addDay()->toDateString(),
+                $startDate->toDateString(),
+            ])
+            ->value('nights') ?? 0;
 
         return [
             'rate'             => $totalAvailableNights > 0 ? round(($bookedNights / $totalAvailableNights) * 100, 1) : 0,
