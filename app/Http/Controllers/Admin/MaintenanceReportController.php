@@ -52,12 +52,13 @@ class MaintenanceReportController extends Controller
             'buildings'  => $buildings,
             'issueTypes' => MaintenanceReport::issueTypes(),
             'filters'    => $request->only(['building_id', 'status', 'issue_type']),
-            'counts'     => [
-                'pending'             => MaintenanceReport::scopedToUser($user)->where('status', 'pending')->count(),
-                'manager_approved'    => MaintenanceReport::scopedToUser($user)->where('status', 'manager_approved')->count(),
-                'accountant_approved' => MaintenanceReport::scopedToUser($user)->where('status', 'accountant_approved')->count(),
-                'ceo_approved'        => MaintenanceReport::scopedToUser($user)->where('status', 'ceo_approved')->count(),
-            ],
+            'counts' => MaintenanceReport::scopedToUser($user)
+                ->whereIn('status', ['pending', 'manager_approved', 'accountant_approved', 'ceo_approved'])
+                ->selectRaw('status, COUNT(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status')
+                ->only(['pending', 'manager_approved', 'accountant_approved', 'ceo_approved'])
+                ->toArray(),
         ]);
     }
 
