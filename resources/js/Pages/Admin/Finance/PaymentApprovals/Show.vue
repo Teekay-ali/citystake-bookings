@@ -83,7 +83,7 @@ function submitPaid() {
 
 <template>
 
-    <Head :title="`Payment Request — ${approval.type_label}`" />
+    <Head :title="`Payment Request - ${approval.type_label}`" />
 
     <div class="p-6 lg:p-8 max-w-3xl space-y-6">
 

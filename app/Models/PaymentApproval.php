@@ -23,7 +23,6 @@ class PaymentApproval extends Model
         'account_name',
         'ceo_comment',
         'payment_reference',
-        'payment_evidence',
         'approved_at',
         'paid_at',
     ];
@@ -35,7 +34,6 @@ class PaymentApproval extends Model
     ];
 
     protected $appends = [
-        'payment_evidence_url',
         'type_label',
     ];
 
@@ -63,14 +61,6 @@ class PaymentApproval extends Model
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
-
-    public function getPaymentEvidenceUrlAttribute(): ?string
-    {
-        if (!$this->payment_evidence) return null;
-        if (str_starts_with($this->payment_evidence, 'http')) return $this->payment_evidence;
-        return Storage::disk('public')->url($this->payment_evidence);
-    }
-
     public function getTypeLabelAttribute(): string
     {
         if ($this->type === 'miscellaneous' && $this->custom_type) {
