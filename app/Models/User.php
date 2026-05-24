@@ -62,7 +62,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(Building::class, 'user_buildings')
             ->withTimestamps()
-            ->select('buildings.*'); // always qualify — prevents ambiguous column on any join
+            ->select('buildings.*'); // always qualify - prevents ambiguous column on any join
     }
 
     // ─── Helpers ──────

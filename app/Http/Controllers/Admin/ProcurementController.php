@@ -195,7 +195,7 @@ class ProcurementController extends Controller
             $recipients = NotificationService::getUsersByRoles(['head-of-procurement', 'accountant'], $procurement->building_id);
             Notification::send($recipients, new ProcurementStatusNotification(
                 $procurement,
-                'Procurement Approved — Ready to Purchase',
+                'Procurement Approved - Ready to Purchase',
                 "CEO has approved \"{$procurement->title}\". Proceed with purchase."
             ));
 

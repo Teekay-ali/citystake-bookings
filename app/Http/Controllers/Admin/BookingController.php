@@ -71,9 +71,14 @@ class BookingController extends Controller
         }
 
         // Sort
-        $sortBy = $request->sort_by ?? 'created_at';
-        $sortOrder = $request->sort_order ?? 'desc';
-        $query->orderBy($sortBy, $sortOrder);
+        $allowedSortColumns = [
+            'created_at', 'check_in', 'check_out',
+            'guest_name', 'total_amount', 'status', 'payment_status',
+        ];
+        $sortBy    = in_array($request->sort_by, $allowedSortColumns, true)
+            ? $request->sort_by
+            : 'created_at';
+        $sortOrder = $request->sort_order === 'asc' ? 'asc' : 'desc';
 
         $bookings = $query->paginate(20)->withQueryString();
 
@@ -127,7 +132,7 @@ class BookingController extends Controller
         ]);
 
         try {
-            $building = Building::findOrFail($validated['building_id']);
+            $building = $this->accessibleBuildings()->findOrFail($validated['building_id']);
             $unitType = UnitType::findOrFail($validated['unit_type_id']);
 
             // Verify unit type belongs to building
@@ -219,7 +224,7 @@ class BookingController extends Controller
                 'category'         => 'booking',
                 'reference_type'   => Booking::class,
                 'reference_id'     => $booking->id,
-                'description'      => "Walk-in booking {$booking->booking_reference} — {$booking->guest_name}",
+                'description'      => "Walk-in booking {$booking->booking_reference} - {$booking->guest_name}",
                 'amount'           => $booking->total_amount,
                 'payment_method'   => $validated['payment_method'],
                 'payment_reference'=> $validated['payment_reference'] ?? null,
@@ -276,6 +281,14 @@ class BookingController extends Controller
     public function checkIn(Request $request, Booking $booking)
     {
         abort_unless(auth()->user()->can('confirm-checkin'), 403);
+
+        $user = auth()->user();
+        if (!$user->hasGlobalAccess()) {
+            abort_unless(
+                in_array($booking->building_id, $user->accessibleBuildingIds() ?? []),
+                403
+            );
+        }
 
         if (!$booking->canCheckIn()) {
             return back()->with('error', 'This booking cannot be checked in at this time.');
@@ -368,7 +381,7 @@ class BookingController extends Controller
             'category'         => 'late_checkout',
             'reference_type'   => Booking::class,
             'reference_id'     => $booking->id,
-            'description'      => "Late checkout fee — {$booking->guest_name} ({$booking->booking_reference})",
+            'description'      => "Late checkout fee - {$booking->guest_name} ({$booking->booking_reference})",
             'amount'           => $booking->late_checkout_fee,
             'payment_method'   => 'cash',
             'transaction_date' => now()->toDateString(),

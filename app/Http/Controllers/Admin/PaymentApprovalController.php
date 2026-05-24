@@ -82,18 +82,24 @@ class PaymentApprovalController extends Controller
         abort_unless(auth()->user()->hasRole(['accountant', 'super-admin']), 403);
 
         $validated = $request->validate([
-            'building_id'    => 'required|exists:buildings,id',
-            'type'           => 'required|in:salary,bonus,vendor_payment,utility,maintenance,miscellaneous',
-            'custom_type'    => 'required_if:type,miscellaneous|nullable|string|max:100',
-            'recipient_name' => 'required|string|max:255',
-            'amount'         => 'required|numeric|min:1',
-            'description'    => 'nullable|string|max:2000',
+            'building_id'          => 'required|exists:buildings,id',
+            'type'                 => 'required|in:salary,bonus,vendor_payment,utility,maintenance,miscellaneous',
+            'custom_type'          => 'required_if:type,miscellaneous|nullable|string|max:100',
+            'recipient_name'       => 'required|string|max:255',
+            'amount'               => 'required|numeric|min:1',
+            'description'          => 'nullable|string|max:2000',
+            'bank_name'            => 'nullable|string|max:100',
+            'account_number'       => 'nullable|string|max:20',
+            'account_name'         => 'nullable|string|max:255',
         ]);
 
         $approval = PaymentApproval::create([
             ...$validated,
-            'requested_by' => auth()->id(),
-            'status'       => 'pending',
+            'bank_name'           => $validated['bank_name'] ?? null,
+            'account_number'      => $validated['account_number'] ?? null,
+            'account_name'        => $validated['account_name'] ?? null,
+            'requested_by'        => auth()->id(),
+            'status'              => 'pending',
         ]);
 
         // Notify CEO and super-admin
@@ -122,7 +128,12 @@ class PaymentApprovalController extends Controller
             abort(403);
         }
 
-        $paymentApproval->load(['requestedBy:id,name', 'approvedBy:id,name', 'building:id,name']);
+        $paymentApproval->load([
+            'requestedBy:id,name',
+            'approvedBy:id,name',
+            'building:id,name',
+            'documents.uploadedBy:id,name',
+        ]);
 
         return Inertia::render('Admin/Finance/PaymentApprovals/Show', [
             'approval' => $paymentApproval,
@@ -130,6 +141,9 @@ class PaymentApprovalController extends Controller
             'canMarkPaid' => auth()->user()->hasRole(['accountant', 'super-admin']) &&
                 $paymentApproval->isApproved() &&
                 $paymentApproval->requested_by === auth()->id(),
+            'canManageDocuments' => auth()->user()->hasRole(['accountant', 'super-admin']) &&
+                $paymentApproval->requested_by === auth()->id() &&
+                !$paymentApproval->isPaid(),
         ]);
     }
 
@@ -190,7 +204,7 @@ class PaymentApprovalController extends Controller
             'category'          => 'manual_expense',
             'reference_type'    => PaymentApproval::class,
             'reference_id'      => $paymentApproval->id,
-            'description'       => "{$paymentApproval->type_label} — {$paymentApproval->recipient_name}",
+            'description'       => "{$paymentApproval->type_label} - {$paymentApproval->recipient_name}",
             'amount'            => $paymentApproval->amount,
             'payment_method'    => 'bank_transfer',
             'payment_reference' => $validated['payment_reference'] ?? null,

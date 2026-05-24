@@ -5,6 +5,7 @@ use  App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
+use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\ImageController;
 use App\Http\Controllers\Admin\PaymentApprovalController;
 use App\Http\Controllers\BookingController;
@@ -157,6 +158,10 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/home', [AdminHomeController::class, 'index'])->name('home');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Documents
+    Route::post('/documents/{type}/{id}', [DocumentController::class, 'store'])->name('documents.store');
+    Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     // Availability Board
     Route::get('/availability', [AvailabilityController::class, 'index'])->name('availability.index');

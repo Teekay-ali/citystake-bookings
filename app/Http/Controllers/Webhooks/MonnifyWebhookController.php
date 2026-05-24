@@ -98,7 +98,7 @@ class MonnifyWebhookController extends Controller
                 'type'           => 'income',
                 'category'       => 'booking',
                 'reference_id'   => $booking->id,
-                'description'    => "Booking {$booking->booking_reference} — {$booking->guest_name}",
+                'description'    => "Booking {$booking->booking_reference} - {$booking->guest_name}",
                 'amount'         => $booking->total_amount,
                 'payment_method' => 'monnify',
                 'transaction_date' => now()->toDateString(),

@@ -82,7 +82,7 @@ class PaystackWebhookController extends Controller
             'category'          => 'booking',
             'reference_type'    => Booking::class,
             'reference_id'      => $booking->id,
-            'description'       => "Booking {$booking->booking_reference} — {$booking->guest_name} (webhook)",
+            'description'       => "Booking {$booking->booking_reference} - {$booking->guest_name} (webhook)",
             'amount'            => $booking->total_amount,
             'payment_method'    => 'paystack',
             'payment_reference' => $reference,

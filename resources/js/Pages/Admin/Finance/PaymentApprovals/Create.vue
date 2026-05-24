@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { ArrowLeft, Send } from 'lucide-vue-next'
+import { ArrowLeft, Send, Info } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -17,6 +17,10 @@ const form = useForm({
     recipient_name: '',
     amount:         '',
     description:    '',
+    bank_name:            '',
+    account_number:       '',
+    account_name:         '',
+    supporting_document:  null,
 })
 
 const paymentTypes = [
@@ -32,9 +36,22 @@ const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
     style: 'currency', currency: 'NGN', minimumFractionDigits: 0,
 }).format(v || 0)
 
+const documentPreview = ref(null)
+
+function onDocumentChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    form.supporting_document = file
+    if (file.type.startsWith('image/')) {
+        documentPreview.value = URL.createObjectURL(file)
+    } else {
+        documentPreview.value = null
+    }
+}
 function submit() {
     form.post(route('manage.payment-approvals.store'))
 }
+
 </script>
 
 <template>
@@ -137,6 +154,55 @@ function submit() {
                         class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none"
                     />
                     <p v-if="form.errors.description" class="mt-1 text-sm text-red-600">{{ form.errors.description }}</p>
+                </div>
+
+                <!-- Account Details -->
+                <div class="border-t border-gray-100 dark:border-gray-900 pt-6">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                        Account Details
+                        <span class="text-gray-400 font-normal">(optional)</span>
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bank Name</label>
+                            <input
+                                v-model="form.bank_name"
+                                type="text"
+                                placeholder="e.g. First Bank, GTBank..."
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                            />
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Account Number</label>
+                                <input
+                                    v-model="form.account_number"
+                                    type="text"
+                                    placeholder="0123456789"
+                                    maxlength="10"
+                                    class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Account Name</label>
+                                <input
+                                    v-model="form.account_name"
+                                    type="text"
+                                    placeholder="Full account name"
+                                    class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supporting Documents -->
+                <div class="border-t border-gray-100 dark:border-gray-900 pt-6">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Supporting Documents</h3>
+                    <div class="flex items-start gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-900 rounded-xl text-sm text-gray-500 dark:text-gray-400">
+                        <Info class="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        Documents can be attached after submitting the request.
+                    </div>
                 </div>
 
                 <!-- Actions -->

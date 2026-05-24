@@ -52,13 +52,13 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
-                'info' => fn () => $request->session()->get('info'),
-                'warning' => fn () => $request->session()->get('warning'),
+                'success' => fn () => $request->session()->pull('success'),
+                'error'   => fn () => $request->session()->pull('error'),
+                'info'    => fn () => $request->session()->pull('info'),
+                'warning' => fn () => $request->session()->pull('warning'),
             ],
             'appName' => config('app.name'),
-            'lateCheckoutPendingCount' => auth()->check()
+            'lateCheckoutPendingCount' => auth()->check() && request()->routeIs('manage.*')
                 ? (function () {
                     $user = auth()->user();
                     $query = Booking::where('late_checkout_status', 'pending');

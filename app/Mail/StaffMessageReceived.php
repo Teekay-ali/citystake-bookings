@@ -18,7 +18,7 @@ class StaffMessageReceived extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Guest message — ' . $this->message->booking->booking_reference,
+            subject: 'Guest message - ' . $this->message->booking->booking_reference,
         );
     }
 

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Booking extends Model
 {
@@ -131,7 +132,7 @@ class Booking extends Model
     // Helper methods
     public static function generateReference(): string
     {
-        return 'CS-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+        return 'CS-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6));
     }
 
     public function calculateTotal(UnitType $unitType): void
@@ -183,6 +184,7 @@ class Booking extends Model
     {
         return $this->status !== 'cancelled'
             && $this->status !== 'completed'
+            && $this->status !== 'checked_in'
             && $this->check_in > now();
     }
 

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
+import DocumentManager from '@/Components/DocumentManager.vue'
 import {
     ArrowLeft, Clock, CheckCircle, XCircle, Banknote,
     User, Building2, Calendar, MessageSquare, Upload,
@@ -11,10 +12,13 @@ import {
 defineOptions({ layout: ManageLayout })
 
 const props = defineProps({
-    approval:     Object,
-    canDecide:    Boolean,
-    canMarkPaid:  Boolean,
+    approval:            Object,
+    canDecide:           Boolean,
+    canMarkPaid:         Boolean,
+    canManageDocuments:  Boolean,
 })
+
+const approvalDocuments = ref(props.approval.documents ?? [])
 
 const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
     style: 'currency', currency: 'NGN', minimumFractionDigits: 0,
@@ -130,10 +134,44 @@ function submitPaid() {
                     </div>
                 </div>
 
-                <div v-if="approval.description">
+                <template v-if="approval.bank_name || approval.account_number">
+                    <div class="border-t border-gray-100 dark:border-gray-900 pt-4">
+                        <p class="text-xs text-gray-500 mb-3 uppercase tracking-wide font-medium">Account Details</p>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div v-if="approval.bank_name">
+                                <p class="text-xs text-gray-500 mb-1">Bank</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ approval.bank_name }}</p>
+                            </div>
+                            <div v-if="approval.account_number">
+                                <p class="text-xs text-gray-500 mb-1">Account Number</p>
+                                <p class="font-medium text-gray-900 dark:text-white font-mono">{{ approval.account_number }}</p>
+                            </div>
+                            <div v-if="approval.account_name">
+                                <p class="text-xs text-gray-500 mb-1">Account Name</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ approval.account_name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <div v-if="approval.description" class="border-t border-gray-100 dark:border-gray-900 pt-4">
                     <p class="text-xs text-gray-500 mb-1">Description</p>
                     <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{{ approval.description }}</p>
                 </div>
+            </div>
+
+            <!-- Supporting Documents — separate card -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
+                    Supporting Documents
+                </h2>
+                <DocumentManager
+                    model-type="payment-approval"
+                    :model-id="approval.id"
+                    :initial="approvalDocuments"
+                    :readonly="!canManageDocuments"
+                    @updated="val => approvalDocuments = val"
+                />
             </div>
 
             <!-- CEO Decision Card -->

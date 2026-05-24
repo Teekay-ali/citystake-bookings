@@ -33,7 +33,7 @@ class FinancialController extends Controller
         }
         $scopedIds = $buildingId ? [(int) $buildingId] : $buildingIds;
 
-        // Pending payment queue — approved maintenance + procurement
+        // Pending payment queue - approved maintenance + procurement
         $pendingMaintenance = MaintenanceReport::whereIn('building_id', $scopedIds)
             ->where('status', 'ceo_approved')
             ->with(['building', 'vendor', 'submittedBy'])
@@ -120,6 +120,7 @@ class FinancialController extends Controller
 
     public function payExpense(Request $request, string $type, int $id)
     {
+        abort_unless(in_array($type, ['maintenance', 'procurement']), 422);
 
         $validated = $request->validate([
             'payment_method'   => 'required|in:cash,bank_transfer,pos,paystack,other',
@@ -141,7 +142,7 @@ class FinancialController extends Controller
                 'actual_cost'     => $validated['amount'],
             ]);
 
-            $description = "Maintenance: {$record->title} — {$record->building->name}";
+            $description = "Maintenance: {$record->title} - {$record->building->name}";
             $category    = 'maintenance';
             $buildingId  = $record->building_id;
             $refType     = MaintenanceReport::class;
@@ -157,11 +158,20 @@ class FinancialController extends Controller
                 'purchased_at' => now(),
             ]);
 
-            $description = "Procurement: {$record->title} — {$record->building->name}";
+            $description = "Procurement: {$record->title} - {$record->building->name}";
             $category    = 'procurement';
             $buildingId  = $record->building_id;
             $refType     = ProcurementRequest::class;
             $refId       = $record->id;
+        }
+
+        $user        = auth()->user();
+        $buildingIds = $user->hasGlobalAccess()
+            ? null
+            : ($user->accessibleBuildingIds() ?? []);
+
+        if ($buildingIds !== null) {
+            abort_unless(in_array($record->building_id, $buildingIds), 403);
         }
 
         FinancialTransaction::create([
@@ -209,6 +219,13 @@ class FinancialController extends Controller
             'transaction_date'  => 'required|date',
             'notes'             => 'nullable|string|max:500',
         ]);
+
+        $user        = auth()->user();
+        $buildingIds = $user->hasGlobalAccess()
+            ? Building::pluck('id')->toArray()
+            : ($user->accessibleBuildingIds() ?? []);
+
+        abort_unless(in_array((int) $validated['building_id'], $buildingIds), 403);
 
         FinancialTransaction::create([
             ...$validated,
@@ -313,22 +330,27 @@ class FinancialController extends Controller
 
     private function getMonthlyTrend(array $buildingIds): array
     {
+        $rows = FinancialTransaction::whereIn('building_id', $buildingIds)
+            ->where('transaction_date', '>=', now()->subMonths(11)->startOfMonth())
+            ->selectRaw('YEAR(transaction_date) as yr, MONTH(transaction_date) as mo, type, SUM(amount) as total')
+            ->groupBy('yr', 'mo', 'type')
+            ->get()
+            ->groupBy(fn($r) => $r->yr . '-' . str_pad($r->mo, 2, '0', STR_PAD_LEFT));
+
         $trend = [];
         for ($i = 11; $i >= 0; $i--) {
             $date  = now()->subMonths($i);
-            $start = $date->copy()->startOfMonth()->toDateString();
-            $end   = $date->copy()->endOfMonth()->toDateString();
+            $key   = $date->format('Y-m');
+            $month = $rows->get($key, collect());
 
-            $income   = FinancialTransaction::whereIn('building_id', $buildingIds)
-                ->where('type', 'income')->whereBetween('transaction_date', [$start, $end])->sum('amount');
-            $expenses = FinancialTransaction::whereIn('building_id', $buildingIds)
-                ->where('type', 'expense')->whereBetween('transaction_date', [$start, $end])->sum('amount');
+            $income   = (float) ($month->firstWhere('type', 'income')?->total ?? 0);
+            $expenses = (float) ($month->firstWhere('type', 'expense')?->total ?? 0);
 
             $trend[] = [
                 'month'    => $date->format('M Y'),
-                'income'   => (float) $income,
-                'expenses' => (float) $expenses,
-                'net'      => (float) ($income - $expenses),
+                'income'   => $income,
+                'expenses' => $expenses,
+                'net'      => $income - $expenses,
             ];
         }
         return $trend;
@@ -347,7 +369,7 @@ class FinancialController extends Controller
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, ['CityStake Financial Transactions']);
-            fputcsv($handle, ['Period', $start->format('d M Y') . ' — ' . $end->format('d M Y')]);
+            fputcsv($handle, ['Period', $start->format('d M Y') . ' - ' . $end->format('d M Y')]);
             fputcsv($handle, ['Generated', now()->format('d M Y H:i')]);
             fputcsv($handle, []);
             fputcsv($handle, ['Date', 'Type', 'Category', 'Description', 'Building', 'Method', 'Reference', 'Amount (₦)', 'Recorded By']);

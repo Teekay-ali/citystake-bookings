@@ -34,7 +34,7 @@ class ExpireUnpaidBookings extends Command
             $booking->update([
                 'status'              => 'cancelled',
                 'cancelled_at'        => now(),
-                'cancellation_reason' => "Automatically cancelled — payment not completed within {$holdMinutes} minutes.",
+                'cancellation_reason' => "Automatically cancelled - payment not completed within {$holdMinutes} minutes.",
             ]);
 
             $count++;

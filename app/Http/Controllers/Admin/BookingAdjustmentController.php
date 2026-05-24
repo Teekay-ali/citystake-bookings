@@ -59,7 +59,7 @@ class BookingAdjustmentController extends Controller
             'category'          => 'goodwill_adjustment',
             'reference_type'    => BookingAdjustment::class,
             'reference_id'      => $adjustment->id,
-            'description'       => "Goodwill adjustment — {$booking->booking_reference} ({$booking->guest_name})",
+            'description'       => "Goodwill adjustment - {$booking->booking_reference} ({$booking->guest_name})",
             'amount'            => $amountNaira,
             'payment_method'    => 'bank_transfer',
             'payment_reference' => $validated['payment_reference'] ?? null,

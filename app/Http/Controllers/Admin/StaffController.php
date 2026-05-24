@@ -18,6 +18,8 @@ class StaffController extends Controller
 {
     public function index()
     {
+        abort_unless(auth()->user()->can('manage-staff'), 403);
+
         $staff = User::with(['roles', 'buildings'])
             ->where('is_staff', true)
             ->select(['id', 'name', 'email', 'phone', 'is_staff', 'is_active', 'welcome_sent_at', 'created_at', 'updated_at'])
@@ -31,6 +33,8 @@ class StaffController extends Controller
 
     public function create()
     {
+        abort_unless(auth()->user()->can('manage-staff'), 403);
+
         return Inertia::render('Admin/Staff/Create', [
             'roles'     => Role::orderBy('name')->get(['id', 'name']),
             'buildings' => Building::where('is_active', true)->get(['id', 'name']),
@@ -149,4 +153,5 @@ class StaffController extends Controller
             : 'Staff member deactivated.'
         );
     }
+
 }

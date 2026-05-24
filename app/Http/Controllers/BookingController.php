@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -205,7 +206,7 @@ class BookingController extends Controller
         // Generate a fresh unique payment reference on every page load
         // This allows retries if the user closes the Paystack modal
         $booking->update([
-            'payment_reference' => $booking->booking_reference . '-' . strtoupper(uniqid()),
+            'payment_reference' => $booking->booking_reference . '-' . strtoupper(Str::random(8)),
         ]);
 
         $paystackService = new PaystackService();
@@ -276,7 +277,7 @@ class BookingController extends Controller
                         'type'            => 'income',
                         'category'        => 'booking',
                         'reference_id'    => $booking->id,
-                        'description'     => "Booking {$booking->booking_reference} — {$booking->guest_name}",
+                        'description'     => "Booking {$booking->booking_reference} - {$booking->guest_name}",
                         'amount'          => $booking->total_amount,
                         'payment_method'  => 'paystack',
                         'transaction_date'=> now()->toDateString(),
@@ -319,6 +320,10 @@ class BookingController extends Controller
             abort(403);
         }
 
+        if ($booking->isPaid()) {
+            return redirect()->route('bookings.confirmation', $booking->id);
+        }
+
         // Monnify returns the paymentReference in the SDK callback
         $paymentReference = $request->query('paymentReference');
 
@@ -332,6 +337,19 @@ class BookingController extends Controller
             $responseBody   = $monnifyService->verifyTransaction($paymentReference);
 
             if (($responseBody['paymentStatus'] ?? '') === 'PAID') {
+
+                $expectedAmount = (float) $booking->total_amount;
+                $paidAmount     = (float) ($responseBody['amountPaid'] ?? 0);
+
+                if ($paidAmount < $expectedAmount) {
+                    Log::warning('Monnify amount mismatch on verify', [
+                        'booking_reference' => $booking->booking_reference,
+                        'expected'          => $expectedAmount,
+                        'paid'              => $paidAmount,
+                    ]);
+                    return redirect()->route('bookings.payment', $bookingReference)
+                        ->with('error', 'Payment amount mismatch. Please contact support.');
+                }
 
                 $booking->update([
                     'payment_status'     => 'paid',
@@ -352,7 +370,7 @@ class BookingController extends Controller
                         'type'            => 'income',
                         'category'        => 'booking',
                         'reference_id'    => $booking->id,
-                        'description'     => "Booking {$booking->booking_reference} — {$booking->guest_name}",
+                        'description'     => "Booking {$booking->booking_reference} - {$booking->guest_name}",
                         'amount'          => $booking->total_amount,
                         'payment_method'  => 'monnify',
                         'transaction_date'=> now()->toDateString(),
@@ -482,30 +500,6 @@ class BookingController extends Controller
         }
 
         return redirect()->route('bookings.index')->with('success', $message);
-    }
-
-    public function checkIn(Request $request, Booking $booking)
-    {
-        if (!$booking->canCheckIn()) {
-            return back()->with('error', 'This booking cannot be checked in at this time.');
-        }
-
-        $validated = $request->validate([
-            'amount_received'        => 'required|numeric|min:0',
-            'checkin_payment_method' => 'required|in:cash,pos,bank_transfer,paystack',
-            'checkin_notes'          => 'nullable|string|max:500',
-        ]);
-
-        $booking->update([
-            'status'                 => 'checked_in',
-            'checked_in_at'          => now(),
-            'checked_in_by'          => auth()->id(),
-            'amount_received'        => $validated['amount_received'],
-            'checkin_payment_method' => $validated['checkin_payment_method'],
-            'checkin_notes'          => $validated['checkin_notes'] ?? null,
-        ]);
-
-        return back()->with('success', 'Guest checked in successfully.');
     }
 
     public function downloadInvoice(Booking $booking)

@@ -18,6 +18,9 @@ class PaymentApproval extends Model
         'amount',
         'description',
         'status',
+        'bank_name',
+        'account_number',
+        'account_name',
         'ceo_comment',
         'payment_reference',
         'payment_evidence',
@@ -31,7 +34,10 @@ class PaymentApproval extends Model
         'paid_at'     => 'datetime',
     ];
 
-    protected $appends = ['payment_evidence_url', 'type_label'];
+    protected $appends = [
+        'payment_evidence_url',
+        'type_label',
+    ];
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
@@ -48,6 +54,12 @@ class PaymentApproval extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    // Add relation:
+    public function documents(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable')->orderBy('sort_order');
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────────

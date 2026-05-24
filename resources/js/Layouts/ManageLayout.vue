@@ -177,9 +177,9 @@ const navGroups = computed(() => [
         items: [
             { label: 'All Bookings',   icon: ClipboardList,   route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
             { label: 'Availability',   icon: Grid3x3,        route: 'manage.availability.index',           match: 'manage.availability.*',                permission: 'manage-availability' },
-            { label: 'Calendar',       icon: CalendarDays,   route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',             permission: 'view-bookings' },
-            { label: 'Messages',       icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                    badge: unreadMessages },
-            { label: 'Late Checkouts', icon: Clock,          route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index',  permission: 'view-bookings', badge: pendingCount },
+            { label: 'Calendar',       icon: CalendarDays,   route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',             permission: 'manage-availability' },
+            { label: 'Messages',       icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                    permission: 'manage-bookings', badge: unreadMessages },
+            { label: 'Late Checkouts', icon: Clock,          route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index',  permission: 'approve-late-checkout', badge: pendingCount },
         ]
     },
     {
