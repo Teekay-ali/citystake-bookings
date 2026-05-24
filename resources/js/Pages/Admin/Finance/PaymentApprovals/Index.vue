@@ -123,54 +123,81 @@ function clearFilters() {
             </button>
         </div>
 
-        <!-- Table -->
+        <!-- Table / Cards -->
         <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
+
             <div v-if="approvals.data.length === 0" class="text-center py-16">
                 <Banknote class="w-10 h-10 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
                 <p class="text-gray-500 dark:text-gray-400">No payment requests found.</p>
             </div>
 
-            <table v-else class="w-full text-sm">
-                <thead class="border-b border-gray-100 dark:border-gray-800">
-                <tr class="text-left">
-                    <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Request</th>
-                    <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Recipient</th>
-                    <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Amount</th>
-                    <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
-                    <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Date</th>
-                    <th class="px-6 py-4"></th>
-                </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                <tr
-                    v-for="approval in approvals.data"
-                    :key="approval.id"
-                    class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                    <td class="px-6 py-4">
-                        <p class="font-medium text-gray-900 dark:text-white">{{ approval.type_label }}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">{{ approval.building?.name }}</p>
-                    </td>
-                    <td class="px-6 py-4 text-gray-600 dark:text-gray-400">{{ approval.recipient_name }}</td>
-                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ formatPrice(approval.amount) }}</td>
-                    <td class="px-6 py-4">
-                            <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border', statusClass(approval.status)]">
-                                <component :is="statusConfig[approval.status]?.icon" class="w-3 h-3" />
-                                {{ statusConfig[approval.status]?.label }}
-                            </span>
-                    </td>
-                    <td class="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs">{{ formatDate(approval.created_at) }}</td>
-                    <td class="px-6 py-4">
-                        <Link
-                            :href="route('manage.payment-approvals.show', approval.id)"
-                            class="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                        >
-                            <ChevronRight class="w-4 h-4" />
-                        </Link>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+            <template v-else>
+                <!-- Desktop table -->
+                <table class="hidden md:table w-full text-sm">
+                    <thead class="border-b border-gray-100 dark:border-gray-800">
+                    <tr class="text-left">
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Request</th>
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Recipient</th>
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Amount</th>
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Date</th>
+                        <th class="px-6 py-4"></th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                    <tr
+                        v-for="approval in approvals.data"
+                        :key="approval.id"
+                        class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    >
+                        <td class="px-6 py-4">
+                            <p class="font-medium text-gray-900 dark:text-white">{{ approval.type_label }}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">{{ approval.building?.name }}</p>
+                        </td>
+                        <td class="px-6 py-4 text-gray-600 dark:text-gray-400">{{ approval.recipient_name }}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ formatPrice(approval.amount) }}</td>
+                        <td class="px-6 py-4">
+                        <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border', statusClass(approval.status)]">
+                            <component :is="statusConfig[approval.status]?.icon" class="w-3 h-3" />
+                            {{ statusConfig[approval.status]?.label }}
+                        </span>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs">{{ formatDate(approval.created_at) }}</td>
+                        <td class="px-6 py-4">
+                            <Link
+                                :href="route('manage.payment-approvals.show', approval.id)"
+                                class="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            >
+                                <ChevronRight class="w-4 h-4" />
+                            </Link>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <!-- Mobile cards -->
+                <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                    <Link
+                        v-for="approval in approvals.data"
+                        :key="approval.id"
+                        :href="route('manage.payment-approvals.show', approval.id)"
+                        class="flex items-start justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                    >
+                        <div class="space-y-1 min-w-0 flex-1 pr-3">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ approval.type_label }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ approval.recipient_name }}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500">{{ approval.building?.name }} · {{ formatDate(approval.created_at) }}</p>
+                        </div>
+                        <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatPrice(approval.amount) }}</p>
+                            <span :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border', statusClass(approval.status)]">
+                        <component :is="statusConfig[approval.status]?.icon" class="w-3 h-3" />
+                        {{ statusConfig[approval.status]?.label }}
+                    </span>
+                        </div>
+                    </Link>
+                </div>
+            </template>
 
             <!-- Pagination -->
             <div v-if="approvals.last_page > 1" class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -191,6 +218,7 @@ function clearFilters() {
                 </div>
             </div>
         </div>
+
     </div>
 
 </template>
