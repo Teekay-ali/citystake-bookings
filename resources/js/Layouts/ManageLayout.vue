@@ -202,10 +202,10 @@ const navGroups = computed(() => [
     {
         label: 'Finance & Analytics',
         items: [
-            { label: 'Analytics',  icon: BarChart3,  route: 'manage.analytics.index',  match: 'manage.analytics.*',  permission: 'view-analytics' },
-            { label: 'Financials', icon: DollarSign, route: 'manage.financials.index', match: 'manage.financials.*', permission: 'view-financials' },
-            { label: 'Caution Fees',   icon: Banknote,   route: 'manage.financials.deposits', match: 'manage.financials.deposits', permission: 'view-financials' },
-            { label: 'Approvals', icon: BadgeCheck, route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*', permission: 'manage-payment-approvals' },
+            { label: 'Analytics',       icon: BarChart3,  route: 'manage.analytics.index',  match: 'manage.analytics.*',  permission: 'view-analytics' },
+            { label: 'Financials',      icon: DollarSign, route: 'manage.financials.index', match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
+            { label: 'Caution Fees',    icon: Banknote,   route: 'manage.financials.deposits', match: 'manage.financials.deposits', permission: 'view-financials' },
+            { label: 'Approvals',       icon: BadgeCheck, route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*', permission: 'manage-payment-approvals' },
         ]
     },
     {
