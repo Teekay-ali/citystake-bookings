@@ -10,6 +10,8 @@ const props = defineProps({
     readonly:  { type: Boolean, default: false },
 })
 
+const success = ref(null)
+
 const emit = defineEmits(['updated'])
 
 const documents  = ref([...props.initial])
@@ -39,6 +41,8 @@ async function handleFiles(files) {
         )
         documents.value.push(...data.documents)
         emit('updated', documents.value)
+        success.value = data.message
+        setTimeout(() => success.value = null, 3000)
     } catch (e) {
         error.value = e.response?.data?.message ?? 'Upload failed. Max 5MB per file, up to 5 files.'
     } finally {
@@ -55,6 +59,8 @@ async function deleteDocument(doc) {
         await axios.delete(route('manage.documents.destroy', doc.id))
         documents.value = documents.value.filter(d => d.id !== doc.id)
         emit('updated', documents.value)
+        success.value = 'Document deleted.'
+        setTimeout(() => success.value = null, 3000)
     } catch {
         error.value = 'Failed to delete document.'
     }
@@ -145,7 +151,11 @@ async function deleteDocument(doc) {
             </div>
         </div>
 
+        <!-- Success -->
+        <p v-if="success" class="text-sm text-green-600 dark:text-green-400">{{ success }}</p>
+
         <!-- Error -->
         <p v-if="error" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+
     </div>
 </template>
