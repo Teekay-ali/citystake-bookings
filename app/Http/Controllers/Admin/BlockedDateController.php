@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\AuditLog;
 use App\Traits\ScopedByBuilding;
 use App\Http\Controllers\Controller;
 use App\Models\BlockedDate;
@@ -123,13 +124,20 @@ class BlockedDateController extends Controller
                 ->withInput();
         }
 
-        BlockedDate::create([
-            'unit_id' => $validated['unit_id'],
+        $blockedDate = BlockedDate::create([
+            'unit_id'      => $validated['unit_id'],
             'blocked_from' => $validated['blocked_from'],
-            'blocked_to' => $validated['blocked_to'],
-            'reason' => $validated['reason'],
-            'notes' => $validated['notes'],
-            'created_by' => auth()->id(),
+            'blocked_to'   => $validated['blocked_to'],
+            'reason'       => $validated['reason'],
+            'notes'        => $validated['notes'],
+            'created_by'   => auth()->id(),
+        ]);
+
+        AuditLog::log('blocked_date.created', $blockedDate, null, [
+            'unit_id' => $blockedDate->unit_id,
+            'from'    => $blockedDate->blocked_from,
+            'to'      => $blockedDate->blocked_to,
+            'reason'  => $blockedDate->reason,
         ]);
 
         return redirect()->route('manage.blocked-dates.index')
@@ -140,9 +148,17 @@ class BlockedDateController extends Controller
     {
         abort_unless(auth()->user()->can('manage-blocked-dates'), 403);
 
+        AuditLog::log('blocked_date.deleted', $blockedDate, [
+            'unit_id' => $blockedDate->unit_id,
+            'from'    => $blockedDate->blocked_from,
+            'to'      => $blockedDate->blocked_to,
+            'reason'  => $blockedDate->reason,
+        ], null);
+
         $blockedDate->delete();
 
         return redirect()->route('manage.blocked-dates.index')
             ->with('success', 'Blocked dates removed successfully!');
     }
+
 }

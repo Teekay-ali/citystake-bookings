@@ -227,10 +227,18 @@ class FinancialController extends Controller
 
         abort_unless(in_array((int) $validated['building_id'], $buildingIds), 403);
 
-        FinancialTransaction::create([
+        $transaction = FinancialTransaction::create([
             ...$validated,
             'category'    => $validated['type'] === 'income' ? 'manual_income' : 'manual_expense',
             'recorded_by' => auth()->id(),
+        ]);
+
+        AuditLog::log('financial.manual_entry', $transaction, null, [
+            'type'        => $transaction->type,
+            'category'    => $transaction->category,
+            'amount'      => $transaction->amount,
+            'building_id' => $transaction->building_id,
+            'description' => $transaction->description,
         ]);
 
         return back()->with('success', 'Transaction recorded.');

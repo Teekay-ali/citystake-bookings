@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Building;
 use App\Models\StockItem;
 use App\Models\StockLog;
@@ -96,6 +97,12 @@ class StockController extends Controller
         $item = StockItem::create([
             ...$validated,
             'created_by' => auth()->id(),
+        ]);
+
+        AuditLog::log('stock.item_created', $item, null, [
+            'name'        => $item->name,
+            'quantity'    => $item->quantity,
+            'building_id' => $item->building_id,
         ]);
 
         // Log initial stock
@@ -199,6 +206,11 @@ class StockController extends Controller
         ]);
 
         $stock->update($validated);
+
+        AuditLog::log('stock.item_updated', $stock,
+            ['name' => $stock->getOriginal('name'), 'low_stock_threshold' => $stock->getOriginal('low_stock_threshold')],
+            ['name' => $stock->name, 'low_stock_threshold' => $stock->low_stock_threshold]
+        );
 
         return redirect()->route('manage.stock.show', $stock->id)
             ->with('success', 'Stock item updated.');

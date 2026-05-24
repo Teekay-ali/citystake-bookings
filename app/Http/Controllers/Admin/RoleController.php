@@ -57,6 +57,11 @@ class RoleController extends Controller
 
         $role->syncPermissions($validated['permissions'] ?? []);
 
+        AuditLog::log('role.permissions_updated', null, null, [
+            'role'        => $role->name,
+            'permissions' => $validated['permissions'] ?? [],
+        ]);
+
         // Refresh permissions cache for all users with this role
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
@@ -79,6 +84,8 @@ class RoleController extends Controller
         if ($role->users()->count() > 0) {
             return back()->with('error', 'Cannot delete a role assigned to staff members.');
         }
+
+        AuditLog::log('role.deleted', null, ['name' => $role->name], null);
 
         $role->delete();
 

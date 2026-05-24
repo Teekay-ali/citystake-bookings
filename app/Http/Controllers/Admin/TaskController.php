@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\AuditLog;
 use App\Notifications\TaskAssignedNotification;
 use App\Http\Controllers\Controller;
 use App\Models\Building;
@@ -139,6 +140,13 @@ class TaskController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        AuditLog::log('task.created', $task, null, [
+            'title'       => $task->title,
+            'assigned_to' => $task->assigned_to,
+            'priority'    => $task->priority,
+            'building_id' => $task->building_id,
+        ]);
+
         if ($task->assigned_to) {
             $assignee = \App\Models\User::find($task->assigned_to);
             // Don't notify yourself
@@ -215,6 +223,11 @@ class TaskController extends Controller
 
         $task->update($validated);
 
+        AuditLog::log('task.updated', $task,
+            ['title' => $task->getOriginal('title'), 'status' => $task->getOriginal('status'), 'assigned_to' => $task->getOriginal('assigned_to')],
+            ['title' => $task->title, 'status' => $task->status, 'assigned_to' => $task->assigned_to]
+        );
+
         if ($task->assigned_to) {
             $assignee = \App\Models\User::find($task->assigned_to);
             // Don't notify yourself
@@ -251,6 +264,11 @@ class TaskController extends Controller
 
         $task->update($validated);
 
+        AuditLog::log('task.status_changed', $task,
+            ['status' => $task->getOriginal('status')],
+            ['status' => $task->status]
+        );
+
         return back()->with('success', 'Status updated.');
     }
 
@@ -285,6 +303,8 @@ class TaskController extends Controller
     {
         abort_unless(auth()->user()->can('manage-tasks'), 403);
         $this->authorizeBuilding($task);
+
+        AuditLog::log('task.deleted', $task, ['title' => $task->title, 'status' => $task->status], null);
 
         $task->subtasks()->delete();
         $task->delete();

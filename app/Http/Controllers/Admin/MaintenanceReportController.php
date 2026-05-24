@@ -104,10 +104,16 @@ class MaintenanceReportController extends Controller
             }
         }
 
-        MaintenanceReport::create([
+        $report = MaintenanceReport::create([
             ...$validated,
             'submitted_by' => auth()->id(),
             'photos'       => $photoPaths ?: null,
+        ]);
+
+        AuditLog::log('maintenance.submitted', $report, null, [
+            'title'       => $report->title,
+            'issue_type'  => $report->issue_type,
+            'building_id' => $report->building_id,
         ]);
 
         return redirect()->route('manage.maintenance.index')

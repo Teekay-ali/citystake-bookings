@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -69,10 +70,12 @@ class VendorController extends Controller
             'notes'               => 'nullable|string|max:1000',
         ]);
 
-        Vendor::create([
+        $vendor = Vendor::create([
             ...$validated,
             'created_by' => auth()->id(),
         ]);
+
+        AuditLog::log('vendor.created', $vendor, null, ['name' => $vendor->name, 'category' => $vendor->category]);
 
         return redirect()->route('manage.vendors.index')
             ->with('success', 'Vendor added successfully.');
@@ -107,6 +110,8 @@ class VendorController extends Controller
 
         $vendor->update($validated);
 
+        AuditLog::log('vendor.updated', $vendor, ['name' => $vendor->getOriginal('name'), 'category' => $vendor->getOriginal('category')], ['name' => $vendor->name, 'category' => $vendor->category]);
+
         return redirect()->route('manage.vendors.index')
             ->with('success', 'Vendor updated successfully.');
     }
@@ -114,6 +119,8 @@ class VendorController extends Controller
     public function destroy(Vendor $vendor)
     {
         abort_unless(auth()->user()->can('manage-vendors'), 403);
+
+        AuditLog::log('vendor.deleted', $vendor, ['name' => $vendor->name, 'category' => $vendor->category], null);
 
         $vendor->delete();
 
