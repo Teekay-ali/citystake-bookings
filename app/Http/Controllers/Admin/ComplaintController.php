@@ -123,9 +123,10 @@ class ComplaintController extends Controller
 
         return Inertia::render('Admin/Complaints/Show', [
             'complaint' => array_merge($complaint->toArray(), [
-                'photo_urls' => collect($complaint->photos ?? [])
-                    ->map(fn($p) => Storage::url($p))
-                    ->values(),
+                'submitted_by_id' => $complaint->submitted_by,
+                'resolved_by_id'  => $complaint->resolved_by,
+                'photo_urls'      => collect($complaint->photos ?? [])
+                    ->map(fn($p) => Storage::url($p))->values(),
             ]),
         ]);
     }

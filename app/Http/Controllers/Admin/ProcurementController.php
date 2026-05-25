@@ -145,6 +145,7 @@ class ProcurementController extends Controller
 
         return Inertia::render('Admin/Procurement/Show', [
             'procurement' => array_merge($procurement->toArray(), [
+                'submitted_by_id' => $procurement->submitted_by,
                 'status_label'            => $procurement->statusLabel(),
                 'can_accountant_approve'  => $procurement->canAccountantApprove(),
                 'can_ceo_approve'         => $procurement->canCeoApprove(),

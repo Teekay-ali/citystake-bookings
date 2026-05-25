@@ -135,9 +135,12 @@ class MaintenanceReportController extends Controller
 
         return Inertia::render('Admin/Maintenance/Show', [
             'report' => array_merge($maintenance->toArray(), [
-                'photo_urls'   => collect($maintenance->photos ?? [])
+                'submitted_by_id'        => $maintenance->submitted_by,
+                'payment_made_by_id'     => $maintenance->payment_made_by,
+                'manager_approved_by_id' => $maintenance->manager_approved_by,
+                'photo_urls'             => collect($maintenance->photos ?? [])
                     ->map(fn($p) => Storage::url($p))->values(),
-                'status_label' => $maintenance->statusLabel(),
+                'status_label'           => $maintenance->statusLabel(),
                 'can_manager_approve'    => $maintenance->canManagerApprove(),
                 'can_accountant_approve' => $maintenance->canAccountantApprove(),
                 'can_ceo_approve'        => $maintenance->canCeoApprove(),

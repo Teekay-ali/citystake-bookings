@@ -12,7 +12,7 @@ const props = defineProps({
 
 const user       = computed(() => usePage().props.auth.user)
 const canManage  = computed(() => user.value?.permissions?.includes('manage-tasks'))
-const isAssigned = computed(() => user.value?.id === props.task.assigned_to)
+const isAssigned = computed(() => user.value?.id == props.task.assigned_to_id)
 
 const statusForm = useForm({ status: props.task.status })
 

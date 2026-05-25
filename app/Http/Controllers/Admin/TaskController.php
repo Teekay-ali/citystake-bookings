@@ -172,6 +172,8 @@ class TaskController extends Controller
 
         return Inertia::render('Admin/Tasks/Show', [
             'task' => array_merge($task->toArray(), [
+                'assigned_to_id'     => $task->assigned_to,
+                'created_by_id'      => $task->created_by,
                 'is_overdue'         => $task->isOverdue(),
                 'completion_percent' => $task->completionPercent(),
             ]),
