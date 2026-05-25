@@ -58,7 +58,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Staff Queries</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">HR records — confidential</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">HR records - confidential</p>
             </div>
             <Link :href="route('manage.staff-queries.create')"
                   class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">

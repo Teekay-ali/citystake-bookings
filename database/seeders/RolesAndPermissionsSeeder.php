@@ -65,6 +65,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-staff',
             'manage-staff-queries',
             'manage-roles',
+            'manage-guests',
 
             // Analytics
             'view-analytics',
@@ -102,7 +103,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'submit-maintenance', 'approve-maintenance-manager', 'view-maintenance',
                 'submit-procurement', 'confirm-procurement-receipt', 'view-procurement',
                 'view-stock', 'manage-stock', 'log-stock-usage',
-                'manage-staff-queries',
+                'manage-staff-queries', 'manage-guests',
                 'view-analytics',
                 'manage-tasks', 'view-tasks',
                 'view-audit-logs',
@@ -133,6 +134,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-financials', 'manage-financials', 'manage-payment-approvals',
                 'manage-tasks', 'view-tasks',
                 'view-audit-logs',
+                'manage-guests',
             ],
 
             'head-of-procurement' => [

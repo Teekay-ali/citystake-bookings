@@ -8,8 +8,8 @@ import {
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
     ChevronLeft, ChevronRight, FileText, ShieldCheck, ChevronUp, ChevronDown,
-    Search, Plus, Banknote, BadgeCheck
-} from 'u'
+    Search, Plus, Banknote, BadgeCheck, UserRound
+} from 'lucide-vue-next'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
 import { useFloating, offset, shift, flip } from '@floating-ui/vue'
@@ -211,10 +211,12 @@ const navGroups = computed(() => [
     {
         label: 'Team',
         items: [
+            { label: 'Guests',        icon: UserRound,   route: 'manage.guests.index',         match: 'manage.guests.*',         permission: 'manage-guests' },
             { label: 'Staff',         icon: Users,       route: 'manage.staff.index',         match: 'manage.staff.*',         permission: 'manage-staff' },
             { label: 'Staff Queries', icon: FileText,    route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', permission: 'manage-staff-queries' },
             { label: 'Tasks',         icon: CheckSquare, route: 'manage.tasks.index',         match: 'manage.tasks.*',         permission: 'view-tasks' },
             { label: 'Roles',         icon: ShieldCheck, route: 'manage.roles.index',         match: 'manage.roles.*',         permission: 'manage-roles' },
+            { label: 'Admin Accounts',  icon: ShieldCheck, route: 'manage.admin-accounts.index', match: 'manage.admin-accounts.*', permission: 'manage-roles' },
             { label: 'Audit Logs',    icon: FileText,    route: 'manage.audit-logs.index',    match: 'manage.audit-logs.*',    permission: 'view-audit-logs' },
         ]
     },

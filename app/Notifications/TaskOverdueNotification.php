@@ -40,7 +40,7 @@ class TaskOverdueNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject($this->title() . ' — ' . $this->task->title)
+            ->subject($this->title() . ' - ' . $this->task->title)
             ->view('emails.tasks.overdue', [
                 'task'       => $this->task,
                 'type'       => $this->type,

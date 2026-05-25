@@ -229,6 +229,16 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
     Route::post('/staff/{staff}/toggle-active', [StaffController::class, 'toggleActive'])->name('staff.toggle-active');
 
+    // Guest Management
+    Route::get('/guests', [App\Http\Controllers\Admin\GuestController::class, 'index'])->name('guests.index');
+    Route::get('/guests/{guest}', [App\Http\Controllers\Admin\GuestController::class, 'show'])->name('guests.show');
+    Route::post('/guests/{guest}/toggle-active', [App\Http\Controllers\Admin\GuestController::class, 'toggleActive'])->name('guests.toggle-active');
+
+    // Admin Accounts
+    Route::get('/admin-accounts', [App\Http\Controllers\Admin\AdminUserController::class, 'index'])->name('admin-accounts.index');
+    Route::post('/admin-accounts/{user}/toggle-active', [App\Http\Controllers\Admin\AdminUserController::class, 'toggleActive'])->name('admin-accounts.toggle-active');
+    Route::post('/admin-accounts/{user}/reset-password', [App\Http\Controllers\Admin\AdminUserController::class, 'resetPassword'])->name('admin-accounts.reset-password');
+
     // Vendors
     Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');
     Route::get('/vendors/create', [VendorController::class, 'create'])->name('vendors.create');
