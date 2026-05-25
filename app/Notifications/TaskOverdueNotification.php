@@ -26,7 +26,7 @@ class TaskOverdueNotification extends Notification
         return [
             'type'    => 'task_overdue',
             'title'   => $this->title(),
-            'message' => $this->message(),
+            'message' => $this->body(),
             'url'     => route('manage.tasks.show', $this->task->id),
             'icon'    => 'task',
             'meta'    => [
@@ -45,7 +45,7 @@ class TaskOverdueNotification extends Notification
                 'task'       => $this->task,
                 'type'       => $this->type,
                 'title'      => $this->title(),
-                'message'    => $this->message(),
+                'message'    => $this->body(),
                 'notifiable' => $notifiable,
             ]);
     }
@@ -60,7 +60,7 @@ class TaskOverdueNotification extends Notification
         };
     }
 
-    private function message(): string
+    private function body(): string
     {
         $due = $this->task->due_date?->format('M d, Y');
         return match($this->type) {

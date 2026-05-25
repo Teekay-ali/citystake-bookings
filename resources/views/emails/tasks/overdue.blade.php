@@ -3,7 +3,7 @@
 @section('content')
     <h1 class="email-title">{{ $title }}</h1>
 
-    <p class="email-text">{{ $message }}</p>
+    <p class="email-text">{{ $body }}</p>
 
     <div class="booking-card">
         <div class="booking-detail">
