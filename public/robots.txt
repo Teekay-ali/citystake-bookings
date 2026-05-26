@@ -1,2 +1,8 @@
 User-agent: *
-Disallow:
+Disallow: /manage/
+Disallow: /login
+Disallow: /register
+Disallow: /webhooks/
+Allow: /
+
+Sitemap: https://csbookings.ninetentech.net/sitemap.xml

@@ -61,6 +61,12 @@ async function fetchUnreadCount() {
         const res = await fetch(route('manage.notifications.unread-count'), {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         })
+
+        if (res.status === 401) {
+            clearInterval(pollInterval.value)
+            return
+        }
+
         const data = await res.json()
         unreadCount.value = data.count
     } catch {}
