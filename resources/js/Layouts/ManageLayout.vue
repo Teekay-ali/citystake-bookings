@@ -220,6 +220,7 @@ const navGroups = computed(() => [
             { label: 'Complaints',  icon: AlertTriangle, route: 'manage.complaints.index',  match: 'manage.complaints.*',  permission: 'view-complaints' },
             { label: 'Maintenance', icon: Wrench,        route: 'manage.maintenance.index', match: 'manage.maintenance.*', permission: 'view-maintenance' },
             { label: 'Stock',       icon: Package,       route: 'manage.stock.index',       match: 'manage.stock.*',       permission: 'view-stock' },
+            { label: 'Tasks',       icon: CheckSquare,   route: 'manage.tasks.index', match: 'manage.tasks.*', permission: 'view-tasks' },
             { label: 'Vendors',     icon: BookOpen,      route: 'manage.vendors.index',     match: 'manage.vendors.*',     permission: 'view-vendors' },
         ]
     },
@@ -237,14 +238,13 @@ const navGroups = computed(() => [
         items: [
             {
                 label: 'Team', icon: Users,
-                match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.tasks.*|manage.staff-queries.*|manage.audit-logs.*',
+                match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.staff-queries.*|manage.audit-logs.*',
                 permission: 'manage-staff|manage-guests|manage-roles|view-tasks|manage-staff-queries|view-audit-logs',
                 children: [
                     { label: 'Staff',          route: 'manage.staff.index',          match: 'manage.staff.*',          permission: 'manage-staff' },
                     { label: 'Guests',         route: 'manage.guests.index',         match: 'manage.guests.*',         permission: 'manage-guests' },
                     { label: 'Admin Accounts', route: 'manage.admin-accounts.index', match: 'manage.admin-accounts.*', permission: 'manage-roles' },
                     { label: 'Roles',          route: 'manage.roles.index',          match: 'manage.roles.*',          permission: 'manage-roles' },
-                    { label: 'Tasks',          route: 'manage.tasks.index',          match: 'manage.tasks.*',          permission: 'view-tasks' },
                     { label: 'Staff Queries',  route: 'manage.staff-queries.index',  match: 'manage.staff-queries.*',  permission: 'manage-staff-queries' },
                     { label: 'Audit Logs',     route: 'manage.audit-logs.index',     match: 'manage.audit-logs.*',     permission: 'view-audit-logs' },
                 ]
