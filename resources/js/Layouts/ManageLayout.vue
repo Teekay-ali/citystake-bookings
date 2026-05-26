@@ -29,6 +29,23 @@ const collapsed = ref(
         : false
 )
 
+const openMenus = ref(
+    typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem('sidebar-open-menus') ?? '["Bookings","Team"]')
+        : ['Bookings', 'Team']
+)
+
+function toggleMenu(label) {
+    const idx = openMenus.value.indexOf(label)
+    if (idx > -1) openMenus.value.splice(idx, 1)
+    else openMenus.value.push(label)
+    localStorage.setItem('sidebar-open-menus', JSON.stringify(openMenus.value))
+}
+
+function isMenuOpen(label) {
+    return openMenus.value.includes(label)
+}
+
 function toggleCollapsed() {
     collapsed.value = !collapsed.value
     localStorage.setItem('sidebar-collapsed', collapsed.value)
@@ -175,11 +192,18 @@ const navGroups = computed(() => [
     {
         label: 'Bookings',
         items: [
-            { label: 'All Bookings',   icon: ClipboardList,   route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
-            { label: 'Availability',   icon: Grid3x3,        route: 'manage.availability.index',           match: 'manage.availability.*',                permission: 'manage-availability' },
-            { label: 'Calendar',       icon: CalendarDays,   route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',             permission: 'manage-availability' },
-            { label: 'Messages',       icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                    permission: 'manage-bookings', badge: unreadMessages },
-            { label: 'Late Checkouts', icon: Clock,          route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index',  permission: 'approve-late-checkout', badge: pendingCount },
+            {
+                label: 'Bookings', icon: ClipboardList,
+                match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in|manage.availability.*|manage.bookings.calendar|manage.messages.*|manage.bookings.late-checkout.index',
+                permission: 'view-bookings',
+                children: [
+                    { label: 'All Bookings',   route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
+                    { label: 'Availability',   route: 'manage.availability.index',           match: 'manage.availability.*',               permission: 'manage-availability' },
+                    { label: 'Calendar',       route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',            permission: 'manage-availability' },
+                    { label: 'Messages',       route: 'manage.messages.index',               match: 'manage.messages.*',                   permission: 'manage-bookings', badge: unreadMessages },
+                    { label: 'Late Checkouts', route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'approve-late-checkout', badge: pendingCount },
+                ]
+            },
         ]
     },
     {
@@ -202,22 +226,29 @@ const navGroups = computed(() => [
     {
         label: 'Finance & Analytics',
         items: [
-            { label: 'Analytics',       icon: BarChart3,  route: 'manage.analytics.index',  match: 'manage.analytics.*',  permission: 'view-analytics' },
-            { label: 'Financials',      icon: DollarSign, route: 'manage.financials.index', match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
-            { label: 'Caution Fees',    icon: Banknote,   route: 'manage.financials.deposits', match: 'manage.financials.deposits', permission: 'view-financials' },
-            { label: 'Approvals',       icon: BadgeCheck, route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*', permission: 'manage-payment-approvals' },
+            { label: 'Analytics',    icon: BarChart3,  route: 'manage.analytics.index',         match: 'manage.analytics.*',                                                                         permission: 'view-analytics' },
+            { label: 'Financials',   icon: DollarSign, route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
+            { label: 'Caution Fees', icon: Banknote,   route: 'manage.financials.deposits',     match: 'manage.financials.deposits',                                                                 permission: 'view-financials' },
+            { label: 'Approvals',    icon: BadgeCheck,  route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*',                                                                permission: 'manage-payment-approvals' },
         ]
     },
     {
         label: 'Team',
         items: [
-            { label: 'Guests',        icon: UserRound,   route: 'manage.guests.index',         match: 'manage.guests.*',         permission: 'manage-guests' },
-            { label: 'Staff',         icon: Users,       route: 'manage.staff.index',         match: 'manage.staff.*',         permission: 'manage-staff' },
-            { label: 'Staff Queries', icon: FileText,    route: 'manage.staff-queries.index', match: 'manage.staff-queries.*', permission: 'manage-staff-queries' },
-            { label: 'Tasks',         icon: CheckSquare, route: 'manage.tasks.index',         match: 'manage.tasks.*',         permission: 'view-tasks' },
-            { label: 'Roles',         icon: ShieldCheck, route: 'manage.roles.index',         match: 'manage.roles.*',         permission: 'manage-roles' },
-            { label: 'Admin Accounts',  icon: ShieldCheck, route: 'manage.admin-accounts.index', match: 'manage.admin-accounts.*', permission: 'manage-roles' },
-            { label: 'Audit Logs',    icon: FileText,    route: 'manage.audit-logs.index',    match: 'manage.audit-logs.*',    permission: 'view-audit-logs' },
+            {
+                label: 'Team', icon: Users,
+                match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.tasks.*|manage.staff-queries.*|manage.audit-logs.*',
+                permission: 'manage-staff|manage-guests|manage-roles|view-tasks|manage-staff-queries|view-audit-logs',
+                children: [
+                    { label: 'Staff',          route: 'manage.staff.index',          match: 'manage.staff.*',          permission: 'manage-staff' },
+                    { label: 'Guests',         route: 'manage.guests.index',         match: 'manage.guests.*',         permission: 'manage-guests' },
+                    { label: 'Admin Accounts', route: 'manage.admin-accounts.index', match: 'manage.admin-accounts.*', permission: 'manage-roles' },
+                    { label: 'Roles',          route: 'manage.roles.index',          match: 'manage.roles.*',          permission: 'manage-roles' },
+                    { label: 'Tasks',          route: 'manage.tasks.index',          match: 'manage.tasks.*',          permission: 'view-tasks' },
+                    { label: 'Staff Queries',  route: 'manage.staff-queries.index',  match: 'manage.staff-queries.*',  permission: 'manage-staff-queries' },
+                    { label: 'Audit Logs',     route: 'manage.audit-logs.index',     match: 'manage.audit-logs.*',     permission: 'view-audit-logs' },
+                ]
+            },
         ]
     },
 ])
@@ -244,7 +275,8 @@ const userPermissions = computed(() => page.props.auth.user?.permissions ?? [])
 
 function canSeeItem(item) {
     if (!item.permission) return true
-    return userPermissions.value.includes(item.permission)
+    // Support pipe-separated permissions (show if user has ANY of them)
+    return item.permission.split('|').some(p => userPermissions.value.includes(p.trim()))
 }
 </script>
 
@@ -325,13 +357,13 @@ function canSeeItem(item) {
             <!-- Nav items -->
             <nav ref="navRef"
                  @scroll="saveScroll"
-                 class="flex-1 overflow-y-auto overscroll-contain py-4 px-2"
+                 class="flex-1 overflow-y-auto overscroll-contain py-2 px-2"
                  style="scrollbar-width: none; -ms-overflow-style: none;">
                 <template v-for="group in navGroups" :key="group.label">
-                    <div v-if="group.items.some(item => canSeeItem(item) && !item.soon)" class="mb-4">
+                    <div v-if="group.items.some(item => canSeeItem(item) && !item.soon)" class="mb-2">
 
                         <p v-if="!collapsed"
-                           class="text-xs font-medium text-gray-300 dark:text-gray-600 uppercase tracking-wider px-3 mb-1">
+                           class="text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-widest px-3 mb-1 mt-2">
                             {{ group.label }}
                         </p>
                         <div v-else class="border-t border-gray-100 dark:border-gray-800 mx-2 mb-2" />
@@ -340,49 +372,112 @@ function canSeeItem(item) {
                             <template v-for="item in group.items" :key="item.label">
                                 <template v-if="canSeeItem(item)">
 
-                                    <!-- Soon (disabled) -->
-                                    <div v-if="item.soon"
-                                         :class="collapsed ? 'justify-center px-0' : 'px-3'"
-                                         class="flex items-center gap-2.5 py-2 rounded-lg text-sm text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                                         @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
-                                         @mouseleave="onMouseLeave">
-                                        <span class="w-6 h-6 flex items-center justify-center shrink-0">
-                                            <component :is="item.icon" class="w-4 h-4" />
-                                        </span>
-                                        <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
-                                        <span v-if="!collapsed"
-                                              class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 px-1.5 py-0.5 rounded-full">
-                                            Soon
-                                        </span>
-                                    </div>
+                                    <!-- Item with children (submenu) -->
+                                    <template v-if="item.children && !collapsed">
+                                        <button
+                                            type="button"
+                                            @click="toggleMenu(item.label)"
+                                            :class="[
+                                    isActive(item.match)
+                                        ? 'text-gray-900 dark:text-white font-medium'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
+                                    'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-800'
+                                ]"
+                                        >
+                                <span :class="isActive(item.match)
+                                    ? 'w-5 h-5 bg-amber-500/10 dark:bg-amber-500/20 rounded-md flex items-center justify-center shrink-0'
+                                    : 'w-5 h-5 flex items-center justify-center shrink-0'">
+                                    <component :is="item.icon"
+                                               :class="isActive(item.match) ? 'w-3 h-3 text-amber-600 dark:text-amber-400' : 'w-3.5 h-3.5'" />
+                                </span>
+                                            <span class="flex-1 text-left">{{ item.label }}</span>
+                                            <ChevronDown v-if="isMenuOpen(item.label)" class="w-3 h-3 text-gray-400" />
+                                            <ChevronRight v-else class="w-3 h-3 text-gray-400" />
+                                        </button>
 
-                                    <!-- Nav link -->
-                                    <Link v-else
-                                          :href="route(item.route)"
-                                          @click="sidebarOpen = false"
-                                          @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
-                                          @mouseleave="onMouseLeave"
-                                          :class="[
-                                              isActive(item.match)
-                                                  ? 'bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium border border-gray-200 dark:border-gray-800 rounded-xl'
-                                                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-                                              collapsed ? 'justify-center px-0' : 'px-3'
+                                        <!-- Children with left border line -->
+                                        <div v-if="isMenuOpen(item.label)"
+                                             :class="isActive(item.match) ? 'border-amber-400 dark:border-amber-700' : 'border-gray-200 dark:border-gray-800'"
+                                             class="ml-6 mt-1 mb-1 border-l pl-3 space-y-0.5">
+                                            <template v-for="child in item.children" :key="child.label">
+                                                <Link v-if="canSeeItem(child)"
+                                                      :href="route(child.route)"
+                                                      @click="sidebarOpen = false"
+                                                      :class="[
+                                              isActive(child.match)
+                                                  ? 'text-gray-900 dark:text-white font-medium bg-gray-50 dark:bg-gray-800'
+                                                  : 'text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800',
                                           ]"
-                                          class="relative flex items-center gap-2.5 py-2 rounded-lg text-sm transition-all">
-                                        <span :class="isActive(item.match)
-                                            ? 'w-6 h-6 bg-gray-900 dark:bg-white rounded-md flex items-center justify-center shrink-0'
-                                            : 'w-6 h-6 flex items-center justify-center shrink-0'">
-                                            <component :is="item.icon"
-                                                       :class="isActive(item.match) ? 'w-3.5 h-3.5 text-white dark:text-gray-900' : 'w-4 h-4'" />
+                                                      class="flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-all">
+                                                    <span>{{ child.label }}</span>
+                                                    <span v-if="child.badge && child.badge > 0"
+                                                          class="bg-amber-500 text-white text-xs font-medium w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                                            {{ child.badge }}
                                         </span>
-                                        <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
-                                        <span v-if="!collapsed && item.badge && item.badge > 0"
-                                              class="bg-amber-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center">
-                                            {{ item.badge }}
-                                        </span>
-                                        <span v-if="collapsed && item.badge && item.badge > 0"
-                                              class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
-                                    </Link>
+                                                </Link>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                    <!-- Collapsed submenu — show icon only with tooltip -->
+                                    <template v-else-if="item.children && collapsed">
+                                        <div
+                                            @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
+                                            @mouseleave="onMouseLeave"
+                                            class="flex justify-center py-2 rounded-lg text-gray-400 cursor-default"
+                                        >
+                                <span class="w-5 h-5 flex items-center justify-center">
+                                    <component :is="item.icon" class="w-3.5 h-3.5" />
+                                </span>
+                                        </div>
+                                    </template>
+
+                                    <!-- Regular item (no children) -->
+                                    <template v-else>
+                                        <!-- Soon -->
+                                        <div v-if="item.soon"
+                                             :class="collapsed ? 'justify-center px-0' : 'px-3'"
+                                             class="flex items-center gap-2 py-2 rounded-lg text-sm text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                             @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
+                                             @mouseleave="onMouseLeave">
+                                <span class="w-5 h-5 flex items-center justify-center shrink-0">
+                                    <component :is="item.icon" class="w-3.5 h-3.5" />
+                                </span>
+                                            <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
+                                            <span v-if="!collapsed"
+                                                  class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 px-1.5 py-0.5 rounded-full">
+                                    Soon
+                                </span>
+                                        </div>
+
+                                        <!-- Nav link -->
+                                        <Link v-else
+                                              :href="route(item.route)"
+                                              @click="sidebarOpen = false"
+                                              @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
+                                              @mouseleave="onMouseLeave"
+                                              :class="[
+                                      isActive(item.match)
+                                          ? 'bg-gray-50 dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium'
+                                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
+                                      collapsed ? 'justify-center px-0' : 'px-3'
+                                  ]"
+                                              class="relative flex items-center gap-2 py-2 rounded-lg text-sm transition-all">
+                                <span :class="isActive(item.match)
+                                    ? 'w-5 h-5 bg-amber-500/10 dark:bg-amber-500/20 rounded-md flex items-center justify-center shrink-0'
+                                    : 'w-5 h-5 flex items-center justify-center shrink-0'">
+                                    <component :is="item.icon"
+                                               :class="isActive(item.match) ? 'w-3 h-3 text-amber-600 dark:text-amber-400' : 'w-3.5 h-3.5'" />
+                                </span>
+                                            <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
+                                            <span v-if="!collapsed && item.badge && item.badge > 0"
+                                                  class="bg-amber-500 text-white text-xs font-medium w-4 h-4 rounded-full flex items-center justify-center">
+                                    {{ item.badge }}
+                                </span>
+                                            <span v-if="collapsed && item.badge && item.badge > 0"
+                                                  class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                                        </Link>
+                                    </template>
 
                                 </template>
                             </template>
