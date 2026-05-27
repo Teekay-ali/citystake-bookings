@@ -14,7 +14,6 @@ import {
     BedDouble,
     Calendar
 } from 'lucide-vue-next';
-import BookingBanner from '@/Components/BookingBanner.vue'
 import { ref, computed } from 'vue';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
