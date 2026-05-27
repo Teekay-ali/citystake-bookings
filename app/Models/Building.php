@@ -25,6 +25,7 @@ class Building extends Model
         'caution_fee_amount',
         'amenities',
         'house_rules',
+        'monthly_emergency_limit',
         'is_active',
     ];
 
@@ -32,6 +33,7 @@ class Building extends Model
         'caution_fee_amount' => 'decimal:2',
         'amenities' => 'array',
         'house_rules' => 'array',
+        'monthly_emergency_limit' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 

@@ -7,8 +7,8 @@ import {
     Users, Grid3x3, Clock, Menu, X, LogOut, User, ClipboardList,
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
-    ChevronLeft, ChevronRight, FileText, ShieldCheck, ChevronUp, ChevronDown,
-    Search, Plus, Banknote, BadgeCheck, UserRound
+    ChevronLeft, ChevronRight, FileText, ShieldAlert, ChevronUp, ChevronDown,
+    Search, Plus, Banknote, BadgeCheck,
 } from 'lucide-vue-next'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
@@ -228,9 +228,10 @@ const navGroups = computed(() => [
         label: 'Finance & Analytics',
         items: [
             { label: 'Analytics',    icon: BarChart3,  route: 'manage.analytics.index',         match: 'manage.analytics.*',                                                                         permission: 'view-analytics' },
-            { label: 'Financials',   icon: DollarSign, route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
-            { label: 'Caution Fees', icon: Banknote,   route: 'manage.financials.deposits',     match: 'manage.financials.deposits',                                                                 permission: 'view-financials' },
             { label: 'Approvals',    icon: BadgeCheck,  route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*',                                                                permission: 'manage-payment-approvals' },
+            { label: 'Financials',   icon: DollarSign, route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
+            { label: 'Emergency Fund', icon: ShieldAlert, route: 'manage.emergency-fund.index', match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund' },
+            { label: 'Caution Fees', icon: Banknote,   route: 'manage.financials.deposits',     match: 'manage.financials.deposits',                                                                 permission: 'view-financials' },
         ]
     },
     {

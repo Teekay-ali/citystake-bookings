@@ -54,6 +54,7 @@ class BuildingController extends Controller
             'description' => 'nullable|string',
             'caution_fee_amount' => 'required|numeric|min:0',
             'amenities' => 'nullable|array',
+            'monthly_emergency_limit' => 'required|numeric|min:0',
             'is_active' => 'boolean',
         ]);
 
@@ -91,6 +92,7 @@ class BuildingController extends Controller
             'description' => 'nullable|string',
             'caution_fee_amount' => 'required|numeric|min:0',
             'amenities' => 'nullable|array',
+            'monthly_emergency_limit' => 'required|numeric|min:0',
             'is_active' => 'boolean',
         ]);
 

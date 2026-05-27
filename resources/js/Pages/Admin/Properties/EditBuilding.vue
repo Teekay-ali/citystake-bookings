@@ -32,6 +32,7 @@ const form = useForm({
     description: props.building.description ?? '',
     amenities: props.building.amenities ?? [],
     house_rules: props.building.house_rules ?? [],
+    monthly_emergency_limit: props.building.monthly_emergency_limit ?? 200000,
     is_active: props.building.is_active,
     caution_fee_amount: props.building.caution_fee_amount ?? 70000,
 })
@@ -206,6 +207,24 @@ const deleteBuilding = () => {
                                     </div>
                                 </div>
 
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Monthly Emergency Fund Limit (₦)
+                                    </label>
+                                    <input
+                                        v-model="form.monthly_emergency_limit"
+                                        type="number"
+                                        min="0"
+                                        step="1000"
+                                        class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                    />
+                                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                        Maximum amount available for emergency fund requests per month.
+                                    </p>
+                                    <p v-if="form.errors.monthly_emergency_limit" class="mt-1 text-sm text-red-600">
+                                        {{ form.errors.monthly_emergency_limit }}
+                                    </p>
+                                </div>
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

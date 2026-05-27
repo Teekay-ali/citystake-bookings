@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
 use App\Http\Controllers\Admin\DocumentController;
+use App\Http\Controllers\Admin\EmergencyFundController;
 use App\Http\Controllers\Admin\ImageController;
 use App\Http\Controllers\Admin\PaymentApprovalController;
 use App\Http\Controllers\BookingController;
@@ -300,13 +301,23 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/audit-logs', [AuditLogController::class, 'index'])
         ->name('audit-logs.index');
 
-    // Financial Reports
+    // Financials
     Route::get('/financials', [FinancialController::class, 'index'])->name('financials.index');
     Route::post('/financials/manual', [FinancialController::class, 'storeManual'])->name('financials.manual');
     Route::post('/financials/pay/{type}/{id}', [FinancialController::class, 'payExpense'])->name('financials.pay');
     Route::get('/financials/export', [FinancialController::class, 'export'])->name('financials.export');
     Route::get('/financials/deposits', [FinancialController::class, 'deposits'])->name('financials.deposits');
 
+
+    // Emergency Fund
+    Route::get('/emergency-fund', [EmergencyFundController::class, 'index'])->name('emergency-fund.index');
+    Route::get('/emergency-fund/create', [EmergencyFundController::class, 'create'])->name('emergency-fund.create');
+    Route::post('/emergency-fund', [EmergencyFundController::class, 'store'])->name('emergency-fund.store');
+    Route::get('/emergency-fund/{emergencyFund}', [EmergencyFundController::class, 'show'])->name('emergency-fund.show');
+    Route::post('/emergency-fund/{emergencyFund}/decide', [EmergencyFundController::class, 'decide'])->name('emergency-fund.decide');
+    Route::post('/emergency-fund/{emergencyFund}/mark-paid', [EmergencyFundController::class, 'markPaid'])->name('emergency-fund.mark-paid');
+    Route::post('/emergency-fund/{emergencyFund}/manager-decide', [EmergencyFundController::class, 'managerDecide'])->name('emergency-fund.manager-decide');
+    Route::delete('/emergency-fund/{emergencyFund}', [EmergencyFundController::class, 'destroy'])->name('emergency-fund.destroy');
     // Payment Approvals
     Route::get('/payment-approvals', [PaymentApprovalController::class, 'index'])->name('payment-approvals.index');
     Route::get('/payment-approvals/create', [PaymentApprovalController::class, 'create'])->name('payment-approvals.create');

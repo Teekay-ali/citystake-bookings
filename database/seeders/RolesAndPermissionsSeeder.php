@@ -79,6 +79,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-tasks',
             'view-tasks',
 
+            // Emergency Funds
+            'manage-emergency-fund',
+
             // Audit
             'view-audit-logs',
         ];
@@ -104,6 +107,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'submit-procurement', 'confirm-procurement-receipt', 'view-procurement',
                 'view-stock', 'manage-stock', 'log-stock-usage',
                 'manage-staff-queries', 'manage-guests',
+                'manage-emergency-fund',
                 'view-analytics',
                 'manage-tasks', 'view-tasks',
                 'view-audit-logs',
@@ -118,6 +122,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-stock', 'log-stock-usage',
                 'view-analytics',
                 'view-financials', 'manage-financials', 'manage-payment-approvals',
+                'manage-emergency-fund',
                 'view-tasks',
             ],
 
@@ -133,6 +138,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-analytics',
                 'view-financials', 'manage-financials', 'manage-payment-approvals',
                 'manage-tasks', 'view-tasks',
+                'manage-emergency-fund',
                 'view-audit-logs',
                 'manage-guests',
             ],
