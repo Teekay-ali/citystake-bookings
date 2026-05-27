@@ -230,7 +230,7 @@ const prominentBooking = computed(() => {
                     <div
                         v-for="building in featuredProperties"
                         :key="building.id"
-                        @click="router.get(route('properties.index', { building: building.slug }))"
+                        @click="router.get(route('properties.building', building.slug))"
                         class="group cursor-pointer rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden hover:shadow-xl hover:shadow-gray-200/60 dark:hover:shadow-black/40 hover:-translate-y-1 transition-all duration-300"
                     >
                         <!-- Image -->
