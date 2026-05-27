@@ -108,9 +108,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-stock', 'manage-stock', 'log-stock-usage',
                 'manage-staff-queries', 'manage-guests',
                 'manage-emergency-fund',
-                'view-analytics',
                 'manage-tasks', 'view-tasks',
-                'view-audit-logs',
             ],
 
             'accountant' => [

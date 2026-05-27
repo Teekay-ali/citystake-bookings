@@ -49,7 +49,6 @@ class EmergencyFundController extends Controller
         // Requests list
         $query = EmergencyFundRequest::with(['requestedBy:id,name', 'approvedBy:id,name', 'building:id,name'])
             ->whereIn('building_id', $buildingIds)
-            ->when($user->hasRole('accountant'), fn($q) => $q->where('requested_by', $user->id))
             ->when($request->status,   fn($q) => $q->where('status', $request->status))
             ->when($request->building, fn($q) => $q->where('building_id', $request->building))
             ->when($request->month,    fn($q) => $q->where('month_year', $request->month))
@@ -153,10 +152,6 @@ class EmergencyFundController extends Controller
     public function show(EmergencyFundRequest $emergencyFund): Response
     {
         abort_unless(auth()->user()->can('manage-emergency-fund'), 403);
-
-        if (auth()->user()->hasRole('accountant') && $emergencyFund->requested_by !== auth()->id()) {
-            abort(403);
-        }
 
         $emergencyFund->load(['requestedBy:id,name', 'approvedBy:id,name', 'building:id,name,monthly_emergency_limit']);
 
@@ -282,7 +277,7 @@ class EmergencyFundController extends Controller
             'category'          => 'manual_expense',
             'reference_type'    => EmergencyFundRequest::class,
             'reference_id'      => $emergencyFund->id,
-            'description'       => "Emergency Fund — {$emergencyFund->reason}",
+            'description'       => "Emergency Fund - {$emergencyFund->reason}",
             'amount'            => $emergencyFund->amount,
             'payment_method'    => 'cash',
             'payment_reference' => $validated['payment_reference'] ?? null,

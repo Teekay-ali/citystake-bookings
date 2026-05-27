@@ -38,7 +38,7 @@ class EmergencyFundDecisionNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("Emergency Fund Request " . ($this->request->isApproved() ? 'Approved' : 'Declined') . " — {$this->request->building->name}")
+            ->subject("Emergency Fund Request " . ($this->request->isApproved() ? 'Approved' : 'Declined') . " - {$this->request->building->name}")
             ->view('emails.emergency-fund.decision', [
                 'request'    => $this->request,
                 'notifiable' => $notifiable,

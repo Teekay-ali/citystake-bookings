@@ -229,9 +229,9 @@ const navGroups = computed(() => [
         items: [
             { label: 'Analytics',    icon: BarChart3,  route: 'manage.analytics.index',         match: 'manage.analytics.*',                                                                         permission: 'view-analytics' },
             { label: 'Approvals',    icon: BadgeCheck,  route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*',                                                                permission: 'manage-payment-approvals' },
-            { label: 'Financials',   icon: DollarSign, route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
-            { label: 'Emergency Fund', icon: ShieldAlert, route: 'manage.emergency-fund.index', match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund' },
             { label: 'Caution Fees', icon: Banknote,   route: 'manage.financials.deposits',     match: 'manage.financials.deposits',                                                                 permission: 'view-financials' },
+            { label: 'Emergency Fund', icon: ShieldAlert, route: 'manage.emergency-fund.index', match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund' },
+            { label: 'Financials',   icon: DollarSign, route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
         ]
     },
     {
@@ -240,7 +240,7 @@ const navGroups = computed(() => [
             {
                 label: 'Team', icon: Users,
                 match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.staff-queries.*|manage.audit-logs.*',
-                permission: 'manage-staff|manage-guests|manage-roles|view-tasks|manage-staff-queries|view-audit-logs',
+                permission: 'manage-staff|manage-guests|manage-roles|manage-staff-queries|view-audit-logs',
                 children: [
                     { label: 'Staff',          route: 'manage.staff.index',          match: 'manage.staff.*',          permission: 'manage-staff' },
                     { label: 'Guests',         route: 'manage.guests.index',         match: 'manage.guests.*',         permission: 'manage-guests' },

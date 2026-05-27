@@ -13,9 +13,7 @@ use Illuminate\Support\Facades\Mail;
 
 class BookingMessageController extends Controller
 {
-    /**
-     * Admin messages index — all conversations with unread counts
-     */
+
     public function index(Request $request)
     {
         abort_unless(auth()->user()->can('view-bookings'), 403);

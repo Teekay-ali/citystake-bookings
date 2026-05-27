@@ -55,7 +55,7 @@ class TaskOverdueNotification extends Notification
         return match($this->type) {
             'warning'    => 'Task Due Tomorrow',
             'overdue'    => 'Task Overdue',
-            'escalation' => 'Overdue Task — Action Required',
+            'escalation' => 'Overdue Task - Action Required',
             default      => 'Task Reminder',
         };
     }
