@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import { Plus, ShieldAlert, ChevronRight, Clock, CheckCircle, XCircle, Banknote, AlertTriangle } from 'lucide-vue-next'
 
-defineOptions({ layout: null })
+defineOptions({ layout: ManageLayout })
 
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 
@@ -61,10 +61,9 @@ function clearFilters() {
 </script>
 
 <template>
-    <ManageLayout>
-        <Head title="Emergency Fund" />
+    <Head title="Emergency Fund" />
 
-        <div class="p-6 lg:p-8 space-y-6">
+    <div class="p-6 lg:p-8 space-y-6">
 
             <!-- Header -->
             <div class="flex items-center justify-between">
@@ -273,6 +272,6 @@ function clearFilters() {
                     </div>
                 </div>
             </div>
-        </div>
-    </ManageLayout>
+</div>
+
 </template>
