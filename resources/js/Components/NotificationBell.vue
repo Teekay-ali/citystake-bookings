@@ -63,7 +63,7 @@ async function fetchUnreadCount() {
         })
 
         if (res.status === 401) {
-            clearInterval(pollInterval.value)
+            clearInterval(pollInterval)
             return
         }
 

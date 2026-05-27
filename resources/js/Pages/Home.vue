@@ -361,7 +361,7 @@ const prominentBooking = computed(() => {
                             </svg>
                             <div>
                                 <p class="text-sm font-medium text-white">5% off</p>
-                                <p class="text-xs text-gray-500">5+ nights</p>
+                                <p class="text-xs text-gray-500">7+ nights</p>
                             </div>
                         </div>
 
@@ -430,7 +430,7 @@ const prominentBooking = computed(() => {
                         </div>
                         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Prime Locations</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400 font-light leading-relaxed">
-                            Properties in Asokoro, Maitama, and Wuse - Abuja's most prestigious addresses
+                            Premium apartments across Abuja's most prestigious neighborhoods
                         </p>
                     </div>
 
