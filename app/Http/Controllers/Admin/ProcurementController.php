@@ -71,7 +71,7 @@ class ProcurementController extends Controller
 
         $vendors = Vendor::where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'phone', 'email']);
+            ->get(['id', 'name', 'phone', 'email', 'bank_name', 'bank_account_number', 'bank_account_name']);
 
         return Inertia::render('Admin/Procurement/Create', [
             'buildings' => $buildings,
@@ -90,6 +90,9 @@ class ProcurementController extends Controller
             'supplier_name'  => 'nullable|string|max:255',
             'supplier_phone' => 'nullable|string|max:20',
             'supplier_email' => 'nullable|email|max:255',
+            'supplier_bank_name'       => 'nullable|string|max:100',
+            'supplier_account_number'  => 'nullable|string|max:20',
+            'supplier_account_name'    => 'nullable|string|max:255',
             'items'          => 'required|array|min:1',
             'items.*.name'       => 'required|string|max:255',
             'items.*.description'=> 'nullable|string|max:500',
@@ -108,6 +111,9 @@ class ProcurementController extends Controller
             'supplier_name'  => $validated['supplier_name'] ?? null,
             'supplier_phone' => $validated['supplier_phone'] ?? null,
             'supplier_email' => $validated['supplier_email'] ?? null,
+            'supplier_bank_name'       => $validated['supplier_bank_name'] ?? null,
+            'supplier_account_number'  => $validated['supplier_account_number'] ?? null,
+            'supplier_account_name'    => $validated['supplier_account_name'] ?? null,
         ]);
 
         $total = 0;

@@ -54,20 +54,20 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
 </script>
 
 <template>
-    <Head title="Maintenance Reports" />
+    <Head title="Maintenance Requests" />
 
     <div class="p-6 lg:p-8">
 
         <!-- ── Header ── -->
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Maintenance Reports</h1>
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Maintenance Requests</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Track and approve maintenance work</p>
             </div>
             <Link :href="route('manage.maintenance.create')"
                   class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
                 <Plus class="w-3.5 h-3.5" />
-                New Report
+                New Request
             </Link>
         </div>
 
@@ -76,7 +76,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             <button
                 v-for="(label, key) in pipeline"
                 :key="key"
-                @click="status = status === key ? '' : key"
+                @click="status === key ? '' : key"
                 :class="status === key
                     ? 'ring-2 ring-gray-900 dark:ring-white border-transparent'
                     : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'"

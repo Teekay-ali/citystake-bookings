@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import { useToast } from 'vue-toastification'
 import {
@@ -76,6 +76,22 @@ const { floatingStyles } = useFloating(tooltipAnchor, tooltipEl, {
     strategy: 'fixed',
     middleware: [offset(8), shift({ padding: 8 }), flip()],
 })
+
+const mobileSearchOpen = ref(false)
+
+function openMobileSearch() {
+    mobileSearchOpen.value = true
+    nextTick(() => {
+        document.getElementById('mobile-search-input')?.focus()
+    })
+}
+
+function closeMobileSearch() {
+    mobileSearchOpen.value = false
+    searchQuery.value = ''
+    searchResults.value = []
+    searchOpen.value = false
+}
 
 function onMouseEnter(item, el) {
     if (!collapsed.value) return
@@ -161,7 +177,7 @@ const quickActionsOpen = ref(false)
 const quickActions = [
     { label: 'New Booking',            icon: CalendarDays,  route: 'manage.bookings.create',      permission: 'manage-bookings' },
     { label: 'New Complaint',          icon: AlertTriangle, route: 'manage.complaints.create',    permission: 'view-complaints' },
-    { label: 'New Maintenance Report', icon: Wrench,        route: 'manage.maintenance.create',   permission: 'view-maintenance' },
+    { label: 'New Maintenance Request', icon: Wrench,        route: 'manage.maintenance.create',   permission: 'view-maintenance' },
     { label: 'New Procurement',        icon: ShoppingCart,  route: 'manage.procurement.create',   permission: 'view-procurement' },
 ]
 
@@ -506,8 +522,8 @@ function canSeeItem(item) {
                     <Menu class="w-5 h-5" />
                 </button>
 
-                <!-- Global search -->
-                <div ref="searchRef" class="relative flex-1 max-w-sm">
+                <!-- Global search — desktop only -->
+                <div ref="searchRef" class="relative flex-1 max-w-sm hidden lg:block">
                     <div class="relative">
                         <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         <input
@@ -536,29 +552,28 @@ function canSeeItem(item) {
                                 @click="closeSearch"
                                 class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
                                 <div :class="[
-                                'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0',
-                                result.type === 'booking' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                                result.type === 'unit'    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' :
-                                'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                            ]">
-                                    {{ result.type === 'booking' ? 'B' : result.type === 'unit' ? 'U' : 'P' }}
+                    'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0',
+                    result.type === 'booking' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                    result.type === 'unit'    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                    'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                ]">
+                                    {{ result.type.charAt(0).toUpperCase() }}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ result.label }}</p>
-                                    <p class="text-xs text-gray-400 truncate">{{ result.sublabel }}</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ result.title }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ result.subtitle }}</p>
                                 </div>
-                                <span :class="[
-                                'text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0',
-                                result.status === 'confirmed'  ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' :
-                                result.status === 'checked_in' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' :
-                                result.status === 'cancelled'  ? 'bg-red-50 dark:bg-red-900/20 text-red-500' :
-                                result.status === 'staff'      ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' :
-                                'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                            ]">{{ result.status }}</span>
                             </Link>
                         </div>
                     </Transition>
                 </div>
+
+                <!-- Mobile search icon -->
+                <button
+                    @click="openMobileSearch"
+                    class="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                    <Search class="w-5 h-5" />
+                </button>
 
                 <!-- Spacer -->
                 <div class="flex-1" />
@@ -658,6 +673,81 @@ function canSeeItem(item) {
                 <slot />
             </main>
         </div>
+
+        <!-- Mobile search overlay -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="mobileSearchOpen"
+                     class="fixed inset-0 z-[100] bg-white dark:bg-gray-950 flex flex-col lg:hidden">
+
+                    <!-- Search header -->
+                    <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-900">
+                        <div class="relative flex-1">
+                            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <input
+                                id="mobile-search-input"
+                                v-model="searchQuery"
+                                type="text"
+                                placeholder="Search bookings, guests, units..."
+                                class="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                            />
+                            <div v-if="searchLoading"
+                                 class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                        </div>
+                        <button
+                            @click="closeMobileSearch"
+                            class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0">
+                            Cancel
+                        </button>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="flex-1 overflow-y-auto">
+                        <div v-if="searchResults.length > 0" class="divide-y divide-gray-100 dark:divide-gray-900">
+                            <Link
+                                v-for="result in searchResults" :key="`${result.type}-${result.id}`"
+                                :href="result.url"
+                                @click="closeMobileSearch"
+                                class="flex items-center gap-3 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                                <div :class="[
+                            'w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0',
+                            result.type === 'booking' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                            result.type === 'unit'    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                            'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                        ]">
+                                    {{ result.type.charAt(0).toUpperCase() }}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ result.title }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ result.subtitle }}</p>
+                                </div>
+                            </Link>
+                        </div>
+
+                        <!-- Empty state -->
+                        <div v-else-if="searchQuery.length >= 2 && !searchLoading"
+                             class="flex flex-col items-center justify-center py-16 px-4 text-center">
+                            <Search class="w-10 h-10 text-gray-300 dark:text-gray-700 mb-3" />
+                            <p class="text-gray-500 dark:text-gray-400">No results for "{{ searchQuery }}"</p>
+                        </div>
+
+                        <!-- Idle state -->
+                        <div v-else-if="searchQuery.length === 0"
+                             class="flex flex-col items-center justify-center py-16 px-4 text-center">
+                            <Search class="w-10 h-10 text-gray-300 dark:text-gray-700 mb-3" />
+                            <p class="text-sm text-gray-400">Search bookings, guests, units...</p>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
 
     </div>
 </template>

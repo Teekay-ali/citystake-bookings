@@ -15,6 +15,9 @@ class ProcurementRequest extends Model
     protected $fillable = [
         'reference', 'building_id', 'submitted_by',
         'vendor_id', 'supplier_name', 'supplier_phone', 'supplier_email',
+        'supplier_bank_name',
+        'supplier_account_number',
+        'supplier_account_name',
         'accountant_approved_by', 'accountant_approved_at',
         'ceo_approved_by', 'ceo_approved_at',
         'purchased_by', 'purchased_at',

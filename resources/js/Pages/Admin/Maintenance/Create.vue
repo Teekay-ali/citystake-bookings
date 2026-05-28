@@ -55,7 +55,7 @@ const labelClass = "block text-xs font-medium text-gray-500 dark:text-gray-400 m
 </script>
 
 <template>
-    <Head title="New Maintenance Report" />
+    <Head title="New Maintenance Request" />
 
     <div class="p-6 lg:p-8">
         <div class="max-w-2xl">
@@ -69,7 +69,7 @@ const labelClass = "block text-xs font-medium text-gray-500 dark:text-gray-400 m
 
             <!-- Header -->
             <div class="mb-6">
-                <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">New Maintenance Report</h1>
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">New Maintenance Request</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Submit a maintenance or repair request for review</p>
             </div>
 

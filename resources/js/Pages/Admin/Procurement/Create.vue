@@ -20,6 +20,9 @@ const form = useForm({
     supplier_name:  '',
     supplier_phone: '',
     supplier_email: '',
+    supplier_bank_name:      '',
+    supplier_account_number: '',
+    supplier_account_name:   '',
     items: [
         { name: '', description: '', quantity: 1, unit_price: '' }
     ],
@@ -43,6 +46,18 @@ const totalAmount = computed(() => {
 
 function formatAmount(n) {
     return '₦' + Number(n).toLocaleString('en-NG', { minimumFractionDigits: 0 })
+}
+
+function onVendorSelect(vendorId) {
+    if (!vendorId) return
+    const vendor = props.vendors.find(v => v.id == vendorId)
+    if (!vendor) return
+    form.supplier_name           = vendor.name
+    form.supplier_phone          = vendor.phone ?? ''
+    form.supplier_email          = vendor.email ?? ''
+    form.supplier_bank_name      = vendor.bank_name ?? ''
+    form.supplier_account_number = vendor.bank_account_number ?? ''
+    form.supplier_account_name   = vendor.bank_account_name ?? ''
 }
 
 function submit() {
@@ -172,7 +187,9 @@ function submit() {
                             <span class="text-gray-300 dark:text-gray-700">|</span>
                             <button type="button" @click="useVendorDirectory = false"
                                     :class="!useVendorDirectory ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-400'"
-                                    class="text-sm transition-all">Manual Entry</button>
+                                    class="text-sm transition-all">
+                                Manual Entry
+                            </button>
                         </div>
                     </div>
 
@@ -186,21 +203,47 @@ function submit() {
                     </div>
 
                     <!-- Manual -->
-                    <div v-else class="grid grid-cols-2 gap-4">
-                        <div class="col-span-2">
+                    <div v-else class="space-y-3">
+                        <div>
                             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Supplier Name</label>
                             <input v-model="form.supplier_name" type="text"
                                    class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
                         </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Phone</label>
-                            <input v-model="form.supplier_phone" type="text"
-                                   class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Phone</label>
+                                <input v-model="form.supplier_phone" type="text"
+                                       class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Email</label>
+                                <input v-model="form.supplier_email" type="email"
+                                       class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Email</label>
-                            <input v-model="form.supplier_email" type="email"
-                                   class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+
+                        <!-- Bank Details — full width, outside the 2-col grid -->
+                        <div class="border-t border-gray-100 dark:border-gray-800 pt-3">
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">Bank Details <span class="font-normal">(optional)</span></p>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Bank Name</label>
+                                    <input v-model="form.supplier_bank_name" type="text" placeholder="e.g. GTBank, First Bank..."
+                                           class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Account Number</label>
+                                        <input v-model="form.supplier_account_number" type="text" maxlength="10" placeholder="0123456789"
+                                               class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Account Name</label>
+                                        <input v-model="form.supplier_account_name" type="text" placeholder="Full account name"
+                                               class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

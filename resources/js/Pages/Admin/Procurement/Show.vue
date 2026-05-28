@@ -177,12 +177,13 @@ const timelineSteps = computed(() => [
                     <div v-if="procurement.vendor || procurement.supplier_name"
                          class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
                         <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-4">Supplier</p>
-                        <div class="flex items-center gap-3.5">
-                            <!-- Avatar — same style as sidebar user avatar -->
+
+                        <!-- Name + contact row -->
+                        <div class="flex items-center gap-3.5 mb-4">
                             <div class="w-9 h-9 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center shrink-0 select-none">
-                                <span class="text-white dark:text-gray-900 text-sm font-semibold">
-                                    {{ (procurement.vendor?.name ?? procurement.supplier_name ?? '?').charAt(0).toUpperCase() }}
-                                </span>
+            <span class="text-white dark:text-gray-900 text-sm font-semibold">
+                {{ (procurement.vendor?.name ?? procurement.supplier_name ?? '?').charAt(0).toUpperCase() }}
+            </span>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white leading-none mb-1.5">
@@ -197,12 +198,33 @@ const timelineSteps = computed(() => [
                                     </a>
                                     <span v-if="procurement.supplier_email"
                                           class="inline-flex items-center gap-1.5 text-[12px] text-gray-400">
-                                        <Mail class="w-3 h-3" />
-                                        {{ procurement.supplier_email }}
-                                    </span>
+                    <Mail class="w-3 h-3" />
+                    {{ procurement.supplier_email }}
+                </span>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Bank Details — below supplier row, full width -->
+                        <template v-if="procurement.supplier_bank_name || procurement.supplier_account_number">
+                            <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+                                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-3">Bank Details</p>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div v-if="procurement.supplier_bank_name">
+                                        <p class="text-xs text-gray-400 mb-1">Bank</p>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ procurement.supplier_bank_name }}</p>
+                                    </div>
+                                    <div v-if="procurement.supplier_account_number">
+                                        <p class="text-xs text-gray-400 mb-1">Account No.</p>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white font-mono">{{ procurement.supplier_account_number }}</p>
+                                    </div>
+                                    <div v-if="procurement.supplier_account_name">
+                                        <p class="text-xs text-gray-400 mb-1">Account Name</p>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ procurement.supplier_account_name }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Timeline -->
