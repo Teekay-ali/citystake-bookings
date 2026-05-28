@@ -26,7 +26,7 @@ class EmergencyFundRequestedNotification extends Notification
             'title'   => 'Emergency Fund Request',
             'message' => "{$this->request->requestedBy->name} has requested ₦" . number_format($this->request->amount, 0) . " from the {$this->request->building->name} emergency fund requiring your {$stage}. Reason: {$this->request->reason}",
             'url'     => route('manage.emergency-fund.show', $this->request->id),
-            'icon'    => 'task',
+            'icon'    => 'emergency_fund',
             'meta'    => [
                 'request_id' => $this->request->id,
                 'amount'     => $this->request->amount,

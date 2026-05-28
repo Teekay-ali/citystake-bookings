@@ -26,7 +26,7 @@ class EmergencyFundDecisionNotification extends Notification
             'title'   => 'Emergency Fund Request ' . ucfirst($decision),
             'message' => "{$this->request->approvedBy->name} has {$decision} your emergency fund request of ₦" . number_format($this->request->amount, 0) . " for {$this->request->building->name}." . ($this->request->ceo_comment ? " Comment: {$this->request->ceo_comment}" : ''),
             'url'     => route('manage.emergency-fund.show', $this->request->id),
-            'icon'    => 'task',
+            'icon'    => 'emergency_fund',
             'meta'    => [
                 'request_id' => $this->request->id,
                 'decision'   => $decision,

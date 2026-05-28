@@ -1,7 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePage } from '@inertiajs/vue3'
-import { Bell } from 'lucide-vue-next'
+import {
+    Bell, Home, XCircle, Clock, ShoppingCart,
+    Wrench, AlertTriangle, CheckSquare, Banknote,
+    ShieldAlert, DollarSign, MessageSquare, Users
+} from 'lucide-vue-next'
 import axios from 'axios'
 
 const page = usePage()
@@ -12,13 +16,18 @@ const loading = ref(false)
 let pollInterval = null
 
 const icons = {
-    booking:           '🏠',
-    booking_cancelled: '❌',
-    late_checkout:     '🕐',
-    procurement:       '🛒',
-    maintenance:       '🔧',
-    complaint:         '⚠️',
-    task:              '✅',
+    booking:           Home,
+    booking_cancelled: XCircle,
+    late_checkout:     Clock,
+    procurement:       ShoppingCart,
+    maintenance:       Wrench,
+    complaint:         AlertTriangle,
+    task:              CheckSquare,
+    payment_approval:  Banknote,
+    emergency_fund:    ShieldAlert,
+    finance:           DollarSign,
+    message:           MessageSquare,
+    staff:             Users,
 }
 
 const props = defineProps({
@@ -193,7 +202,12 @@ onUnmounted(() => {
                         class="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors flex items-start gap-3"
                         :class="{ 'bg-blue-50/60 dark:bg-blue-900/10': !n.read_at }"
                     >
-                        <span class="text-lg flex-shrink-0 mt-0.5">{{ icons[n.data.icon] ?? '🔔' }}</span>
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <component
+                                :is="icons[n.data.icon] ?? Bell"
+                                class="w-4 h-4 text-gray-600 dark:text-gray-400"
+                            />
+                        </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
                                 {{ n.data.title }}

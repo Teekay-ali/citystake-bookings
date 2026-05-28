@@ -25,6 +25,7 @@ class PaymentApprovalRequestedNotification extends Notification
             'title'   => 'Payment Approval Request',
             'message' => "{$this->approval->requestedBy->name} is requesting approval for a {$this->approval->type_label} payment of ₦" . number_format($this->approval->amount, 0) . " to {$this->approval->recipient_name}.",
             'url'     => route('manage.payment-approvals.show', $this->approval->id),
+            'icon'    => 'payment_approval',
             'meta'    => [
                 'approval_id' => $this->approval->id,
                 'amount'      => $this->approval->amount,
