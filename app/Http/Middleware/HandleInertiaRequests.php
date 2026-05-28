@@ -82,6 +82,55 @@ class HandleInertiaRequests extends Middleware
                     })
                     ->count()
                 : 0,
+            // Badges
+            'pendingEmergencyFund' => auth()->check() && request()->routeIs('manage.*')
+                ? (function () {
+                    $user = auth()->user();
+                    // Accountant doesn't need to act on pending — they submitted it
+                    if ($user->hasRole('accountant')) return 0;
+                    $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
+                    // Manager sees 'pending', CEO sees 'manager_approved'
+                    $statuses = $user->hasRole('manager') ? ['pending'] : ['manager_approved'];
+                    return \App\Models\EmergencyFundRequest::whereIn('status', $statuses)
+                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+                        ->count();
+                })()
+                : 0,
+
+            'pendingPaymentApprovals' => auth()->check() && request()->routeIs('manage.*')
+                ? (function () {
+                    $user = auth()->user();
+                    if ($user->hasRole('accountant')) return 0; // they submitted, not reviewing
+                    $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
+                    return \App\Models\PaymentApproval::where('status', 'pending')
+                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+                        ->count();
+                })()
+                : 0,
+
+            'pendingMaintenance' => auth()->check() && request()->routeIs('manage.*')
+                ? (function () {
+                    $user = auth()->user();
+                    $buildingIds = $user->hasGlobalAccess()
+                        ? null
+                        : $user->accessibleBuildingIds();
+                    return \App\Models\MaintenanceReport::whereIn('status', ['pending', 'manager_approved', 'accountant_approved'])
+                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+                        ->count();
+                })()
+                : 0,
+
+            'pendingProcurement' => auth()->check() && request()->routeIs('manage.*')
+                ? (function () {
+                    $user = auth()->user();
+                    $buildingIds = $user->hasGlobalAccess()
+                        ? null
+                        : $user->accessibleBuildingIds();
+                    return \App\Models\ProcurementRequest::whereIn('status', ['pending', 'accountant_approved'])
+                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+                        ->count();
+                })()
+                : 0,
         ]);
     }
 

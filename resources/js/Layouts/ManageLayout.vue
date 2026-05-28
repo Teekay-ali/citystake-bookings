@@ -20,6 +20,10 @@ const { isDark, toggle: toggleDark } = useDarkMode()
 const page = usePage()
 const user = computed(() => page.props.auth.user)
 const pendingCount = computed(() => page.props.lateCheckoutPendingCount ?? 0)
+const pendingEmergencyFund    = computed(() => page.props.pendingEmergencyFund ?? 0)
+const pendingPaymentApprovals = computed(() => page.props.pendingPaymentApprovals ?? 0)
+const pendingMaintenance      = computed(() => page.props.pendingMaintenance ?? 0)
+const pendingProcurement      = computed(() => page.props.pendingProcurement ?? 0)
 const unreadMessages = computed(() => page.props.unreadMessages ?? 0)
 
 const sidebarOpen = ref(false)
@@ -216,9 +220,9 @@ const navGroups = computed(() => [
     {
         label: 'Operations',
         items: [
-            { label: 'Procurement', icon: ShoppingCart,  route: 'manage.procurement.index', match: 'manage.procurement.*', permission: 'view-procurement' },
             { label: 'Complaints',  icon: AlertTriangle, route: 'manage.complaints.index',  match: 'manage.complaints.*',  permission: 'view-complaints' },
-            { label: 'Maintenance', icon: Wrench,        route: 'manage.maintenance.index', match: 'manage.maintenance.*', permission: 'view-maintenance' },
+            { label: 'Procurement', icon: ShoppingCart,  route: 'manage.procurement.index', match: 'manage.procurement.*', permission: 'view-procurement', badge: pendingProcurement.value },
+            { label: 'Maintenance', icon: Wrench,        route: 'manage.maintenance.index', match: 'manage.maintenance.*', permission: 'view-maintenance', badge: pendingMaintenance.value },
             { label: 'Stock',       icon: Package,       route: 'manage.stock.index',       match: 'manage.stock.*',       permission: 'view-stock' },
             { label: 'Tasks',       icon: CheckSquare,   route: 'manage.tasks.index', match: 'manage.tasks.*', permission: 'view-tasks' },
             { label: 'Vendors',     icon: BookOpen,      route: 'manage.vendors.index',     match: 'manage.vendors.*',     permission: 'view-vendors' },
@@ -227,10 +231,10 @@ const navGroups = computed(() => [
     {
         label: 'Finance & Analytics',
         items: [
-            { label: 'Analytics',    icon: BarChart3,  route: 'manage.analytics.index',         match: 'manage.analytics.*',                                                                         permission: 'view-analytics' },
-            { label: 'Approvals',    icon: BadgeCheck,  route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*',                                                                permission: 'manage-payment-approvals' },
-            { label: 'Caution Fees', icon: Banknote,   route: 'manage.financials.deposits',     match: 'manage.financials.deposits',                                                                 permission: 'view-financials' },
-            { label: 'Emergency Fund', icon: ShieldAlert, route: 'manage.emergency-fund.index', match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund' },
+            { label: 'Analytics',    icon: BarChart3,  route: 'manage.analytics.index',         match: 'manage.analytics.*', permission: 'view-analytics' },
+            { label: 'Approvals',    icon: BadgeCheck,  route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*', permission: 'manage-payment-approvals', badge: pendingPaymentApprovals.value },
+            { label: 'Caution Fees', icon: Banknote,   route: 'manage.financials.deposits',     match: 'manage.financials.deposits', permission: 'view-financials' },
+            { label: 'Emergency Fund', icon: ShieldAlert, route: 'manage.emergency-fund.index', match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund', badge: pendingEmergencyFund.value },
             { label: 'Financials',   icon: DollarSign, route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
         ]
     },
