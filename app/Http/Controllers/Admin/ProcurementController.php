@@ -39,7 +39,14 @@ class ProcurementController extends Controller
             $query->where('status', $request->status);
         }
 
-        $requests = $query->paginate(20)->withQueryString();
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', "%{$request->search}%")
+                    ->orWhere('reference', 'like', "%{$request->search}%");
+            });
+        }
+
+        $requests = $query->paginate(10)->withQueryString();
 
         $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
             $q->whereIn('id', $user->accessibleBuildingIds());
@@ -48,7 +55,7 @@ class ProcurementController extends Controller
         return Inertia::render('Admin/Procurement/Index', [
             'requests'  => $requests,
             'buildings' => $buildings,
-            'filters'   => $request->only(['building_id', 'status']),
+            'filters' => $request->only(['building_id', 'status', 'search']),
             'counts' => ProcurementRequest::scopedToUser($user)
                 ->whereIn('status', ['pending', 'accountant_approved', 'ceo_approved', 'purchased'])
                 ->selectRaw('status, COUNT(*) as total')

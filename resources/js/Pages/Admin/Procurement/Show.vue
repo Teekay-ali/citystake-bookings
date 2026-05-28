@@ -39,7 +39,7 @@ const actionLabel = computed(() => {
     if (props.procurement.can_ceo_approve && (roles.includes('ceo') || roles.includes('super-admin')))
         return 'CEO Approval'
     if (props.procurement.can_mark_purchased && (roles.includes('head-of-procurement') || roles.includes('super-admin')))
-        return 'Confirm Items Purchased'
+        return 'Confirm Payment/Purchase'
     if (props.procurement.can_confirm_receipt && (roles.includes('manager') || roles.includes('super-admin')))
         return 'Confirm Receipt'
     return null
@@ -128,7 +128,9 @@ const timelineSteps = computed(() => [
                         <div class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
                             <h2 class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">Line Items</h2>
                         </div>
-                        <table class="w-full">
+
+                        <!-- Desktop table -->
+                        <table class="hidden md:table w-full">
                             <thead>
                             <tr class="bg-gray-50 dark:bg-gray-800/60">
                                 <th class="text-left px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-400">Item</th>
@@ -158,6 +160,25 @@ const timelineSteps = computed(() => [
                             </tr>
                             </tfoot>
                         </table>
+
+                        <!-- Mobile cards -->
+                        <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                            <div v-for="item in procurement.items" :key="item.id" class="px-4 py-3.5">
+                                <div class="flex items-start justify-between gap-3 mb-1">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.name }}</p>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums whitespace-nowrap">{{ formatAmount(item.total_price) }}</p>
+                                </div>
+                                <p v-if="item.description" class="text-xs text-gray-400 mb-1.5">{{ item.description }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ item.quantity }} × {{ formatAmount(item.unit_price) }}
+                                </p>
+                            </div>
+                            <!-- Grand total -->
+                            <div class="px-4 py-3.5 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-between">
+                                <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Grand Total</p>
+                                <p class="text-base font-extrabold text-gray-900 dark:text-white tabular-nums">{{ formatAmount(procurement.total_amount) }}</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Justification / Notes -->

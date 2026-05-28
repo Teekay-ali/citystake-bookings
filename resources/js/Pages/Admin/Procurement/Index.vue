@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { Plus, ShoppingCart, ChevronRight } from 'lucide-vue-next'
+import { Plus, ShoppingCart, ChevronRight, Search } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -37,6 +37,22 @@ const pipeline = {
     accountant_approved: 'Awaiting CEO',
     ceo_approved:        'Awaiting Purchase',
     purchased:           'Awaiting Receipt',
+}
+
+const search = ref(props.filters.search || '')
+
+let searchTimeout = null
+watch(search, () => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(applyFilters, 400)
+})
+
+function applyFilters() {
+    router.get(route('manage.procurement.index'), {
+        search:    search.value || undefined,
+        status:    status.value || undefined,
+        building:  buildingId.value || undefined,
+    }, { preserveState: true, replace: true })
 }
 
 function formatAmount(n) {
@@ -88,6 +104,17 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
 
         <!-- ── Filters ── -->
         <div class="flex flex-wrap gap-2 mb-6">
+            <!-- Search -->
+            <div class="relative">
+                <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input
+                    v-model="search"
+                    type="text"
+                    placeholder="Search by title or reference..."
+                    class="pl-9 pr-4 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all w-56"
+                />
+            </div>
+
             <select v-model="buildingId" :class="selectClass" style="width: auto">
                 <option value="">All buildings</option>
                 <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
