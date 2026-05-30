@@ -8,7 +8,7 @@ import {
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, MessageSquare, Sun, Moon,
     ChevronLeft, ChevronRight, FileText, ShieldAlert, ChevronUp, ChevronDown,
-    Search, Plus, Banknote, BadgeCheck,
+    Search, Plus, Banknote, BadgeCheck, WifiOff
 } from 'lucide-vue-next'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
@@ -32,6 +32,13 @@ const collapsed = ref(
         ? localStorage.getItem('sidebar-collapsed') === 'true'
         : false
 )
+
+// Offline detection
+const isOnline = ref(navigator.onLine)
+onMounted(() => {
+    window.addEventListener('online',  () => isOnline.value = true)
+    window.addEventListener('offline', () => isOnline.value = false)
+})
 
 const openMenus = ref(
     typeof window !== 'undefined'
@@ -303,6 +310,21 @@ function canSeeItem(item) {
 
 <template>
     <div class="min-h-[100dvh] bg-white dark:bg-gray-950 flex flex-col">
+
+        <!-- ── Offline banner ─────────────────────────────── -->
+        <Transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="-translate-y-full opacity-0"
+            enter-to-class="translate-y-0 opacity-100"
+            leave-active-class="transition-all duration-300 ease-in"
+            leave-from-class="translate-y-0 opacity-100"
+            leave-to-class="-translate-y-full opacity-0">
+            <div v-if="!isOnline"
+                 class="fixed top-0 inset-x-0 z-[9999] flex items-center justify-center gap-2.5 bg-red-600 text-white text-sm font-medium py-2.5 px-4 shadow-lg">
+                <WifiOff class="w-4 h-4 shrink-0" />
+                <span>No internet connection - changes cannot be saved until you're back online.</span>
+            </div>
+        </Transition>
 
         <!-- ── Mobile backdrop ───────────────────────────── -->
         <Transition
