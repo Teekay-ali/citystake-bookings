@@ -34,19 +34,36 @@ const collapsed = ref(
 )
 
 // Offline detection
-const isOnline = ref(navigator.onLine)
+const isOnline = ref(true)
+
+async function checkConnectivity() {
+    if (!navigator.onLine) {
+        isOnline.value = false
+        return
+    }
+    try {
+        await fetch('/ping', { method: 'HEAD', cache: 'no-store' })
+        isOnline.value = true
+    } catch {
+        isOnline.value = false
+    }
+}
 
 onMounted(() => {
-    window.addEventListener('online',  () => isOnline.value = true)
+    checkConnectivity()
+
+    window.addEventListener('online', checkConnectivity)
     window.addEventListener('offline', () => isOnline.value = false)
 
-    // SW-based connectivity detection
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'ONLINE')  isOnline.value = true
             if (event.data?.type === 'OFFLINE') isOnline.value = false
         })
     }
+
+    const interval = setInterval(checkConnectivity, 15000)
+    onUnmounted(() => clearInterval(interval))
 })
 
 const openMenus = ref(

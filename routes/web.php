@@ -38,6 +38,8 @@ use App\Http\Middleware\EnsureUserIsStaff;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('/ping', fn() => response()->noContent());
+
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
