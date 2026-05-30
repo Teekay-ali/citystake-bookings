@@ -35,9 +35,18 @@ const collapsed = ref(
 
 // Offline detection
 const isOnline = ref(navigator.onLine)
+
 onMounted(() => {
     window.addEventListener('online',  () => isOnline.value = true)
     window.addEventListener('offline', () => isOnline.value = false)
+
+    // SW-based connectivity detection
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data?.type === 'ONLINE')  isOnline.value = true
+            if (event.data?.type === 'OFFLINE') isOnline.value = false
+        })
+    }
 })
 
 const openMenus = ref(
