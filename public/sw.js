@@ -6,22 +6,19 @@ self.addEventListener('fetch', event => {
     event.respondWith(
         fetch(event.request)
             .then(response => {
-                // Connection restored — notify clients
                 self.clients.matchAll().then(clients =>
                     clients.forEach(c => c.postMessage({ type: 'ONLINE' }))
                 )
-                if (response.ok && response.headers.get('content-type')?.includes('text/html')) {
-                    const clone = response.clone()
-                    caches.open(CACHE).then(cache => cache.put(event.request, clone))
-                }
                 return response
             })
             .catch(() => {
-                // Fetch failed — notify clients
                 self.clients.matchAll().then(clients =>
                     clients.forEach(c => c.postMessage({ type: 'OFFLINE' }))
                 )
-                return caches.match(event.request)
+                return new Response('Offline', {
+                    status: 503,
+                    headers: { 'Content-Type': 'text/plain' }
+                })
             })
     )
 })
