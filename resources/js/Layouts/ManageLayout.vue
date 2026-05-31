@@ -4,10 +4,10 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { useToast } from 'vue-toastification'
 import {
     LayoutDashboard, CalendarDays, Building2, Ban, BarChart3,
-    Users, Grid3x3, Clock, Menu, X, LogOut, User, ClipboardList,
+    Users, Menu, X, LogOut, User, ClipboardList,
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
-    DollarSign, CheckSquare, MessageSquare, Sun, Moon,
-    ChevronLeft, ChevronRight, FileText, ShieldAlert, ChevronUp, ChevronDown,
+    DollarSign, CheckSquare, Sun, Moon,
+    ChevronLeft, ChevronRight, ShieldAlert, ChevronDown,
     Search, Plus, Banknote, BadgeCheck, WifiOff
 } from 'lucide-vue-next'
 import NotificationBell from '@/Components/NotificationBell.vue'
@@ -24,6 +24,7 @@ const pendingEmergencyFund    = computed(() => page.props.pendingEmergencyFund ?
 const pendingPaymentApprovals = computed(() => page.props.pendingPaymentApprovals ?? 0)
 const pendingMaintenance      = computed(() => page.props.pendingMaintenance ?? 0)
 const pendingProcurement      = computed(() => page.props.pendingProcurement ?? 0)
+const pendingTasks            = computed(() => page.props.pendingTasks ?? 0)
 const unreadMessages = computed(() => page.props.unreadMessages ?? 0)
 
 const sidebarOpen = ref(false)
@@ -273,7 +274,7 @@ const navGroups = computed(() => [
             { label: 'Procurement', icon: ShoppingCart,  route: 'manage.procurement.index', match: 'manage.procurement.*', permission: 'view-procurement', badge: pendingProcurement.value },
             { label: 'Maintenance', icon: Wrench,        route: 'manage.maintenance.index', match: 'manage.maintenance.*', permission: 'view-maintenance', badge: pendingMaintenance.value },
             { label: 'Stock',       icon: Package,       route: 'manage.stock.index',       match: 'manage.stock.*',       permission: 'view-stock' },
-            { label: 'Tasks',       icon: CheckSquare,   route: 'manage.tasks.index', match: 'manage.tasks.*', permission: 'view-tasks' },
+            { label: 'Tasks',       icon: CheckSquare,   route: 'manage.tasks.index',       match: 'manage.tasks.*',       permission: 'view-tasks', badge: pendingTasks.value },
             { label: 'Vendors',     icon: BookOpen,      route: 'manage.vendors.index',     match: 'manage.vendors.*',     permission: 'view-vendors' },
         ]
     },

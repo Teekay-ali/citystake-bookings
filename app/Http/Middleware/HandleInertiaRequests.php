@@ -131,6 +131,17 @@ class HandleInertiaRequests extends Middleware
                         ->count();
                 })()
                 : 0,
+
+            'pendingTasks' => auth()->check() && request()->routeIs('manage.*')
+                ? (function () {
+                    $user        = auth()->user();
+                    $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
+                    return \App\Models\Task::where('assigned_to', auth()->id())
+                        ->whereIn('status', ['pending', 'in_progress'])
+                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+                        ->count();
+                })()
+                : 0,
         ]);
     }
 
