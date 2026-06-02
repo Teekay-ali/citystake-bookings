@@ -119,7 +119,15 @@ class BookingController extends Controller
             ->get();
 
         return Inertia::render('Admin/Bookings/Create', [
-            'buildings' => $buildings,
+            'buildings'  => $buildings,
+            'prefill' => [
+                'building_id'  => request('building_id'),
+                'unit_type_id' => request('unit_type_id'),
+                'unit_id'      => request('unit_id'),
+                'check_in'     => request('check_in'),
+                'check_out'    => request('check_out'),
+                'nights'       => request('nights'),
+            ],
         ]);
     }
 

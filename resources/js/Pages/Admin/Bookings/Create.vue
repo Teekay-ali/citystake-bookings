@@ -11,17 +11,18 @@ import {
 
 const props = defineProps({
     buildings: Array,
-});
+    prefill:   Object,
+})
 
 const toast = useToast();
 
 const form = useForm({
-    building_id:       '',
-    unit_type_id:      '',
-    unit_id:           '',
-    check_in:          '',
-    nights:            '',
-    check_out:         '',
+    building_id:       props.prefill?.building_id  ?? '',
+    unit_type_id:      props.prefill?.unit_type_id ?? '',
+    check_in:          props.prefill?.check_in     ?? '',
+    nights:            props.prefill?.nights       ?? '',
+    check_out:         props.prefill?.check_out    ?? '',
+    unit_id:           props.prefill?.unit_id      ?? '',
     guests:            1,
     guest_name:        '',
     guest_email:       '',
@@ -29,7 +30,7 @@ const form = useForm({
     special_requests:  '',
     payment_method:    'pos',
     payment_reference: '',
-});
+})
 
 const availableUnits  = ref([])
 const loadingUnits    = ref(false)
@@ -99,13 +100,18 @@ watch([() => form.unit_type_id, () => form.check_in, () => form.check_out], asyn
         )
         availableUnits.value = await res.json()
         unitsLoaded.value    = true
+
+        // Re-apply prefill unit after units load
+        if (props.prefill?.unit_id) {
+            const match = availableUnits.value.find(u => u.id == props.prefill.unit_id)
+            if (match) form.unit_id = match.id
+        }
     } catch {
         availableUnits.value = []
     } finally {
         loadingUnits.value = false
     }
-})
-
+}, { immediate: true })
 
 
 const pricing = computed(() => {

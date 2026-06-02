@@ -161,6 +161,8 @@ function goToBooking(id) {
 }
 
 function createBooking(unit, building, unitType, date) {
+    const checkOut = new Date(date)
+    checkOut.setDate(checkOut.getDate() + 1)
     router.visit(route('manage.bookings.create'), {
         method: 'get',
         data: {
@@ -168,6 +170,8 @@ function createBooking(unit, building, unitType, date) {
             building_id:  building.id,
             unit_type_id: unitType.id,
             check_in:     date,
+            check_out:    checkOut.toISOString().split('T')[0],
+            nights:       1,
         },
     })
 }
