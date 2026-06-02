@@ -176,6 +176,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/bookings/export', [BookingExportController::class, 'export'])->name('bookings.export');
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
+    Route::get('/bookings/available-units', [AdminBookingController::class, 'availableUnits'])->name('bookings.available-units');
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
     Route::post('/bookings/{booking}/check-out', [AdminBookingController::class, 'checkOut'])->name('bookings.check-out');

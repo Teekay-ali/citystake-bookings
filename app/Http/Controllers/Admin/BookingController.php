@@ -108,8 +108,11 @@ class BookingController extends Controller
         abort_unless(auth()->user()->can('create-bookings'), 403);
 
         $buildings = $this->accessibleBuildings()
-            ->with(['unitTypes:id,building_id,name,bedroom_type,base_price_per_night,cleaning_fee,service_charge_percent,max_guests'])
-            ->select('id', 'name', 'caution_fee_amount')
+            ->with([
+                'unitTypes:id,building_id,name,bedroom_type,base_price_per_night,cleaning_fee,service_charge_percent,max_guests',
+                'unitTypes.units:id,unit_type_id,unit_number,floor,status,is_available',
+            ])
+            ->select('id', 'name', 'caution_fee_amount', 'standard_checkout_time', 'late_checkout_fee_per_hour')
             ->get();
 
         return Inertia::render('Admin/Bookings/Create', [
@@ -124,6 +127,7 @@ class BookingController extends Controller
         $validated = $request->validate([
             'building_id' => 'required|exists:buildings,id',
             'unit_type_id' => 'required|exists:unit_types,id',
+            'unit_id' => 'nullable|exists:units,id',
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
             'guests' => 'required|integer|min:1',
@@ -165,13 +169,37 @@ class BookingController extends Controller
                     ->withInput();
             }
 
-            // Find available unit
-            $availableUnit = $unitType->findAvailableUnit($validated['check_in'], $validated['check_out']);
+            // Use manually selected unit or auto-assign
+            if (!empty($validated['unit_id'])) {
+                $availableUnit = \App\Models\Unit::findOrFail($validated['unit_id']);
 
-            if (!$availableUnit) {
-                return redirect()->back()
-                    ->with('error', 'No units available for selected dates.')
-                    ->withInput();
+                // Verify the unit belongs to the selected unit type
+                if ($availableUnit->unit_type_id !== $unitType->id) {
+                    return redirect()->back()
+                        ->with('error', 'Selected unit does not belong to the chosen unit type.')
+                        ->withInput();
+                }
+
+                // Verify it's actually available for the dates
+                $conflict = Booking::where('unit_id', $availableUnit->id)
+                    ->whereNotIn('status', ['cancelled'])
+                    ->where('check_in', '<', $validated['check_out'])
+                    ->where('check_out', '>', $validated['check_in'])
+                    ->exists();
+
+                if ($conflict) {
+                    return redirect()->back()
+                        ->with('error', "Unit {$availableUnit->unit_number} is not available for the selected dates.")
+                        ->withInput();
+                }
+            } else {
+                $availableUnit = $unitType->findAvailableUnit($validated['check_in'], $validated['check_out']);
+
+                if (!$availableUnit) {
+                    return redirect()->back()
+                        ->with('error', 'No units available for selected dates.')
+                        ->withInput();
+                }
             }
 
             // Calculate pricing (reuse existing logic)
@@ -292,6 +320,36 @@ class BookingController extends Controller
             ]),
             'promptPhotoId' => session()->pull('prompt_photo_id', false),
         ]);
+    }
+
+    public function availableUnits(Request $request)
+    {
+        $request->validate([
+            'unit_type_id' => 'required|exists:unit_types,id',
+            'check_in'     => 'required|date',
+            'check_out'    => 'required|date|after:check_in',
+        ]);
+
+        $unitType = UnitType::findOrFail($request->unit_type_id);
+
+        $bookedUnitIds = Booking::where('unit_type_id', $unitType->id)
+            ->whereNotIn('status', ['cancelled'])
+            ->where('check_in', '<', $request->check_out)
+            ->where('check_out', '>', $request->check_in)
+            ->pluck('unit_id');
+
+        $units = $unitType->units()
+            ->where('status', 'available')
+            ->whereNotIn('id', $bookedUnitIds)
+            ->get(['id', 'unit_number', 'floor'])
+            ->map(fn($u) => [
+                'id'          => $u->id,
+                'unit_number' => $u->unit_number,
+                'floor'       => $u->floor,
+                'label'       => 'Unit ' . $u->unit_number . ($u->floor ? ' · ' . $u->floor . ' Floor' : ''),
+            ]);
+
+        return response()->json($units);
     }
 
     public function checkIn(Request $request, Booking $booking)

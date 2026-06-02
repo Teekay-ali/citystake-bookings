@@ -18,6 +18,7 @@ const toast = useToast();
 const form = useForm({
     building_id:       '',
     unit_type_id:      '',
+    unit_id:           '',
     check_in:          '',
     nights:            '',
     check_out:         '',
@@ -29,6 +30,10 @@ const form = useForm({
     payment_method:    'pos',
     payment_reference: '',
 });
+
+const availableUnits  = ref([])
+const loadingUnits    = ref(false)
+const unitsLoaded     = ref(false)
 
 const selectedBuilding = computed(() =>
     props.buildings.find(b => b.id == form.building_id)
@@ -73,8 +78,35 @@ watch(() => form.check_out, (checkOut) => {
 
 // Reset unit type when building changes
 watch(() => form.building_id, () => {
-    form.unit_type_id = '';
-});
+    form.unit_type_id    = ''
+    form.unit_id         = ''
+    availableUnits.value = []
+    unitsLoaded.value    = false
+})
+
+watch([() => form.unit_type_id, () => form.check_in, () => form.check_out], async ([unitTypeId, checkIn, checkOut]) => {
+    form.unit_id    = ''
+    availableUnits.value = []
+    unitsLoaded.value    = false
+
+    if (!unitTypeId || !checkIn || !checkOut) return
+
+    loadingUnits.value = true
+    try {
+        const res = await fetch(
+            route('manage.bookings.available-units') +
+            `?unit_type_id=${unitTypeId}&check_in=${checkIn}&check_out=${checkOut}`
+        )
+        availableUnits.value = await res.json()
+        unitsLoaded.value    = true
+    } catch {
+        availableUnits.value = []
+    } finally {
+        loadingUnits.value = false
+    }
+})
+
+
 
 const pricing = computed(() => {
     if (!selectedUnitType.value || calculateNights.value === 0) {
@@ -239,6 +271,30 @@ const inputCls = (hasError) => [
                                 />
                                 <p v-if="form.errors.guests" class="mt-1 text-xs text-red-600">{{ form.errors.guests }}</p>
                             </div>
+
+                            <!-- Unit Selection -->
+                            <div v-if="form.unit_type_id && form.check_in && form.check_out" class="mt-4">
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                                    Unit <span class="text-gray-400 dark:text-gray-500">(optional — auto-assigned if blank)</span>
+                                </label>
+                                <div v-if="loadingUnits" class="flex items-center gap-2 px-3 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg">
+                                    <div class="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                    <span class="text-xs text-gray-400">Checking availability…</span>
+                                </div>
+                                <select v-else v-model="form.unit_id" :class="inputCls(false)">
+                                    <option value="">Auto-assign best available unit</option>
+                                    <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
+                                        {{ unit.label }}
+                                    </option>
+                                </select>
+                                <p v-if="unitsLoaded && availableUnits.length === 0" class="mt-1 text-xs text-red-500">
+                                    No units available for these dates.
+                                </p>
+                                <p v-else-if="unitsLoaded" class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                    {{ availableUnits.length }} unit{{ availableUnits.length !== 1 ? 's' : '' }} available
+                                </p>
+                            </div>
+
                         </div>
 
                         <!-- Duration pill -->
@@ -426,6 +482,13 @@ const inputCls = (hasError) => [
                         <div class="flex items-center justify-between text-xs">
                             <span class="text-gray-500 dark:text-gray-400">Guests</span>
                             <span class="font-medium text-gray-900 dark:text-white">{{ form.guests }}</span>
+                        </div>
+
+                        <div v-if="form.unit_id" class="flex items-center justify-between text-xs">
+                            <span class="text-gray-500 dark:text-gray-400">Unit</span>
+                            <span class="font-medium text-gray-900 dark:text-white">
+                                {{ availableUnits.find(u => u.id == form.unit_id)?.label ?? '—' }}
+                            </span>
                         </div>
 
                         <div class="border-t border-gray-200 dark:border-gray-800" />
