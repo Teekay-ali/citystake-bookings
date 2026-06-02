@@ -41,11 +41,12 @@ class CautionRefundRequestedNotification extends Notification
     {
         return [
             'type'               => 'caution_refund_requested',
+            'title'              => 'Caution Refund Request',
             'booking_id'         => $this->booking->id,
             'booking_reference'  => $this->booking->booking_reference,
             'guest_name'         => $this->booking->guest_name,
             'action'             => $this->booking->caution_refund_action,
-            'message'            => "Caution refund request for {$this->booking->booking_reference} — {$this->booking->guest_name}",
+            'message'            => "Caution fee refund request for {$this->booking->booking_reference} - {$this->booking->guest_name}",
             'url'                => route('manage.bookings.show', $this->booking->id),
         ];
     }

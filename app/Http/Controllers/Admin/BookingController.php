@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AuditLog;
+use App\Notifications\CautionRefundProcessedNotification;
+use App\Notifications\CautionRefundRequestedNotification;
 use App\Notifications\GuestCheckedInNotification;
 use App\Notifications\LateCheckoutDecisionNotification;
 use App\Notifications\NewBookingNotification;
@@ -84,7 +86,7 @@ class BookingController extends Controller
             : 'created_at';
         $sortOrder = $request->sort_order === 'asc' ? 'asc' : 'desc';
 
-        $bookings = $query->paginate(20)->withQueryString();
+        $bookings = $query->latest()->paginate(10)->withQueryString();
 
         // Get buildings for filter
         $buildings = $this->accessibleBuildings()->select('id', 'name')->get();
@@ -601,10 +603,10 @@ class BookingController extends Controller
             ['action' => $validated['action'], 'by' => auth()->id()]
         );
 
-        $managers = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
-        Notification::send($managers, new \App\Notifications\CautionRefundRequestedNotification($booking));
+        $recipients = NotificationService::getUsersByRoles(['manager', 'super-admin'], $booking->building_id);
+        Notification::send($recipients, new CautionRefundRequestedNotification($booking));
 
-        return back()->with('success', 'Caution refund request submitted. A manager will review it shortly.');
+        return back()->with('success', 'Caution refund request submitted. Manager will review it shortly.');
     }
 
     public function refundCautionFee(Request $request, Booking $booking)
@@ -679,6 +681,10 @@ class BookingController extends Controller
             ['caution_fee_refunded' => false],
             ['action' => $action, 'deduction' => $deduction, 'by' => auth()->id()]
         );
+
+        // Notify all receptionists in the building + admins
+        $recipients = NotificationService::getUsersByRoles(['receptionist', 'super-admin'], $booking->building_id);
+        Notification::send($recipients, new CautionRefundProcessedNotification($booking));
 
         return back()->with('success', $successMessage);
     }

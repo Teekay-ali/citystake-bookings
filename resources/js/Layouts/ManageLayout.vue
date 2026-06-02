@@ -24,6 +24,7 @@ const pendingEmergencyFund    = computed(() => page.props.pendingEmergencyFund ?
 const pendingPaymentApprovals = computed(() => page.props.pendingPaymentApprovals ?? 0)
 const pendingMaintenance      = computed(() => page.props.pendingMaintenance ?? 0)
 const pendingProcurement      = computed(() => page.props.pendingProcurement ?? 0)
+const pendingCautionRefunds   = computed(() => page.props.pendingCautionRefunds ?? 0)
 const pendingTasks            = computed(() => page.props.pendingTasks ?? 0)
 const unreadMessages = computed(() => page.props.unreadMessages ?? 0)
 
@@ -285,7 +286,7 @@ const navGroups = computed(() => [
         items: [
             { label: 'Analytics',    icon: BarChart3,  route: 'manage.analytics.index',         match: 'manage.analytics.*', permission: 'view-analytics' },
             { label: 'Approvals',    icon: BadgeCheck,  route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*', permission: 'manage-payment-approvals', badge: pendingPaymentApprovals.value },
-            { label: 'Caution Fees', icon: Banknote, route: 'manage.financials.deposits', match: 'manage.financials.deposits', permission: 'view-financials', badge: page.props.pendingCautionRefunds },
+            { label: 'Caution Fees', icon: Banknote, route: 'manage.financials.deposits', match: 'manage.financials.deposits', permission: 'view-financials', badge: pendingCautionRefunds.value },
             { label: 'Emergency Fund', icon: ShieldAlert, route: 'manage.emergency-fund.index', match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund', badge: pendingEmergencyFund.value },
             { label: 'Financials',   icon: DollarSign, route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
         ]

@@ -67,6 +67,12 @@ class Booking extends Model
         'caution_fee_refunded',
         'caution_fee_refunded_at',
         'caution_fee_refunded_by',
+        'caution_refund_requested',
+        'caution_refund_requested_at',
+        'caution_refund_requested_by',
+        'caution_refund_action',
+        'caution_refund_reason',
+        'caution_refund_deduction_amount',
     ];
 
     protected $casts = [
@@ -91,6 +97,9 @@ class Booking extends Model
         'caution_fee_deduction'    => 'decimal:2',
         'caution_fee_refunded'     => 'boolean',
         'caution_fee_refunded_at'  => 'datetime',
+        'caution_refund_requested'        => 'boolean',
+        'caution_refund_requested_at'     => 'datetime',
+        'caution_refund_deduction_amount' => 'decimal:2',
     ];
 
     public function scopeCheckedIn($query)
