@@ -324,6 +324,119 @@ class BookingController extends Controller
         ]);
     }
 
+    public function modifyBooking(Request $request, Booking $booking)
+    {
+        abort_unless(auth()->user()->can('manage-bookings'), 403);
+
+        $user = auth()->user();
+        if (!$user->hasGlobalAccess()) {
+            abort_unless(
+                in_array($booking->building_id, $user->accessibleBuildingIds() ?? []),
+                403
+            );
+        }
+
+        if (in_array($booking->status, ['cancelled', 'completed'])) {
+            return back()->with('error', 'Cannot modify a cancelled or completed booking.');
+        }
+
+        $validated = $request->validate([
+            'check_in'    => 'sometimes|date',
+            'check_out'   => 'sometimes|date|after:check_in',
+            'unit_id'     => 'sometimes|nullable|exists:units,id',
+            'guests'      => 'sometimes|integer|min:1',
+            'guest_name'  => 'sometimes|string|max:255',
+            'guest_email' => 'sometimes|email|max:255',
+            'guest_phone' => 'sometimes|string|max:20',
+            'special_requests' => 'sometimes|nullable|string|max:1000',
+        ]);
+
+        $old = [
+            'check_in'    => $booking->check_in->toDateString(),
+            'check_out'   => $booking->check_out->toDateString(),
+            'nights'      => $booking->nights,
+            'unit_id'     => $booking->unit_id,
+            'unit_number' => $booking->unit?->unit_number,
+            'guests'      => $booking->guests,
+            'guest_name'  => $booking->guest_name,
+            'guest_email' => $booking->guest_email,
+            'guest_phone' => $booking->guest_phone,
+        ];
+
+        $checkIn  = $validated['check_in']  ?? $booking->check_in->toDateString();
+        $checkOut = $validated['check_out'] ?? $booking->check_out->toDateString();
+        $unitId   = array_key_exists('unit_id', $validated) ? $validated['unit_id'] : $booking->unit_id;
+
+        // Validate unit availability if dates or unit changed
+        $datesChanged = $checkIn !== $booking->check_in->toDateString()
+            || $checkOut !== $booking->check_out->toDateString();
+        $unitChanged  = $unitId !== $booking->unit_id;
+
+        if ($datesChanged || $unitChanged) {
+            $conflict = Booking::where('unit_id', $unitId)
+                ->where('id', '!=', $booking->id)
+                ->whereNotIn('status', ['cancelled'])
+                ->where('check_in', '<', $checkOut)
+                ->where('check_out', '>', $checkIn)
+                ->exists();
+
+            if ($conflict) {
+                return back()->with('error', 'The selected unit is not available for the chosen dates.');
+            }
+        }
+
+        // Recalculate nights and total if dates changed
+        $nights = \Carbon\Carbon::parse($checkIn)->diffInDays(\Carbon\Carbon::parse($checkOut));
+
+        $updates = array_filter([
+            'check_in'         => $checkIn,
+            'check_out'        => $checkOut,
+            'nights'           => $nights,
+            'unit_id'          => $unitId,
+            'guests'           => $validated['guests']      ?? $booking->guests,
+            'guest_name'       => $validated['guest_name']  ?? $booking->guest_name,
+            'guest_email'      => $validated['guest_email'] ?? $booking->guest_email,
+            'guest_phone'      => $validated['guest_phone'] ?? $booking->guest_phone,
+            'special_requests' => $validated['special_requests'] ?? $booking->special_requests,
+        ], fn($v) => $v !== null);
+
+        // Recalculate total if dates changed
+        if ($datesChanged) {
+            $unitType = $booking->unitType;
+            $subtotal = $unitType->base_price_per_night * $nights;
+            $discount = \App\Services\DiscountService::resolve($nights);
+            $discountAmt = $discount['percent'] > 0
+                ? round($subtotal * ($discount['percent'] / 100), 2)
+                : 0;
+            $cautionFee = $nights === 1
+                ? (float) $unitType->base_price_per_night
+                : (float) ($booking->building->caution_fee_amount ?? 70000);
+
+            $updates['subtotal']         = $subtotal;
+            $updates['discount_percent'] = $discount['percent'];
+            $updates['discount_amount']  = $discountAmt;
+            $updates['caution_fee']      = $cautionFee;
+            $updates['total_amount']     = ($subtotal - $discountAmt) + $cautionFee;
+        }
+
+        $booking->update($updates);
+
+        $new = [
+            'check_in'    => $checkIn,
+            'check_out'   => $checkOut,
+            'nights'      => $nights,
+            'unit_id'     => $unitId,
+            'guests'      => $updates['guests'],
+            'guest_name'  => $updates['guest_name'],
+            'guest_email' => $updates['guest_email'],
+            'guest_phone' => $updates['guest_phone'],
+        ];
+
+        AuditLog::log('booking.modified', $booking, $old, $new);
+
+        return back()->with('success', 'Booking updated successfully.');
+    }
+
     public function availableUnits(Request $request)
     {
         $request->validate([
@@ -338,6 +451,7 @@ class BookingController extends Controller
             ->whereNotIn('status', ['cancelled'])
             ->where('check_in', '<', $request->check_out)
             ->where('check_out', '>', $request->check_in)
+            ->when($request->exclude_booking, fn($q) => $q->where('id', '!=', $request->exclude_booking))
             ->pluck('unit_id');
 
         $units = $unitType->units()

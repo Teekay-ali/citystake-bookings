@@ -152,9 +152,10 @@ class RolesAndPermissionsSeeder extends Seeder
             ],
 
             'receptionist' => [
-                'view-bookings', 'create-bookings',
+                'view-bookings', 'create-bookings', 'manage-bookings',
                 'confirm-checkin', 'manage-availability',
-                'request-late-checkout',
+                'request-late-checkout', 'approve-late-checkout',
+                'manage-adjustments',
                 'submit-complaints', 'view-complaints',
                 'submit-maintenance', 'view-maintenance',
                 'view-stock', 'log-stock-usage',

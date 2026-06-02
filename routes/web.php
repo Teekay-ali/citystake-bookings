@@ -180,6 +180,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
     Route::post('/bookings/{booking}/check-out', [AdminBookingController::class, 'checkOut'])->name('bookings.check-out');
+    Route::post('/bookings/{booking}/modify', [AdminBookingController::class, 'modifyBooking'])->name('bookings.modify');
     Route::post('/bookings/{booking}/caution-fee/request', [AdminBookingController::class, 'requestCautionRefund'])->name('bookings.caution-fee.request');
     Route::post('/bookings/{booking}/caution-fee/refund', [AdminBookingController::class, 'refundCautionFee'])->name('bookings.caution-fee.refund');
 
