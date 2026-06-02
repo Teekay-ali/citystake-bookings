@@ -145,18 +145,6 @@
         </td>
         <td class="right">₦{{ number_format($booking->subtotal, 0) }}</td>
     </tr>
-    @if($booking->cleaning_fee > 0)
-        <tr>
-            <td>Cleaning Fee</td>
-            <td class="right">₦{{ number_format($booking->cleaning_fee, 0) }}</td>
-        </tr>
-    @endif
-    @if($booking->service_charge > 0)
-        <tr>
-            <td>Service Charge</td>
-            <td class="right">₦{{ number_format($booking->service_charge, 0) }}</td>
-        </tr>
-    @endif
     @if($booking->discount_amount > 0)
         <tr class="discount-row">
             <td>Discount{{ $booking->discount_type ? ' (' . ucfirst(str_replace('_', ' ', $booking->discount_type)) . ')' : '' }}</td>

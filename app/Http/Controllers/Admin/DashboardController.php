@@ -88,10 +88,12 @@ class DashboardController extends Controller
         ];
 
         $statusBreakdown = [
-            'confirmed' => $bookings()->where('status', 'confirmed')->count(),
-            'pending'   => $bookings()->where('status', 'pending')->count(),
-            'cancelled' => $bookings()->where('status', 'cancelled')->count(),
-            'completed' => $bookings()->where('status', 'completed')->count(),
+            'confirmed'  => $bookings()->where('status', 'confirmed')->count(),
+            'pending'    => $bookings()->where('status', 'pending')->count(),
+            'cancelled'  => $bookings()->where('status', 'cancelled')->count(),
+            'completed'  => $bookings()->where('status', 'completed')->count(),
+            'checked_in' => $bookings()->where('status', 'checked_in')->count(),
+            'paused'     => $bookings()->where('status', 'paused')->count(),
         ];
 
         $recentBookings = $bookings()

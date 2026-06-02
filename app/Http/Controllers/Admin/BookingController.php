@@ -87,7 +87,7 @@ class BookingController extends Controller
             : 'created_at';
         $sortOrder = $request->sort_order === 'asc' ? 'asc' : 'desc';
 
-        $bookings = $query->latest()->paginate(10)->withQueryString();
+        $bookings = $query->orderBy($sortBy, $sortOrder)->paginate(10)->withQueryString();
 
         // Get buildings for filter
         $buildings = $this->accessibleBuildings()->select('id', 'name')->get();
@@ -193,7 +193,7 @@ class BookingController extends Controller
 
                 // Verify it's actually available for the dates
                 $conflict = Booking::where('unit_id', $availableUnit->id)
-                    ->whereNotIn('status', ['cancelled'])
+                    ->whereNotIn('status', ['cancelled', 'paused'])
                     ->where('check_in', '<', $validated['check_out'])
                     ->where('check_out', '>', $validated['check_in'])
                     ->exists();
@@ -215,7 +215,6 @@ class BookingController extends Controller
 
             // Calculate pricing (reuse existing logic)
             $subtotal      = $unitType->base_price_per_night * $nights;
-            $serviceCharge = $subtotal * ($unitType->service_charge_percent / 100);
             $discount      = DiscountService::resolve($nights);
             $discountAmt   = $discount['percent'] > 0
                 ? round($subtotal * ($discount['percent'] / 100), 2)
@@ -224,10 +223,7 @@ class BookingController extends Controller
                 ? (float) $unitType->base_price_per_night
                 : (float) ($building->caution_fee_amount ?? 70000);
 
-            $totalAmount = ($subtotal - $discountAmt)
-                + $unitType->cleaning_fee
-                + $serviceCharge
-                + $cautionFee;
+            $totalAmount = ($subtotal - $discountAmt) + $cautionFee;
 
             // Create booking
             $booking = Booking::create([
@@ -246,8 +242,6 @@ class BookingController extends Controller
                 'guest_phone' => $validated['guest_phone'],
                 'special_requests' => $validated['special_requests'] ?? null,
                 'subtotal' => $subtotal,
-                'cleaning_fee' => $unitType->cleaning_fee,
-                'service_charge' => $serviceCharge,
                 'total_amount' => $totalAmount,
                 'discount_type'    => $discount['type'],
                 'discount_percent' => $discount['percent'],
@@ -615,7 +609,7 @@ class BookingController extends Controller
 
         $newCheckIn  = Carbon::parse($validated['resume_check_in']);
         $newCheckOut = $newCheckIn->copy()->addDays($booking->remaining_nights);
-        $unitId      = $validated['unit_id'] ?? $booking->unit_id;
+        $unitId = !empty($validated['unit_id']) ? $validated['unit_id'] : $booking->unit_id;
 
         // Verify unit belongs to same unit type
         $unit = Unit::findOrFail($unitId);

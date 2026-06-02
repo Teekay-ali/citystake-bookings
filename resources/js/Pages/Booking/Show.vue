@@ -97,6 +97,7 @@ const canCancel = computed(() => {
     return (
         props.booking.status !== "cancelled" &&
         props.booking.status !== "completed" &&
+        props.booking.status !== "paused" &&
         new Date(props.booking.check_in) > new Date()
     );
 });
@@ -142,6 +143,11 @@ function resolveStatusBadge(displayStatus) {
             icon: CheckCircle,
             text: "Confirmed",
             class: "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800",
+        },
+        paused: {
+            icon: Clock,
+            text: "Stay Paused",
+            class: "bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-2 border-violet-200 dark:border-violet-800",
         },
     };
     return map[displayStatus] ?? map["confirmed"];
@@ -412,14 +418,6 @@ const daysUntilCheckIn = computed(() => {
                                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                                     <span>{{ booking.nights }} night{{ booking.nights > 1 ? "s" : "" }}</span>
                                     <span>{{ formatPrice(booking.subtotal) }}</span>
-                                </div>
-                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                    <span>Cleaning fee</span>
-                                    <span>{{ formatPrice(booking.cleaning_fee) }}</span>
-                                </div>
-                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                    <span>Service charge</span>
-                                    <span>{{ formatPrice(booking.service_charge) }}</span>
                                 </div>
                             </div>
                             <div class="pt-4 border-t border-gray-200 dark:border-gray-800">

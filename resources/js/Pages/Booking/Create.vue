@@ -256,16 +256,6 @@ const submit = () => {
                                         <span>{{ formatPrice(bookingData.subtotal) }}</span>
                                     </div>
 
-                                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                        <span>Cleaning fee</span>
-                                        <span>{{ formatPrice(bookingData.cleaning_fee) }}</span>
-                                    </div>
-
-                                    <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                        <span>Service charge</span>
-                                        <span>{{ formatPrice(bookingData.service_charge) }}</span>
-                                    </div>
-
                                     <!-- Caution Fee  -->
                                     <div v-if="bookingData.caution_fee > 0" class="flex justify-between text-sm">
                                         <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">

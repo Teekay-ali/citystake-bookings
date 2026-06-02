@@ -87,7 +87,7 @@ class UnitType extends Model
         return $this->units()
             ->where('is_available', true)
             ->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
-                $query->where('status', '!=', 'cancelled')
+                $query->whereNotIn('status', ['cancelled', 'paused'])
                     ->where(function ($q) use ($checkIn, $checkOut) {
                         $q->where('check_in', '<', $checkOut)
                             ->where('check_out', '>', $checkIn);
@@ -104,7 +104,7 @@ class UnitType extends Model
     {
         return $this->units()
             ->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
-                $query->where('status', '!=', 'cancelled')
+                $query->whereNotIn('status', ['cancelled', 'paused'])
                     ->where(function ($q) use ($checkIn, $checkOut) {
                         $q->where('check_in', '<', $checkOut)
                             ->where('check_out', '>', $checkIn);
@@ -116,5 +116,5 @@ class UnitType extends Model
             })
             ->count();
     }
-    
+
 }

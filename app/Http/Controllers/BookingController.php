@@ -36,23 +36,20 @@ class BookingController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->groupBy(function ($booking) {
-                if ($booking->status === 'cancelled') {
-                    return 'cancelled';
-                } elseif ($booking->check_out < now()) {
-                    return 'past';
-                } elseif ($booking->check_in <= now() && $booking->check_out >= now()) {
-                    return 'active';
-                } else {
-                    return 'upcoming';
-                }
+                if ($booking->status === 'cancelled') return 'cancelled';
+                if ($booking->status === 'paused') return 'paused';  // add this
+                if ($booking->check_out < now()) return 'past';
+                if ($booking->check_in <= now() && $booking->check_out >= now()) return 'active';
+                return 'upcoming';
             });
 
         return Inertia::render('Booking/Index', [
             'bookings' => [
                 'upcoming' => $bookings->get('upcoming', collect()),
-                'active' => $bookings->get('active', collect()),
-                'past' => $bookings->get('past', collect()),
-                'cancelled' => $bookings->get('cancelled', collect()),
+                'active'   => $bookings->get('active',   collect()),
+                'past'     => $bookings->get('past',      collect()),
+                'cancelled'=> $bookings->get('cancelled', collect()),
+                'paused'   => $bookings->get('paused',    collect()),
             ],
         ]);
     }
@@ -93,9 +90,6 @@ class BookingController extends Controller
                 'guests'           => $request->guests,
                 'nights'           => $booking->nights,
                 'subtotal'         => $booking->subtotal,
-                'cleaning_fee'     => $booking->cleaning_fee,
-                'service_charge'   => $booking->service_charge,
-                'caution_fee'       => $booking->caution_fee,
                 'discount_type'    => $booking->discount_type,
                 'discount_percent' => $booking->discount_percent,
                 'discount_amount'  => $booking->discount_amount,

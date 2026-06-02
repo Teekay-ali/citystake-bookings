@@ -26,7 +26,7 @@ class BookingCalendarController extends Controller
             ->when($request->building_id, function ($query, $buildingId) {
                 $query->where('building_id', $buildingId);
             })
-            ->whereIn('status', ['confirmed', 'pending', 'completed'])
+            ->whereIn('status', ['confirmed', 'pending', 'completed', 'paused', 'checked_in'])
             ->where('check_out', '>=', now()->subMonth())
             ->where('check_in', '<=', now()->addMonths(6))
             ->get()

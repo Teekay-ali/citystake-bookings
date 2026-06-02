@@ -168,8 +168,6 @@ class Booking extends Model
     {
         $this->nights         = Carbon::parse($this->check_in)->diffInDays($this->check_out);
         $this->subtotal       = $this->nights * $unitType->base_price_per_night;
-        $this->cleaning_fee   = $unitType->cleaning_fee;
-        $this->service_charge = $this->subtotal * ($unitType->service_charge_percent / 100);
 
         // Caution fee — 1-night bookings pay 1 night price, all others pay building's caution fee amount
         $building = $unitType->building ?? $unitType->building()->first();
@@ -189,8 +187,6 @@ class Booking extends Model
 
         // Total includes caution fee
         $this->total_amount = ($this->subtotal - $this->discount_amount)
-            + $this->cleaning_fee
-            + $this->service_charge
             + $this->caution_fee;
     }
 

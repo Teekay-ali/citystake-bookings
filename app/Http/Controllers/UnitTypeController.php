@@ -132,7 +132,7 @@ class UnitTypeController extends Controller
 
         DB::table('bookings')
             ->whereIn('unit_id', $unitIds)
-            ->whereNotIn('status', ['cancelled'])
+            ->whereNotIn('status', ['cancelled', 'paused'])
             ->where('check_in', '<', $end)
             ->where('check_out', '>', $start)
             ->whereNull('deleted_at')

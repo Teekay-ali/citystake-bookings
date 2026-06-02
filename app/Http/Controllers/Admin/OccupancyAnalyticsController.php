@@ -84,7 +84,7 @@ class OccupancyAnalyticsController extends Controller
         $totalAvailableNights = $totalUnits * $daysInMonth;
 
         $bookedNights = (int) DB::table('bookings')
-            ->where('status', '!=', 'cancelled')
+            ->whereNotIn('status', ['cancelled', 'paused'])
             ->when($buildingId, fn($q) => $q->where('building_id', $buildingId))
             ->when($scopedBuildingIds && !$buildingId, fn($q) => $q->whereIn('building_id', $scopedBuildingIds))
             ->where('check_in', '<', $endDate->copy()->addDay()->toDateString())
