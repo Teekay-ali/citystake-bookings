@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AuditLog;
+use App\Models\Unit;
 use App\Notifications\CautionRefundProcessedNotification;
 use App\Notifications\CautionRefundRequestedNotification;
 use App\Notifications\GuestCheckedInNotification;
@@ -173,7 +174,7 @@ class BookingController extends Controller
 
             // Use manually selected unit or auto-assign
             if (!empty($validated['unit_id'])) {
-                $availableUnit = \App\Models\Unit::findOrFail($validated['unit_id']);
+                $availableUnit = Unit::findOrFail($validated['unit_id']);
 
                 // Verify the unit belongs to the selected unit type
                 if ($availableUnit->unit_type_id !== $unitType->id) {
@@ -386,7 +387,7 @@ class BookingController extends Controller
         }
 
         // Recalculate nights and total if dates changed
-        $nights = \Carbon\Carbon::parse($checkIn)->diffInDays(\Carbon\Carbon::parse($checkOut));
+        $nights = Carbon::parse($checkIn)->diffInDays(Carbon::parse($checkOut));
 
         $updates = array_filter([
             'check_in'         => $checkIn,
@@ -554,6 +555,101 @@ class BookingController extends Controller
         }
 
         return back()->with('success', 'Guest checked out successfully. Booking marked as completed.');
+    }
+
+    public function pauseBooking(Request $request, Booking $booking)
+    {
+        abort_unless(auth()->user()->can('confirm-checkin'), 403);
+
+        if (!$booking->canBePaused()) {
+            return back()->with('error', 'Only checked-in bookings can be paused.');
+        }
+
+        $validated = $request->validate([
+            'paused_departure' => 'required|date|after_or_equal:' . $booking->check_in->toDateString() . '|before:' . $booking->check_out->toDateString(),
+        ]);
+
+        $departure      = Carbon::parse($validated['paused_departure']);
+        $remainingNights = $departure->diffInDays($booking->check_out);
+
+        if ($remainingNights <= 0) {
+            return back()->with('error', 'Departure date must be before the scheduled checkout date.');
+        }
+
+        $booking->update([
+            'status'           => 'paused',
+            'paused_at'        => now(),
+            'paused_by'        => auth()->id(),
+            'paused_departure' => $validated['paused_departure'],
+            'remaining_nights' => $remainingNights,
+        ]);
+
+        AuditLog::log('booking.paused', $booking,
+            ['status' => 'checked_in', 'check_out' => $booking->check_out->toDateString()],
+            ['status' => 'paused', 'remaining_nights' => $remainingNights, 'paused_departure' => $validated['paused_departure']]
+        );
+
+        return back()->with('success', "Booking paused. {$remainingNights} night(s) remaining for the guest to use.");
+    }
+
+    public function resumeBooking(Request $request, Booking $booking)
+    {
+        abort_unless(auth()->user()->can('confirm-checkin'), 403);
+
+        if (!$booking->canBeResumed()) {
+            return back()->with('error', 'Only paused bookings can be resumed.');
+        }
+
+        $validated = $request->validate([
+            'resume_check_in' => 'required|date|after_or_equal:today',
+            'unit_id'         => 'nullable|exists:units,id',
+        ]);
+
+        $newCheckIn  = Carbon::parse($validated['resume_check_in']);
+        $newCheckOut = $newCheckIn->copy()->addDays($booking->remaining_nights);
+        $unitId      = $validated['unit_id'] ?? $booking->unit_id;
+
+        // Verify unit belongs to same unit type
+        $unit = Unit::findOrFail($unitId);
+        if ($unit->unit_type_id !== $booking->unit_type_id) {
+            return back()->with('error', 'Selected unit must be of the same type as the original booking.');
+        }
+
+        // Check availability
+        $conflict = Booking::where('unit_id', $unitId)
+            ->where('id', '!=', $booking->id)
+            ->whereNotIn('status', ['cancelled', 'paused'])
+            ->where('check_in', '<', $newCheckOut->toDateString())
+            ->where('check_out', '>', $newCheckIn->toDateString())
+            ->exists();
+
+        if ($conflict) {
+            return back()->with('error', 'The selected unit is not available for the resumed dates.');
+        }
+
+        $booking->update([
+            'status'           => 'confirmed',
+            'check_in'         => $newCheckIn->toDateString(),
+            'check_out'        => $newCheckOut->toDateString(),
+            'nights'           => $booking->remaining_nights,
+            'unit_id'          => $unitId,
+            'resumed_at'       => now(),
+            'resumed_by'       => auth()->id(),
+            'remaining_nights' => null,
+        ]);
+
+        AuditLog::log('booking.resumed', $booking,
+            ['status' => 'paused'],
+            [
+                'status'     => 'confirmed',
+                'check_in'   => $newCheckIn->toDateString(),
+                'check_out'  => $newCheckOut->toDateString(),
+                'unit_id'    => $unitId,
+                'resumed_by' => auth()->id(),
+            ]
+        );
+
+        return back()->with('success', "Booking resumed. New stay: {$newCheckIn->format('M j')} → {$newCheckOut->format('M j, Y')}.");
     }
 
     public function requestLateCheckout(Booking $booking)

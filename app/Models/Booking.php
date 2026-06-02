@@ -73,6 +73,12 @@ class Booking extends Model
         'caution_refund_action',
         'caution_refund_reason',
         'caution_refund_deduction_amount',
+        'paused_at',
+        'paused_by',
+        'paused_departure',
+        'remaining_nights',
+        'resumed_at',
+        'resumed_by',
     ];
 
     protected $casts = [
@@ -100,6 +106,9 @@ class Booking extends Model
         'caution_refund_requested'        => 'boolean',
         'caution_refund_requested_at'     => 'datetime',
         'caution_refund_deduction_amount' => 'decimal:2',
+        'paused_at'        => 'datetime',
+        'paused_departure' => 'date',
+        'resumed_at'       => 'datetime',
     ];
 
     public function scopeCheckedIn($query)
@@ -210,6 +219,16 @@ class Booking extends Model
         return $this->status === 'checked_in';
     }
 
+    public function canBePaused(): bool
+    {
+        return $this->status === 'checked_in';
+    }
+
+    public function canBeResumed(): bool
+    {
+        return $this->status === 'paused';
+    }
+
     public function canBeCancelled(): bool
     {
         return $this->status !== 'cancelled'
@@ -277,6 +296,7 @@ class Booking extends Model
         if ($this->status === 'cancelled') return 'cancelled';
         if ($this->status === 'completed') return 'completed';
         if ($this->status === 'checked_in') return 'checked_in';
+        if ($this->status === 'paused') return 'paused';
         if ($this->payment_status === 'pending') return 'payment_pending';
 
         $today = now()->startOfDay();

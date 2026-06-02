@@ -3,7 +3,7 @@ import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import { ref, watch } from 'vue'
 import {
-    Search, Plus, Download, Eye,
+    Search, Plus, Download, Eye, PauseCircle,
     CheckCircle, XCircle, Clock, AlertCircle,
     ChevronRight, ChevronLeft,
 } from 'lucide-vue-next'
@@ -75,6 +75,7 @@ const statusMap = {
     checked_in:      { icon: Clock,       text: 'Checked In',       cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800' },
     completed:       { icon: CheckCircle, text: 'Completed',        cls: 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700' },
     confirmed:       { icon: CheckCircle, text: 'Confirmed',        cls: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800' },
+    paused:          { icon: PauseCircle, text: 'Paused',           cls:  'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-800' },
 }
 
 const getStatus = (booking) => statusMap[booking.display_status] ?? statusMap['confirmed']

@@ -7,7 +7,7 @@ import { ref, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
-    User, Phone, Mail, MessageSquare,
+    User, Phone, Mail, MessageSquare, PauseCircle,
     Clock, CheckCircle, ChevronRight,
     Building2, Calendar, Shield, Receipt, AlertTriangle,
 } from 'lucide-vue-next'
@@ -71,6 +71,7 @@ const adjForm = useForm({
     payment_reference: '',
     transaction_date:  new Date().toISOString().split('T')[0],
 })
+
 function submitAdjustment() {
     adjForm.post(route('manage.bookings.adjustments.store', props.booking.id), {
         preserveScroll: true,
@@ -80,6 +81,57 @@ function submitAdjustment() {
 function deleteAdjustment(adj) {
     if (!confirm('Remove this adjustment? This will also delete the financial transaction record.')) return
     router.delete(route('manage.bookings.adjustments.destroy', [props.booking.id, adj.id]), { preserveScroll: true })
+}
+
+// ── Pause & Resume ─────────────────────────────────────────────
+const showPauseForm   = ref(false)
+const showResumeForm  = ref(false)
+const pauseDeparture  = ref('')
+const resumeCheckIn   = ref('')
+const resumeUnitId    = ref('')
+const resumeUnits     = ref([])
+const loadingResumeUnits = ref(false)
+const isPausing       = ref(false)
+const isResuming      = ref(false)
+
+function submitPause() {
+    isPausing.value = true
+    router.post(route('manage.bookings.pause', props.booking.id), {
+        paused_departure: pauseDeparture.value,
+    }, {
+        onSuccess: () => { showPauseForm.value = false },
+        onFinish:  () => { isPausing.value = false },
+    })
+}
+
+async function loadResumeUnits() {
+    if (!resumeCheckIn.value) return
+    loadingResumeUnits.value = true
+    const checkOut = new Date(resumeCheckIn.value)
+    checkOut.setDate(checkOut.getDate() + props.booking.remaining_nights)
+    const checkOutStr = checkOut.toISOString().split('T')[0]
+    try {
+        const res = await fetch(
+            route('manage.bookings.available-units') +
+            `?unit_type_id=${props.booking.unit_type_id}&check_in=${resumeCheckIn.value}&check_out=${checkOutStr}&exclude_booking=${props.booking.id}`
+        )
+        resumeUnits.value = await res.json()
+    } catch {
+        resumeUnits.value = []
+    } finally {
+        loadingResumeUnits.value = false
+    }
+}
+
+function submitResume() {
+    isResuming.value = true
+    router.post(route('manage.bookings.resume', props.booking.id), {
+        resume_check_in: resumeCheckIn.value,
+        unit_id:         resumeUnitId.value || null,
+    }, {
+        onSuccess: () => { showResumeForm.value = false },
+        onFinish:  () => { isResuming.value = false },
+    })
 }
 
 // ── Late checkout ──────────────────────────────────────────────
@@ -219,6 +271,7 @@ const statusConfig = computed(() => {
         checked_in:       { label: 'Checked In',       cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
         completed:        { label: 'Completed',        cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700' },
         cancelled:        { label: 'Cancelled',        cls: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' },
+        paused:           { label: 'Paused',           cls: 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800' },
         payment_pending:  { label: 'Awaiting Payment', cls: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
         active:           { label: 'Active Stay',      cls: 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800' },
         overdue_checkout: { label: 'Overdue Checkout', cls: 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800' },
@@ -523,6 +576,20 @@ const inputCls = (hasError = false) => [
                                     <p class="text-[11px] text-gray-400">{{ fmtDateTime(booking.checked_out_at) }}</p>
                                 </div>
                             </div>
+                            <div v-if="booking.paused_at" class="flex items-start gap-2.5">
+                                <div class="w-1.5 h-1.5 rounded-full bg-violet-500 mt-1.5 shrink-0" />
+                                <div>
+                                    <p class="text-xs font-medium text-gray-900 dark:text-white">Booking Paused</p>
+                                    <p class="text-[11px] text-gray-400">{{ fmtDateTime(booking.paused_at) }} · {{ booking.remaining_nights }} nights remaining</p>
+                                </div>
+                            </div>
+                            <div v-if="booking.resumed_at" class="flex items-start gap-2.5">
+                                <div class="w-1.5 h-1.5 rounded-full bg-violet-400 mt-1.5 shrink-0" />
+                                <div>
+                                    <p class="text-xs font-medium text-gray-900 dark:text-white">Booking Resumed</p>
+                                    <p class="text-[11px] text-gray-400">{{ fmtDateTime(booking.resumed_at) }}</p>
+                                </div>
+                            </div>
                             <div v-if="booking.cancelled_at" class="flex items-start gap-2.5">
                                 <div class="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
                                 <div>
@@ -589,6 +656,96 @@ const inputCls = (hasError = false) => [
                                     class="w-full py-2.5 text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-all flex items-center justify-center gap-1.5">
                                 <LogOut class="w-3.5 h-3.5" /> Check Out Guest
                             </button>
+
+                            <!-- Pause booking -->
+                            <div v-if="booking.status === 'checked_in' && can('confirm-checkin')"
+                                 class="border border-gray-200 dark:border-gray-800 rounded-xl p-4 bg-white dark:bg-gray-900 mt-3">
+                                <button v-if="!showPauseForm"
+                                        @click="showPauseForm = true"
+                                        class="w-full py-2 text-xs border border-violet-200 dark:border-violet-800 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-600 dark:text-violet-400 transition-all flex items-center justify-center gap-1.5">
+                                    <PauseCircle class="w-3.5 h-3.5" /> Pause Booking
+                                </button>
+                                <form v-else @submit.prevent="submitPause" class="space-y-3">
+                                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Guest departing early</p>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Actual Departure Date</label>
+                                        <input v-model="pauseDeparture" type="date"
+                                               :min="booking.check_in"
+                                               :max="booking.check_out"
+                                               :class="inputCls(false)" required />
+                                        <p v-if="pauseDeparture" class="mt-1 text-[11px] text-gray-400">
+                                            {{ Math.ceil((new Date(booking.check_out) - new Date(pauseDeparture)) / (1000*60*60*24)) }} night(s) will be held for later use
+                                        </p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="submit" :disabled="isPausing || !pauseDeparture"
+                                                class="flex-1 py-2 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg disabled:opacity-50 transition-all">
+                                            Confirm Pause
+                                        </button>
+                                        <button type="button" @click="showPauseForm = false"
+                                                class="px-4 py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                        </div>
+
+                        <!-- Resume booking -->
+                        <div v-if="booking.status === 'paused'"
+                             class="border border-violet-200 dark:border-violet-800 rounded-xl p-4 bg-violet-50 dark:bg-violet-900/20">
+                            <p class="text-xs font-semibold text-violet-700 dark:text-violet-400 mb-2 flex items-center gap-1.5">
+                                <PauseCircle class="w-3.5 h-3.5" /> Booking Paused
+                            </p>
+                            <p class="text-xs text-violet-600 dark:text-violet-400 mb-1">
+                                {{ booking.remaining_nights }} night{{ booking.remaining_nights !== 1 ? 's' : '' }} remaining
+                            </p>
+                            <p class="text-xs text-violet-500 dark:text-violet-500 mb-3">
+                                Departed: {{ fmtDate(booking.paused_departure) }}
+                            </p>
+
+                            <div v-if="!showResumeForm">
+                                <button @click="showResumeForm = true"
+                                        class="w-full py-2.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-all">
+                                    Resume Booking
+                                </button>
+                            </div>
+
+                            <form v-else @submit.prevent="submitResume" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">New Check-in Date</label>
+                                    <input v-model="resumeCheckIn" type="date"
+                                           :min="new Date().toISOString().split('T')[0]"
+                                           :class="inputCls(false)"
+                                           @change="loadResumeUnits"
+                                           required />
+                                    <p v-if="resumeCheckIn" class="mt-1 text-[11px] text-gray-400">
+                                        Check-out: {{ (() => { const d = new Date(resumeCheckIn); d.setDate(d.getDate() + booking.remaining_nights); return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) })() }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Unit</label>
+                                    <div v-if="loadingResumeUnits" class="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg">
+                                        <div class="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                        <span class="text-xs text-gray-400">Checking…</span>
+                                    </div>
+                                    <select v-else v-model="resumeUnitId" :class="inputCls(false)">
+                                        <option value="">Auto-assign available unit</option>
+                                        <option v-for="u in resumeUnits" :key="u.id" :value="u.id">{{ u.label }}</option>
+                                    </select>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="submit" :disabled="isResuming || !resumeCheckIn"
+                                            class="flex-1 py-2 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg disabled:opacity-50 transition-all">
+                                        Confirm Resume
+                                    </button>
+                                    <button type="button" @click="showResumeForm = false"
+                                            class="px-4 py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
                         </div>
 
                         <!-- Late checkout -->
