@@ -55,6 +55,8 @@ class BuildingController extends Controller
             'caution_fee_amount' => 'required|numeric|min:0',
             'amenities' => 'nullable|array',
             'monthly_emergency_limit' => 'required|numeric|min:0',
+            'standard_checkout_time'    => 'required|date_format:H:i',
+            'late_checkout_fee_per_hour'=> 'required|numeric|min:0',
             'is_active' => 'boolean',
         ]);
 
@@ -93,6 +95,8 @@ class BuildingController extends Controller
             'caution_fee_amount' => 'required|numeric|min:0',
             'amenities' => 'nullable|array',
             'monthly_emergency_limit' => 'required|numeric|min:0',
+            'standard_checkout_time'    => 'required|date_format:H:i',
+            'late_checkout_fee_per_hour'=> 'required|numeric|min:0',
             'is_active' => 'boolean',
         ]);
 

@@ -102,7 +102,7 @@ const openCookieSettings = () => {
                             <!-- Dashboard entry point for staff/admin -->
                             <Link
                                 v-if="$page.props.auth.user.is_admin || $page.props.auth.user.is_staff"
-                                :href="route('manage.dashboard')"
+                                :href="route('dashboard')"
                                 class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:opacity-90 transition-all"
                             >
                                 Dashboard
@@ -227,7 +227,7 @@ const openCookieSettings = () => {
                         <template v-if="$page.props.auth.user">
                             <Link
                                 v-if="$page.props.auth.user.is_admin || $page.props.auth.user.is_staff"
-                                :href="route('manage.dashboard')"
+                                :href="route('dashboard')"
                                 @click="showMobileMenu = false"
                                 class="block px-3 py-2.5 rounded-lg text-base font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
                             >

@@ -14,6 +14,9 @@ const props = defineProps({
 
 const status = ref(props.filters.status || '')
 
+const approvingId  = ref(null)
+const approveHours = ref(null)
+
 watch(status, () => {
     router.get(route('manage.bookings.late-checkout.index'), {
         status: status.value || undefined,
@@ -126,15 +129,25 @@ function formatAmount(n) {
                     <!-- Actions -->
                     <div class="flex items-center gap-2 shrink-0">
                         <template v-if="booking.late_checkout_status === 'pending'">
-                            <Link
-                                :href="route('manage.bookings.late-checkout.approve', booking.id)"
-                                method="post"
-                                as="button"
-                                :data="{ action: 'approved' }"
-                                class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-all">
+                            <div v-if="approvingId === booking.id" class="flex items-center gap-2">
+                                <input v-model.number="approveHours" type="number" min="1" max="24" placeholder="hrs"
+                                       class="w-16 px-2 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-xs bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none" />
+                                <Link
+                                    :href="route('manage.bookings.late-checkout.approve', booking.id)"
+                                    method="post"
+                                    as="button"
+                                    :data="{ action: 'approved', hours: approveHours }"
+                                    :class="['inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium transition-all', !approveHours && 'opacity-40 pointer-events-none']">
+                                    Confirm
+                                </Link>
+                                <button @click="approvingId = null; approveHours = null" class="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                            </div>
+                            <button v-else
+                                    @click="approvingId = booking.id"
+                                    class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-all">
                                 <CheckCircle2 class="w-3.5 h-3.5" />
                                 Approve
-                            </Link>
+                            </button>
                             <Link
                                 :href="route('manage.bookings.late-checkout.approve', booking.id)"
                                 method="post"

@@ -16,6 +16,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Building;
 use App\Models\UnitType;
+use App\Mail\GuestCheckedIn;
+use App\Mail\GuestCheckedOut;
 use App\Mail\BookingConfirmation;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
@@ -129,7 +131,7 @@ class BookingController extends Controller
             'guest_email' => 'required|email|max:255',
             'guest_phone' => 'required|string|max:20',
             'special_requests' => 'nullable|string|max:1000',
-            'payment_method' => 'required|in:cash,pos,bank_transfer',
+            'payment_method' => 'required|in:pos,bank_transfer',
             'payment_reference' => 'nullable|string|max:255',
         ]);
 
@@ -242,7 +244,8 @@ class BookingController extends Controller
             Notification::send($recipients, new NewBookingNotification($booking));
 
             return redirect()->route('manage.bookings.show', $booking->id)
-                ->with('success', 'Booking created successfully!');
+                ->with('success', 'Booking created successfully!')
+                ->with('prompt_photo_id', true);
 
         } catch (\Exception $e) {
             \Log::error('Admin booking creation failed', [
@@ -264,19 +267,30 @@ class BookingController extends Controller
 
         $booking->load([
             'building', 'unitType', 'unit', 'user', 'adjustments',
-            'checkedInBy', 'lateCheckoutApprovedBy',
+            'checkedInBy', 'checkedOutBy', 'lateCheckoutApprovedBy',
             'messages.sender',
             'adjustments.appliedBy',
+            'documents.uploadedBy',
         ]);
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => array_merge($booking->toArray(), [
-                'checked_in_by_name' => $booking->checkedInBy?->name,
-                'unreadMessageCount' => $booking->messages()
+                'checked_in_by_name'  => $booking->checkedInBy?->name,
+                'checked_out_by_name' => $booking->checkedOutBy?->name,
+                'unreadMessageCount'  => $booking->messages()
                     ->where('sender_type', 'guest')
                     ->whereNull('read_at')
                     ->count(),
+                'documents' => $booking->documents->map(fn($d) => [
+                    'id'             => $d->id,
+                    'url'            => $d->url,
+                    'original_name'  => $d->original_name,
+                    'mime_type'      => $d->mime_type,
+                    'is_image'       => $d->is_image,
+                    'formatted_size' => $d->formatted_size,
+                ]),
             ]),
+            'promptPhotoId' => session()->pull('prompt_photo_id', false),
         ]);
     }
 
@@ -298,7 +312,7 @@ class BookingController extends Controller
 
         $validated = $request->validate([
             'amount_received'        => 'required|numeric|min:0',
-            'checkin_payment_method' => 'required|in:cash,pos,bank_transfer,paystack',
+            'checkin_payment_method' => 'required|in:pos,bank_transfer,paystack',
             'checkin_notes'          => 'nullable|string|max:500',
         ]);
 
@@ -313,10 +327,59 @@ class BookingController extends Controller
 
         AuditLog::log('booking.checked_in', $booking, ['status' => 'confirmed'], ['status' => 'checked_in', 'checked_in_by' => auth()->id()]);
 
-        $recipients = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
+        $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
         Notification::send($recipients, new GuestCheckedInNotification($booking));
 
+        // Notify the guest
+        try {
+            Mail::to($booking->guest_email)->send(new GuestCheckedIn($booking));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send guest check-in email', [
+                'booking_reference' => $booking->booking_reference,
+                'error'             => $e->getMessage(),
+            ]);
+        }
+
         return back()->with('success', 'Guest checked in successfully.');
+    }
+
+    public function checkOut(Request $request, Booking $booking)
+    {
+        abort_unless(auth()->user()->can('confirm-checkin'), 403);
+
+        $user = auth()->user();
+        if (!$user->hasGlobalAccess()) {
+            abort_unless(
+                in_array($booking->building_id, $user->accessibleBuildingIds() ?? []),
+                403
+            );
+        }
+
+        if (!$booking->canCheckOut()) {
+            return back()->with('error', 'This booking cannot be checked out at this time.');
+        }
+
+        $booking->update([
+            'status'          => 'completed',
+            'checked_out_at'  => now(),
+            'checked_out_by'  => auth()->id(),
+        ]);
+
+        AuditLog::log('booking.checked_out', $booking,
+            ['status' => 'checked_in'],
+            ['status' => 'completed', 'checked_out_by' => auth()->id()]
+        );
+
+        try {
+            Mail::to($booking->guest_email)->send(new GuestCheckedOut($booking));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send guest checkout email', [
+                'booking_reference' => $booking->booking_reference,
+                'error'             => $e->getMessage(),
+            ]);
+        }
+
+        return back()->with('success', 'Guest checked out successfully. Booking marked as completed.');
     }
 
     public function requestLateCheckout(Booking $booking)
@@ -325,12 +388,10 @@ class BookingController extends Controller
             return back()->with('error', 'Late checkout cannot be requested for this booking.');
         }
 
-        $fee = config('booking.late_checkout_fee', 20000);
-
         $booking->update([
             'late_checkout_requested' => true,
             'late_checkout_status'    => 'pending',
-            'late_checkout_fee'       => $fee,
+            'late_checkout_fee'       => null, // set at approval time when hours are known
         ]);
 
         $recipients = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
@@ -349,15 +410,23 @@ class BookingController extends Controller
 
         $validated = $request->validate([
             'action' => 'required|in:approved,rejected',
+            'hours'  => 'required_if:action,approved|nullable|numeric|min:1|max:24',
         ]);
 
+        $fee = 0;
+        if ($validated['action'] === 'approved') {
+            $booking->load('building');
+            $ratePerHour = (float) ($booking->building->late_checkout_fee_per_hour ?? 10000);
+            $fee         = $ratePerHour * (int) $validated['hours'];
+        }
+
         $booking->update([
-            'late_checkout_status'       => $validated['action'],
-            'late_checkout_approved_by'  => auth()->id(),
-            'late_checkout_approved_at'  => now(),
-            // Add fee to total only on approval
-            'total_amount' => $validated['action'] === 'approved'
-                ? $booking->total_amount + $booking->late_checkout_fee
+            'late_checkout_status'      => $validated['action'],
+            'late_checkout_approved_by' => auth()->id(),
+            'late_checkout_approved_at' => now(),
+            'late_checkout_fee'         => $validated['action'] === 'approved' ? $fee : null,
+            'total_amount'              => $validated['action'] === 'approved'
+                ? $booking->total_amount + $fee
                 : $booking->total_amount,
         ]);
 

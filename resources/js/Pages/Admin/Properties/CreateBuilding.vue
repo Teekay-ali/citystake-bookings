@@ -5,7 +5,7 @@ import { ref } from 'vue';
 import {
     ArrowLeft,
     Building2,
-    MapPin,
+    Clock,
     FileText,
     Sparkles,
     ToggleLeft, Images, Info,
@@ -18,6 +18,8 @@ const form = useForm({
     city: 'Abuja',
     description: '',
     amenities: [],
+    standard_checkout_time: '12:00',
+    late_checkout_fee_per_hour: 10000,
     is_active: true,
     caution_fee_amount: 70000,
 });
@@ -228,6 +230,56 @@ const submit = () => {
                         <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
                             Select all amenities available at this property
                         </p>
+                    </div>
+
+                    <!-- Checkout Settings -->
+                    <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                        <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center">
+                            <Clock class="w-5 h-5 mr-2" />
+                            Checkout Settings
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Standard Checkout Time <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    v-model="form.standard_checkout_time"
+                                    type="time"
+                                    :class="[
+                    'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
+                    form.errors.standard_checkout_time
+                        ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
+                        : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white'
+                ]"
+                                />
+                                <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Default: 12:00 PM</p>
+                                <p v-if="form.errors.standard_checkout_time" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                    {{ form.errors.standard_checkout_time }}
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Late Checkout Fee / Hour (₦) <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    v-model.number="form.late_checkout_fee_per_hour"
+                                    type="number"
+                                    min="0"
+                                    step="500"
+                                    :class="[
+                                        'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
+                                        form.errors.late_checkout_fee_per_hour
+                                            ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
+                                            : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white'
+                                    ]"
+                                />
+                                <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Default: ₦10,000/hour</p>
+                                <p v-if="form.errors.late_checkout_fee_per_hour" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                    {{ form.errors.late_checkout_fee_per_hour }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Images -->

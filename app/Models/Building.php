@@ -26,6 +26,8 @@ class Building extends Model
         'amenities',
         'house_rules',
         'monthly_emergency_limit',
+        'standard_checkout_time',
+        'late_checkout_fee_per_hour',
         'is_active',
     ];
 
@@ -34,6 +36,7 @@ class Building extends Model
         'amenities' => 'array',
         'house_rules' => 'array',
         'monthly_emergency_limit' => 'decimal:2',
+        'late_checkout_fee_per_hour' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 

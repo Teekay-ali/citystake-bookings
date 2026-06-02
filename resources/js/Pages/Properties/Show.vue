@@ -634,7 +634,7 @@ const proceedToBooking = () => {
 
                                     <div v-if="calculateNights >= 7" class="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
                                         <span>Long stay discount (5% off)</span>
-                                        <span>−{{ formatPrice(calculateNights * parseFloat(unitType.base_price_per_night) * 0.05) }}</span>
+                                        <span>{{ formatPrice(calculateNights * parseFloat(unitType.base_price_per_night) * 0.05) }}</span>
                                     </div>
                                 </div>
 

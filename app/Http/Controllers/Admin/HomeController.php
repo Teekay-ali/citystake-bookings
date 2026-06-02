@@ -67,6 +67,24 @@ class HomeController extends Controller
                 ->get(['id', 'booking_reference', 'guest_name', 'guest_phone',
                     'building_id', 'unit_id', 'unit_type_id', 'status', 'check_in', 'check_out']);
 
+            $data['currentlyOccupied'] = Booking::whereIn('building_id', $buildingIds)
+                ->where('status', 'checked_in')
+                ->with(['unit', 'unitType', 'building'])
+                ->get(['id', 'booking_reference', 'guest_name', 'guest_phone',
+                    'building_id', 'unit_id', 'unit_type_id', 'status', 'check_in', 'check_out', 'checked_in_at'])
+                ->map(fn($b) => [
+                    'id'               => $b->id,
+                    'booking_reference'=> $b->booking_reference,
+                    'guest_name'       => $b->guest_name,
+                    'guest_phone'      => $b->guest_phone,
+                    'unit_number'      => $b->unit?->unit_number,
+                    'unit_type'        => $b->unitType?->name,
+                    'building'         => $b->building?->name,
+                    'check_in'         => $b->check_in?->toDateString(),
+                    'check_out'        => $b->check_out?->toDateString(),
+                    'checked_in_at'    => $b->checked_in_at?->toDateTimeString(),
+                ]);
+
             $data['todayCheckouts'] = Booking::whereIn('building_id', $buildingIds)
                 ->whereDate('check_out', $today)
                 ->whereIn('status', ['confirmed', 'checked_in'])

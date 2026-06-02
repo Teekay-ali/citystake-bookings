@@ -5,7 +5,7 @@ import { ref } from 'vue';
 import {
     ArrowLeft,
     Building2,
-    MapPin,
+    Clock,
     FileText,
     Sparkles,
     ToggleLeft,
@@ -15,26 +15,29 @@ import {
 } from 'lucide-vue-next';
 import ImageManager from '@/Components/ImageManager.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
+import { useToast } from 'vue-toastification';
 
 const props = defineProps({
     building: Object,
 });
 
+const toast = useToast();
 const buildingImages = ref(props.building.images ?? []);
-
 const showDeleteModal = ref(false);
 const isDeleting = ref(false);
 
 const form = useForm({
-    name: props.building.name,
-    address: props.building.address,
-    city: props.building.city,
-    description: props.building.description ?? '',
-    amenities: props.building.amenities ?? [],
-    house_rules: props.building.house_rules ?? [],
-    monthly_emergency_limit: props.building.monthly_emergency_limit ?? 200000,
-    is_active: props.building.is_active,
-    caution_fee_amount: props.building.caution_fee_amount ?? 70000,
+    name:                       props.building.name,
+    address:                    props.building.address,
+    city:                       props.building.city,
+    description:                props.building.description ?? '',
+    amenities:                  props.building.amenities ?? [],
+    house_rules:                props.building.house_rules ?? [],
+    standard_checkout_time:     props.building.standard_checkout_time ?? '12:00',
+    late_checkout_fee_per_hour: props.building.late_checkout_fee_per_hour ?? 10000,
+    monthly_emergency_limit:    props.building.monthly_emergency_limit ?? 200000,
+    is_active:                  props.building.is_active,
+    caution_fee_amount:         props.building.caution_fee_amount ?? 70000,
 })
 
 const amenitiesList = [
@@ -49,7 +52,7 @@ const amenitiesList = [
     'High-Speed Internet',
     'Water Supply',
     'Landscaped Gardens',
-    'Children\'s Playground',
+    "Children's Playground",
 ];
 
 const toggleAmenity = (amenity) => {
@@ -68,9 +71,7 @@ const submit = () => {
         },
         onError: (errors) => {
             const firstError = Object.values(errors)[0];
-            if (firstError) {
-                toast.error(firstError);
-            }
+            if (firstError) toast.error(firstError);
         },
     });
 };
@@ -96,6 +97,7 @@ const deleteBuilding = () => {
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
             <div class="max-w-4xl mx-auto px-6 lg:px-8">
+
                 <!-- Back Button -->
                 <div class="mb-8">
                     <Link
@@ -117,7 +119,6 @@ const deleteBuilding = () => {
                             Update {{ building.name }} details
                         </p>
                     </div>
-
                     <button
                         @click="showDeleteModal = true"
                         class="px-4 py-2 border-2 border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700 text-red-600 dark:text-red-400 font-medium rounded-xl transition-all flex items-center"
@@ -128,6 +129,7 @@ const deleteBuilding = () => {
                 </div>
 
                 <form @submit.prevent="submit" class="space-y-6">
+
                     <!-- Basic Information -->
                     <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
                         <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center">
@@ -182,50 +184,6 @@ const deleteBuilding = () => {
                                     </p>
                                 </div>
 
-                                <!-- Caution Fee -->
-                                <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
-                                    <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
-                                        Booking Policy
-                                    </h2>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Caution Fee (₦)
-                                        </label>
-                                        <input
-                                            v-model="form.caution_fee_amount"
-                                            type="number"
-                                            min="0"
-                                            step="1000"
-                                            class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
-                                        />
-                                        <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                            Charged on every booking and refunded at check-out if no damage. For 1-night bookings, the caution fee is equal to 1 night's rate instead.
-                                        </p>
-                                        <p v-if="form.errors.caution_fee_amount" class="mt-1 text-sm text-red-600">
-                                            {{ form.errors.caution_fee_amount }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Monthly Emergency Fund Limit (₦)
-                                    </label>
-                                    <input
-                                        v-model="form.monthly_emergency_limit"
-                                        type="number"
-                                        min="0"
-                                        step="1000"
-                                        class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
-                                    />
-                                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                        Maximum amount available for emergency fund requests per month.
-                                    </p>
-                                    <p v-if="form.errors.monthly_emergency_limit" class="mt-1 text-sm text-red-600">
-                                        {{ form.errors.monthly_emergency_limit }}
-                                    </p>
-                                </div>
-
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Status
@@ -243,7 +201,11 @@ const deleteBuilding = () => {
                                         <span :class="form.is_active ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'" class="font-medium">
                                             {{ form.is_active ? 'Active' : 'Inactive' }}
                                         </span>
-                                        <component :is="form.is_active ? ToggleRight : ToggleLeft" :class="form.is_active ? 'text-green-600 dark:text-green-400' : 'text-gray-400'" class="w-6 h-6" />
+                                        <component
+                                            :is="form.is_active ? ToggleRight : ToggleLeft"
+                                            :class="form.is_active ? 'text-green-600 dark:text-green-400' : 'text-gray-400'"
+                                            class="w-6 h-6"
+                                        />
                                     </button>
                                 </div>
                             </div>
@@ -277,7 +239,6 @@ const deleteBuilding = () => {
                             <FileText class="w-5 h-5 mr-2" />
                             Description
                         </h2>
-
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Property Description
@@ -289,7 +250,7 @@ const deleteBuilding = () => {
                                 class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all resize-none"
                             ></textarea>
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                Optional - Provide details about the property
+                                Optional — Provide details about the property
                             </p>
                         </div>
                     </div>
@@ -300,7 +261,6 @@ const deleteBuilding = () => {
                             <Sparkles class="w-5 h-5 mr-2" />
                             Building Amenities
                         </h2>
-
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                             <button
                                 v-for="amenity in amenitiesList"
@@ -320,6 +280,101 @@ const deleteBuilding = () => {
                         <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
                             Select all amenities available at this property
                         </p>
+                    </div>
+
+                    <!-- Booking Policy -->
+                    <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                        <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
+                            Booking Policy
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Caution Fee (₦)
+                                </label>
+                                <input
+                                    v-model="form.caution_fee_amount"
+                                    type="number"
+                                    min="0"
+                                    step="1000"
+                                    class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                />
+                                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                    Charged on every booking and refunded at check-out if no damage. For 1-night bookings, the caution fee equals 1 night's rate.
+                                </p>
+                                <p v-if="form.errors.caution_fee_amount" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.caution_fee_amount }}
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Monthly Emergency Fund Limit (₦)
+                                </label>
+                                <input
+                                    v-model="form.monthly_emergency_limit"
+                                    type="number"
+                                    min="0"
+                                    step="1000"
+                                    class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
+                                />
+                                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                    Maximum amount available for emergency fund requests per month.
+                                </p>
+                                <p v-if="form.errors.monthly_emergency_limit" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.monthly_emergency_limit }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Checkout Settings -->
+                    <div class="border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                        <h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                            <Clock class="w-5 h-5" />
+                            Checkout Settings
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Standard Checkout Time <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    v-model="form.standard_checkout_time"
+                                    type="time"
+                                    :class="[
+                                        'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
+                                        form.errors.standard_checkout_time
+                                            ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
+                                            : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white'
+                                    ]"
+                                />
+                                <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Default: 12:00 PM</p>
+                                <p v-if="form.errors.standard_checkout_time" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.standard_checkout_time }}
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Late Checkout Fee / Hour (₦) <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    v-model.number="form.late_checkout_fee_per_hour"
+                                    type="number"
+                                    min="0"
+                                    step="500"
+                                    :class="[
+                                        'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
+                                        form.errors.late_checkout_fee_per_hour
+                                            ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
+                                            : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white'
+                                    ]"
+                                />
+                                <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Default: ₦10,000/hour</p>
+                                <p v-if="form.errors.late_checkout_fee_per_hour" class="mt-1 text-sm text-red-600">
+                                    {{ form.errors.late_checkout_fee_per_hour }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Images -->

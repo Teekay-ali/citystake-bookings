@@ -47,6 +47,8 @@ class Booking extends Model
         'cancelled_at',
         'checked_in_at',
         'checked_in_by',
+        'checked_out_at',
+        'checked_out_by',
         'amount_received',
         'checkin_payment_method',
         'checkin_notes',
@@ -71,6 +73,7 @@ class Booking extends Model
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'checked_in_at' => 'datetime',
+        'checked_out_at' => 'datetime',
         'amount_received' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'cleaning_fee' => 'decimal:2',
@@ -129,6 +132,11 @@ class Booking extends Model
         return $this->hasMany(BookingAdjustment::class);
     }
 
+    public function documents(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\Document::class, 'documentable')->orderBy('sort_order');
+    }
+
     // Helper methods
     public static function generateReference(): string
     {
@@ -178,6 +186,16 @@ class Booking extends Model
     public function checkedInBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
+    public function checkedOutBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_out_by');
+    }
+
+    public function canCheckOut(): bool
+    {
+        return $this->status === 'checked_in';
     }
 
     public function canBeCancelled(): bool
@@ -245,15 +263,17 @@ class Booking extends Model
     public function getDisplayStatusAttribute(): string
     {
         if ($this->status === 'cancelled') return 'cancelled';
+        if ($this->status === 'completed') return 'completed';
         if ($this->status === 'checked_in') return 'checked_in';
         if ($this->payment_status === 'pending') return 'payment_pending';
 
         $today = now()->startOfDay();
 
-        if ($this->check_out->lt($today)) return 'completed';
+        // Confirmed but checkout date has passed without manual checkout — flag it
+        if ($this->check_out->lt($today)) return 'overdue_checkout';
         if ($this->check_in->lte($today) && $this->check_out->gte($today)) return 'active';
 
-        return 'confirmed'; // upcoming
+        return 'confirmed';
     }
 
 }

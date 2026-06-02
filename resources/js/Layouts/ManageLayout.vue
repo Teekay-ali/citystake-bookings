@@ -209,10 +209,12 @@ onUnmounted(() => {
 const quickActionsOpen = ref(false)
 
 const quickActions = [
-    { label: 'New Booking',            icon: CalendarDays,  route: 'manage.bookings.create',      permission: 'manage-bookings' },
-    { label: 'New Complaint',          icon: AlertTriangle, route: 'manage.complaints.create',    permission: 'view-complaints' },
-    { label: 'New Maintenance Request', icon: Wrench,        route: 'manage.maintenance.create',   permission: 'view-maintenance' },
-    { label: 'New Procurement',        icon: ShoppingCart,  route: 'manage.procurement.create',   permission: 'view-procurement' },
+    { label: 'Booking',             icon: CalendarDays,  route: 'manage.bookings.create',           permission: 'manage-bookings' },
+    { label: 'Complaint',           icon: AlertTriangle, route: 'manage.complaints.create',         permission: 'view-complaints' },
+    { label: 'Maintenance Request', icon: Wrench,        route: 'manage.maintenance.create',        permission: 'view-maintenance' },
+    { label: 'Procurement',         icon: ShoppingCart,  route: 'manage.procurement.create',        permission: 'view-procurement' },
+    { label: 'Task',                icon: CheckSquare,   route: 'manage.tasks.create',              permission: 'manage-tasks' },
+    { label: 'Payment Approval',            icon: BadgeCheck,    route: 'manage.payment-approvals.create',  permission: 'manage-payment-approvals' },
 ]
 
 const visibleQuickActions = computed(() =>
@@ -491,15 +493,22 @@ function canSeeItem(item) {
 
                                     <!-- Collapsed submenu — show icon only with tooltip -->
                                     <template v-else-if="item.children && collapsed">
-                                        <div
+                                        <Link
+                                            :href="route(item.children.find(c => canSeeItem(c))?.route ?? item.children[0].route)"
                                             @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
                                             @mouseleave="onMouseLeave"
-                                            class="flex justify-center py-2 rounded-lg text-gray-400 cursor-default"
-                                        >
-                                <span class="w-5 h-5 flex items-center justify-center">
-                                    <component :is="item.icon" class="w-3.5 h-3.5" />
-                                </span>
-                                        </div>
+                                            :class="isActive(item.match)
+                                                ? 'bg-gray-50 dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium'
+                                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'"
+                                                                                class="flex justify-center py-2 rounded-lg transition-all"
+                                                                            >
+                                            <span :class="isActive(item.match)
+                                                ? 'w-5 h-5 bg-amber-500/10 dark:bg-amber-500/20 rounded-md flex items-center justify-center shrink-0'
+                                                : 'w-5 h-5 flex items-center justify-center shrink-0'">
+                                                <component :is="item.icon"
+                                                           :class="isActive(item.match) ? 'w-3 h-3 text-amber-600 dark:text-amber-400' : 'w-3.5 h-3.5'" />
+                                            </span>
+                                        </Link>
                                     </template>
 
                                     <!-- Regular item (no children) -->

@@ -178,6 +178,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
+    Route::post('/bookings/{booking}/check-out', [AdminBookingController::class, 'checkOut'])->name('bookings.check-out');
     Route::post('/bookings/{booking}/caution-fee/refund', [AdminBookingController::class, 'refundCautionFee'])->name('bookings.caution-fee.refund');
 
     Route::post('/bookings/{booking}/late-checkout/request', [AdminBookingController::class, 'requestLateCheckout'])->name('bookings.late-checkout.request');

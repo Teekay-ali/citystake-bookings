@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\Document;
 use App\Models\PaymentApproval;
 use Illuminate\Http\Request;
@@ -17,7 +18,12 @@ class DocumentController extends Controller
      */
     public function store(Request $request, string $type, int $id)
     {
-        abort_unless(auth()->user()->can('manage-payment-approvals'), 403);
+        $requiredPermission = match($type) {
+            'payment-approval' => 'manage-payment-approvals',
+            'booking'          => 'confirm-checkin',
+            default            => abort(403),
+        };
+        abort_unless(auth()->user()->can($requiredPermission), 403);
 
         $request->validate([
             'documents'   => 'required|array|min:1|max:5',
@@ -62,7 +68,10 @@ class DocumentController extends Controller
      */
     public function destroy(Document $document)
     {
-        abort_unless(auth()->user()->can('manage-payment-approvals'), 403);
+        $requiredPermission = str_contains($document->documentable_type ?? '', 'Booking')
+            ? 'confirm-checkin'
+            : 'manage-payment-approvals';
+        abort_unless(auth()->user()->can($requiredPermission), 403);
 
         // Only uploader or super-admin can delete
         abort_unless(
@@ -76,10 +85,11 @@ class DocumentController extends Controller
         return response()->json(['message' => 'Document deleted.']);
     }
 
-    private function resolveModel(string $type, int $id): PaymentApproval
+    private function resolveModel(string $type, int $id)
     {
         return match($type) {
             'payment-approval' => PaymentApproval::findOrFail($id),
+            'booking'          => Booking::findOrFail($id),
             default            => abort(404, 'Unknown document target type.'),
         };
     }

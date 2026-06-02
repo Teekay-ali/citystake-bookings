@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import {
-    CheckCircle2, Clock, AlertTriangle, Building2,
+    CheckCircle2, AlertTriangle, Building2,
     LogIn, LogOut, ShoppingCart, CreditCard,
     TrendingUp, TrendingDown, Wrench, ChevronRight
 } from 'lucide-vue-next'
@@ -14,9 +14,10 @@ const props = defineProps({
     myTasks:           Array,
 
     // Receptionist
-    todayCheckins:     Array,
-    todayCheckouts:    Array,
-    availability:      Object,
+    todayCheckins:      Array,
+    todayCheckouts:     Array,
+    currentlyOccupied:  Array,
+    availability:       Object,
 
     // Manager
     openComplaints:    Number,
@@ -171,6 +172,62 @@ function formatDate(d) {
                             </div>
                         </div>
                     </div>
+
+                    <!-- Currently Occupied -->
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden sm:col-span-2">
+                        <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                <Building2 class="w-4 h-4 text-blue-500" />
+                                Currently Occupied
+                                <span class="ml-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
+                {{ currentlyOccupied?.length ?? 0 }} unit{{ (currentlyOccupied?.length ?? 0) !== 1 ? 's' : '' }}
+            </span>
+                            </h2>
+                            <Link :href="route('manage.availability.index')"
+                                  class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                                View board →
+                            </Link>
+                        </div>
+
+                        <!-- Empty state -->
+                        <div v-if="!currentlyOccupied?.length" class="px-5 py-6 text-center text-sm text-gray-400">
+                            No units currently occupied
+                        </div>
+
+                        <!-- Table -->
+                        <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
+                            <Link
+                                v-for="booking in currentlyOccupied"
+                                :key="booking.id"
+                                :href="route('manage.bookings.show', booking.id)"
+                                class="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+
+                                <!-- Unit badge -->
+                                <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 flex items-center justify-center shrink-0">
+                                    <span class="text-xs font-bold text-blue-700 dark:text-blue-400">{{ booking.unit_number }}</span>
+                                </div>
+
+                                <!-- Guest info -->
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ booking.guest_name }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {{ booking.unit_type }}
+                                        <span v-if="currentlyOccupied.length > 1 && booking.building"> · {{ booking.building }}</span>
+                                    </p>
+                                </div>
+
+                                <!-- Checkout date -->
+                                <div class="text-right shrink-0">
+                                    <p class="text-xs font-medium text-gray-900 dark:text-white">
+                                        Out {{ new Date(booking.check_out).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) }}
+                                    </p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ booking.guest_phone }}</p>
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+
+
                 </div>
             </template>
 
