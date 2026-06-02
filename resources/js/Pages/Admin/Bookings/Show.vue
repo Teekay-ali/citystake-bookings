@@ -621,11 +621,11 @@ const inputCls = (hasError = false) => [
                             <form @submit.prevent="submitCheckIn" class="space-y-3">
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Amount Received (₦)</label>
-                                    <input v-model="checkInForm.amount_received" type="number" step="0.01" :class="inputCls" required />
+                                    <input v-model="checkInForm.amount_received" type="number" step="0.01" :class="inputCls(checkInForm.errors.amount_received)" required />
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Payment Method</label>
-                                    <select v-model="checkInForm.checkin_payment_method" :class="inputCls" required>
+                                    <select v-model="checkInForm.checkin_payment_method" :class="inputCls(checkInForm.errors.checkin_payment_method)" required>
                                         <option value="">Select method</option>
                                         <option value="pos">POS</option>
                                         <option value="bank_transfer">Bank Transfer</option>
@@ -634,7 +634,7 @@ const inputCls = (hasError = false) => [
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Notes</label>
-                                    <textarea v-model="checkInForm.checkin_notes" rows="2" :class="inputCls + ' resize-none'" />
+                                    <textarea v-model="checkInForm.checkin_notes" rows="2" :class="[...inputCls(false), 'resize-none']" />
                                 </div>
                                 <button type="submit" :disabled="checkInForm.processing"
                                         class="w-full py-2.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg disabled:opacity-50 transition-all flex items-center justify-center gap-1.5">
