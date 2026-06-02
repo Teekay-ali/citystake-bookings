@@ -62,6 +62,8 @@ class Booking extends Model
         'late_checkout_approved_at',
         'late_checkout_settled_at',
         'caution_fee',
+        'caution_fee_deduction',
+        'caution_fee_deduction_reason',
         'caution_fee_refunded',
         'caution_fee_refunded_at',
         'caution_fee_refunded_by',
@@ -86,6 +88,7 @@ class Booking extends Model
         'late_checkout_approved_at' => 'datetime',
         'late_checkout_settled_at'  => 'datetime',
         'caution_fee'              => 'decimal:2',
+        'caution_fee_deduction'    => 'decimal:2',
         'caution_fee_refunded'     => 'boolean',
         'caution_fee_refunded_at'  => 'datetime',
     ];

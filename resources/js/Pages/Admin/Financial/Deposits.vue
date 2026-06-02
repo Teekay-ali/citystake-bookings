@@ -63,6 +63,7 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
             <button
                 v-for="tab in [
                     { label: 'Outstanding', value: 'outstanding' },
+                    { label: 'Pending Refund', value: 'pending_refund' },
                     { label: 'Refunded', value: 'refunded' },
                     { label: 'All', value: 'all' },
                 ]"
@@ -118,16 +119,24 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
                             {{ formatPrice(booking.caution_fee) }}
                         </td>
                         <td class="px-5 py-3.5">
-                                <span v-if="booking.caution_fee_refunded"
-                                      class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400">
-                                    <CheckCircle class="w-3 h-3" />
-                                    Refunded
-                                </span>
-                            <span v-else
-                                  class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
-                                    <Clock class="w-3 h-3" />
-                                    Outstanding
-                                </span>
+                            <span v-if="booking.caution_fee_refunded"
+                                  class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400">
+                                <CheckCircle class="w-3 h-3" /> Refunded
+                            </span>
+                                                        <span v-else-if="booking.caution_refund_requested"
+                                                              class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
+                                <Clock class="w-3 h-3" /> Refund Requested
+                            </span>
+                                                        <span v-else
+                                                              class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
+                                <Clock class="w-3 h-3" /> Outstanding
+                            </span>
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                                <p class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">Pending Refund</p>
+                                <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.count_pending_refund }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">awaiting manager approval</p>
+                            </div>
+
                         </td>
                         <td class="px-5 py-3.5 text-right">
                             <Link :href="route('manage.bookings.show', booking.id)"

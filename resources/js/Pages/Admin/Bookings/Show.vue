@@ -100,12 +100,43 @@ function requestLateCheckout() {
 }
 
 // ── Caution fee ────────────────────────────────────────────────
-const isRefunding = ref(false)
-function refundDeposit() {
-    if (!confirm('Mark caution fee as refunded to guest?')) return
+const isRefunding            = ref(false)
+const showCautionForm        = ref(false)
+const cautionAction          = ref('full_refund')
+const cautionDeductionAmount = ref(null)
+const cautionDeductionReason = ref('')
+
+// Receptionist submits request
+function submitCautionRequest() {
+    isRefunding.value = true
+    router.post(route('manage.bookings.caution-fee.request', props.booking.id), {
+        action:           cautionAction.value,
+        reason:           cautionDeductionReason.value,
+        deduction_amount: cautionDeductionAmount.value,
+    }, {
+        onSuccess: () => { showCautionForm.value = false },
+        onFinish:  () => { isRefunding.value = false },
+    })
+}
+
+// Manager approves pending request (no extra data needed — uses stored values)
+function approveCautionRequest() {
     isRefunding.value = true
     router.post(route('manage.bookings.caution-fee.refund', props.booking.id), {}, {
         onFinish: () => { isRefunding.value = false },
+    })
+}
+
+// Manager processes directly (no prior request)
+function submitCautionDirect() {
+    isRefunding.value = true
+    router.post(route('manage.bookings.caution-fee.refund', props.booking.id), {
+        action:           cautionAction.value,
+        reason:           cautionDeductionReason.value,
+        deduction_amount: cautionDeductionAmount.value,
+    }, {
+        onSuccess: () => { showCautionForm.value = false },
+        onFinish:  () => { isRefunding.value = false },
     })
 }
 
@@ -580,20 +611,146 @@ const inputCls = 'w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-
                         </div>
 
                         <!-- Caution fee -->
-                        <div v-if="booking.caution_fee > 0 && booking.status === 'completed' && !booking.caution_fee_refunded && can('manage-bookings')"
+                        <div v-if="booking.caution_fee > 0 && !booking.caution_fee_refunded"
                              class="border border-gray-200 dark:border-gray-800 rounded-xl p-4 bg-white dark:bg-gray-900">
                             <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
-                                <Shield class="w-3.5 h-3.5 text-amber-500" /> Caution Fee · {{ fmt(booking.caution_fee) }}
+                                <Shield class="w-3.5 h-3.5 text-amber-500" />
+                                Caution Fee · {{ fmt(booking.caution_fee) }}
                             </p>
-                            <button @click="refundDeposit" :disabled="isRefunding"
-                                    class="w-full py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 disabled:opacity-50 transition-all">
-                                Mark as Refunded
-                            </button>
+
+                            <!-- ── PENDING REQUEST: receptionist waiting ── -->
+                            <div v-if="booking.caution_refund_requested && !can('manage-bookings')"
+                                 class="px-3 py-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <p class="text-xs font-medium text-blue-700 dark:text-blue-400">Refund request submitted</p>
+                                <p class="text-[11px] text-blue-500 dark:text-blue-400 mt-0.5">Awaiting manager approval</p>
+                            </div>
+
+                            <!-- ── PENDING REQUEST: manager approves ── -->
+                            <div v-else-if="booking.caution_refund_requested && can('manage-bookings')" class="space-y-3">
+                                <div class="px-3 py-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1 text-xs">
+                                    <p class="font-semibold text-blue-700 dark:text-blue-400">Refund Request Pending</p>
+                                    <p class="text-blue-600 dark:text-blue-400">
+                                        Action: <span class="font-medium capitalize">{{ booking.caution_refund_action?.replace(/_/g, ' ') }}</span>
+                                    </p>
+                                    <p v-if="booking.caution_refund_deduction_amount" class="text-blue-600 dark:text-blue-400">
+                                        Deduction: <span class="font-medium">{{ fmt(booking.caution_refund_deduction_amount) }}</span>
+                                    </p>
+                                    <p v-if="booking.caution_refund_reason" class="text-blue-600 dark:text-blue-400">
+                                        Reason: <span class="font-medium">{{ booking.caution_refund_reason }}</span>
+                                    </p>
+                                </div>
+                                <button @click="approveCautionRequest" :disabled="isRefunding"
+                                        class="w-full py-2.5 text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all">
+                                    Approve & Process
+                                </button>
+                            </div>
+
+                            <!-- ── NO PENDING REQUEST: receptionist raises one ── -->
+                            <template v-else-if="booking.status === 'completed' && can('confirm-checkin') && !can('manage-bookings')">
+                                <div v-if="!showCautionForm" class="space-y-2">
+                                    <button @click="cautionAction = 'full_refund'; showCautionForm = true"
+                                            class="w-full py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-all">
+                                        Full Refund
+                                    </button>
+                                    <button @click="cautionAction = 'partial_deduction'; showCautionForm = true"
+                                            class="w-full py-2 text-xs border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-400 transition-all">
+                                        Partial Deduction
+                                    </button>
+                                    <button @click="cautionAction = 'full_forfeit'; showCautionForm = true"
+                                            class="w-full py-2 text-xs border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-all">
+                                        Full Forfeit
+                                    </button>
+                                </div>
+                                <form v-else @submit.prevent="submitCautionRequest" class="space-y-3">
+                                    <div class="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                        <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                            {{ cautionAction === 'full_refund' ? 'Full Refund' : cautionAction === 'partial_deduction' ? 'Partial Deduction' : 'Full Forfeit' }}
+                                        </p>
+                                    </div>
+                                    <div v-if="cautionAction === 'partial_deduction'">
+                                        <label class="block text-xs text-gray-500 mb-1">Deduction Amount (₦)</label>
+                                        <input v-model.number="cautionDeductionAmount" type="number" min="1" :max="booking.caution_fee - 1"
+                                               class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                        <p v-if="cautionDeductionAmount" class="mt-1 text-[11px] text-gray-400">
+                                            Refund: {{ fmt(booking.caution_fee - cautionDeductionAmount) }}
+                                        </p>
+                                    </div>
+                                    <div v-if="cautionAction !== 'full_refund'">
+                                        <label class="block text-xs text-gray-500 mb-1">Reason <span class="text-red-500">*</span></label>
+                                        <textarea v-model="cautionDeductionReason" rows="2"
+                                                  class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none" />
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="submit" :disabled="isRefunding"
+                                                class="flex-1 py-2 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all">
+                                            Submit Request
+                                        </button>
+                                        <button type="button" @click="showCautionForm = false"
+                                                class="px-4 py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                                            Back
+                                        </button>
+                                    </div>
+                                </form>
+                            </template>
+
+                            <!-- ── NO PENDING REQUEST: manager processes directly ── -->
+                            <template v-else-if="booking.status === 'completed' && can('manage-bookings')">
+                                <div v-if="!showCautionForm" class="space-y-2">
+                                    <button @click="cautionAction = 'full_refund'; showCautionForm = true"
+                                            class="w-full py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-all">
+                                        Full Refund
+                                    </button>
+                                    <button @click="cautionAction = 'partial_deduction'; showCautionForm = true"
+                                            class="w-full py-2 text-xs border border-amber-200 dark:border-amber-800 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-400 transition-all">
+                                        Partial Deduction
+                                    </button>
+                                    <button @click="cautionAction = 'full_forfeit'; showCautionForm = true"
+                                            class="w-full py-2 text-xs border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-all">
+                                        Full Forfeit
+                                    </button>
+                                </div>
+                                <form v-else @submit.prevent="submitCautionDirect" class="space-y-3">
+                                    <div class="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                        <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                            {{ cautionAction === 'full_refund' ? 'Full Refund' : cautionAction === 'partial_deduction' ? 'Partial Deduction' : 'Full Forfeit' }}
+                                        </p>
+                                    </div>
+                                    <div v-if="cautionAction === 'partial_deduction'">
+                                        <label class="block text-xs text-gray-500 mb-1">Deduction Amount (₦)</label>
+                                        <input v-model.number="cautionDeductionAmount" type="number" min="1" :max="booking.caution_fee - 1"
+                                               class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                        <p v-if="cautionDeductionAmount" class="mt-1 text-[11px] text-gray-400">
+                                            Refund: {{ fmt(booking.caution_fee - cautionDeductionAmount) }}
+                                        </p>
+                                    </div>
+                                    <div v-if="cautionAction !== 'full_refund'">
+                                        <label class="block text-xs text-gray-500 mb-1">Reason <span class="text-red-500">*</span></label>
+                                        <textarea v-model="cautionDeductionReason" rows="2"
+                                                  class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none" />
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="submit" :disabled="isRefunding"
+                                                class="flex-1 py-2 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all">
+                                            Process
+                                        </button>
+                                        <button type="button" @click="showCautionForm = false"
+                                                class="px-4 py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                                            Back
+                                        </button>
+                                    </div>
+                                </form>
+                            </template>
                         </div>
+
+                        <!-- Already processed -->
                         <div v-else-if="booking.caution_fee_refunded"
                              class="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
                             <p class="text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                                <CheckCircle class="w-3.5 h-3.5" /> Caution fee refunded
+                                <CheckCircle class="w-3.5 h-3.5" />
+                                Caution fee processed
+                                <span v-if="booking.caution_fee_deduction > 0" class="text-amber-600 dark:text-amber-400 ml-1">
+                                    · {{ fmt(booking.caution_fee_deduction) }} deducted
+                                </span>
                             </p>
                         </div>
 

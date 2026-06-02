@@ -142,6 +142,20 @@ class HandleInertiaRequests extends Middleware
                         ->count();
                 })()
                 : 0,
+
+            'pendingCautionRefunds' => auth()->check() && request()->routeIs('manage.*')
+                ? (function () {
+                    $user = auth()->user();
+                    // Only show to roles that can approve (manager and above)
+                    if (!$user->can('manage-bookings')) return 0;
+                    $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
+                    return Booking::where('caution_refund_requested', true)
+                        ->where('caution_fee_refunded', false)
+                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
+                        ->count();
+                })()
+                : 0,
+
         ]);
     }
 

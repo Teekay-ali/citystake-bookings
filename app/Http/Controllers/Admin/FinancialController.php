@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Booking;
 use App\Models\Building;
 use App\Models\FinancialTransaction;
 use App\Models\MaintenanceReport;
@@ -291,26 +292,29 @@ class FinancialController extends Controller
 
         $filter = $request->input('filter', 'outstanding');
 
-        $query = \App\Models\Booking::whereIn('building_id', $buildingIds)
+        $query = Booking::whereIn('building_id', $buildingIds)
             ->where('caution_fee', '>', 0)
             ->with(['building:id,name', 'unitType:id,name', 'unit:id,unit_number'])
-            ->when($filter === 'outstanding', fn($q) => $q->where('caution_fee_refunded', false))
-            ->when($filter === 'refunded',    fn($q) => $q->where('caution_fee_refunded', true))
+            ->when($filter === 'outstanding',
+                fn($q) => $q->where('caution_fee_refunded', false)->where('caution_refund_requested', false))
+            ->when($filter === 'pending_refund',
+                fn($q) => $q->where('caution_refund_requested', true)->where('caution_fee_refunded', false))
+            ->when($filter === 'refunded',
+                fn($q) => $q->where('caution_fee_refunded', true))
             ->latest('check_out');
 
         $deposits = $query->paginate(30)->withQueryString();
 
         $summary = [
-            'total_outstanding' => \App\Models\Booking::whereIn('building_id', $buildingIds)
+            'total_outstanding' => Booking::whereIn('building_id', $buildingIds)
+                ->where('caution_fee', '>', 0)->where('caution_fee_refunded', false)->sum('caution_fee'),
+            'total_refunded' => Booking::whereIn('building_id', $buildingIds)
+                ->where('caution_fee', '>', 0)->where('caution_fee_refunded', true)->sum('caution_fee'),
+            'count_outstanding' => Booking::whereIn('building_id', $buildingIds)
+                ->where('caution_fee', '>', 0)->where('caution_fee_refunded', false)->count(),
+            'count_pending_refund' => Booking::whereIn('building_id', $buildingIds)
                 ->where('caution_fee', '>', 0)
-                ->where('caution_fee_refunded', false)
-                ->sum('caution_fee'),
-            'total_refunded' => \App\Models\Booking::whereIn('building_id', $buildingIds)
-                ->where('caution_fee', '>', 0)
-                ->where('caution_fee_refunded', true)
-                ->sum('caution_fee'),
-            'count_outstanding' => \App\Models\Booking::whereIn('building_id', $buildingIds)
-                ->where('caution_fee', '>', 0)
+                ->where('caution_refund_requested', true)
                 ->where('caution_fee_refunded', false)
                 ->count(),
         ];

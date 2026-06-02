@@ -559,27 +559,128 @@ class BookingController extends Controller
         ]);
     }
 
-    public function refundCautionFee(Booking $booking)
+    public function requestCautionRefund(Request $request, Booking $booking)
+    {
+        abort_unless(auth()->user()->can('confirm-checkin'), 403);
+
+        if ($booking->caution_fee <= 0) {
+            return back()->with('error', 'This booking has no caution fee.');
+        }
+        if ($booking->caution_fee_refunded) {
+            return back()->with('error', 'Caution fee already processed.');
+        }
+        if ($booking->caution_refund_requested) {
+            return back()->with('error', 'A refund request is already pending approval.');
+        }
+
+        $validated = $request->validate([
+            'action'           => 'required|in:full_refund,partial_deduction,full_forfeit',
+            'reason'           => 'required_if:action,partial_deduction,full_forfeit|nullable|string|max:500',
+            'deduction_amount' => 'required_if:action,partial_deduction|nullable|numeric|min:1',
+        ]);
+
+        if (
+            $validated['action'] === 'partial_deduction' &&
+            (float) $validated['deduction_amount'] >= (float) $booking->caution_fee
+        ) {
+            return back()->with('error', 'Deduction cannot equal or exceed the full caution fee. Use Full Forfeit instead.');
+        }
+
+        $booking->update([
+            'caution_refund_requested'        => true,
+            'caution_refund_requested_at'     => now(),
+            'caution_refund_requested_by'     => auth()->id(),
+            'caution_refund_action'           => $validated['action'],
+            'caution_refund_reason'           => $validated['reason'] ?? null,
+            'caution_refund_deduction_amount' => $validated['action'] === 'partial_deduction'
+                ? $validated['deduction_amount'] : null,
+        ]);
+
+        AuditLog::log('booking.caution_refund_requested', $booking,
+            ['caution_refund_requested' => false],
+            ['action' => $validated['action'], 'by' => auth()->id()]
+        );
+
+        $managers = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
+        Notification::send($managers, new \App\Notifications\CautionRefundRequestedNotification($booking));
+
+        return back()->with('success', 'Caution refund request submitted. A manager will review it shortly.');
+    }
+
+    public function refundCautionFee(Request $request, Booking $booking)
     {
         abort_unless(auth()->user()->can('manage-bookings'), 403);
 
         if ($booking->caution_fee <= 0) {
             return back()->with('error', 'This booking has no caution fee.');
         }
-
         if ($booking->caution_fee_refunded) {
-            return back()->with('error', 'Caution fee already refunded.');
+            return back()->with('error', 'Caution fee already processed.');
+        }
+
+        // Use receptionist-submitted values if a request exists,
+        // otherwise use values submitted directly by manager
+        $action          = $booking->caution_refund_action
+            ?? $request->validate(['action' => 'required|in:full_refund,partial_deduction,full_forfeit'])['action'];
+        $deductionAmount = $booking->caution_refund_deduction_amount ?? $request->input('deduction_amount');
+        $reason          = $booking->caution_refund_reason ?? $request->input('reason');
+
+        $deduction = 0;
+
+        switch ($action) {
+            case 'full_refund':
+                $deduction      = 0;
+                $successMessage = 'Caution fee marked as fully refunded.';
+                break;
+
+            case 'partial_deduction':
+                $deduction = (float) $deductionAmount;
+                if ($deduction <= 0 || $deduction >= (float) $booking->caution_fee) {
+                    return back()->with('error', 'Invalid deduction amount.');
+                }
+                $successMessage = '₦' . number_format($deduction, 0) . ' deducted. ₦' .
+                    number_format($booking->caution_fee - $deduction, 0) . ' refunded.';
+                break;
+
+            case 'full_forfeit':
+                $deduction      = (float) $booking->caution_fee;
+                $successMessage = 'Caution fee fully forfeited and recorded as income.';
+                break;
+
+            default:
+                return back()->with('error', 'Invalid action.');
         }
 
         $booking->update([
-            'caution_fee_refunded'    => true,
-            'caution_fee_refunded_at' => now(),
-            'caution_fee_refunded_by' => auth()->id(),
+            'caution_fee_refunded'         => true,
+            'caution_fee_refunded_at'      => now(),
+            'caution_fee_refunded_by'      => auth()->id(),
+            'caution_fee_deduction'        => $deduction > 0 ? $deduction : null,
+            'caution_fee_deduction_reason' => $reason,
         ]);
 
-        AuditLog::log('booking.caution_fee_refunded', $booking, ['refunded' => false], ['refunded' => true, 'amount' => $booking->caution_fee]);
+        if ($deduction > 0) {
+            FinancialTransaction::create([
+                'building_id'      => $booking->building_id,
+                'recorded_by'      => auth()->id(),
+                'type'             => 'income',
+                'category'         => 'caution_fee_deduction',
+                'reference_type'   => Booking::class,
+                'reference_id'     => $booking->id,
+                'description'      => "Caution fee deduction — {$booking->guest_name} ({$booking->booking_reference})"
+                    . ($reason ? ": {$reason}" : ''),
+                'amount'           => $deduction,
+                'payment_method'   => 'cash',
+                'transaction_date' => now()->toDateString(),
+            ]);
+        }
 
-        return back()->with('success', 'Caution fee marked as refunded.');
+        AuditLog::log('booking.caution_fee_processed', $booking,
+            ['caution_fee_refunded' => false],
+            ['action' => $action, 'deduction' => $deduction, 'by' => auth()->id()]
+        );
+
+        return back()->with('success', $successMessage);
     }
 
 }
