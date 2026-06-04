@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { ArrowLeft, Send, Info } from 'lucide-vue-next'
@@ -42,12 +42,14 @@ function onDocumentChange(e) {
     const file = e.target.files[0]
     if (!file) return
     form.supporting_document = file
-    if (file.type.startsWith('image/')) {
-        documentPreview.value = URL.createObjectURL(file)
-    } else {
-        documentPreview.value = null
-    }
+    if (documentPreview.value) URL.revokeObjectURL(documentPreview.value)
+    documentPreview.value = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
 }
+
+onUnmounted(() => {
+    if (documentPreview.value) URL.revokeObjectURL(documentPreview.value)
+})
+
 function submit() {
     form.post(route('manage.payment-approvals.store'))
 }

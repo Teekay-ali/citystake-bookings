@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
@@ -69,12 +69,13 @@ function onPaymentEvidence(e) {
     const file = e.target.files[0]
     if (!file) return
     paidForm.payment_evidence = file
-    if (file.type.startsWith('image/')) {
-        paymentPreview.value = URL.createObjectURL(file)
-    } else {
-        paymentPreview.value = null
-    }
+    if (paymentPreview.value) URL.revokeObjectURL(paymentPreview.value)
+    paymentPreview.value = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
 }
+
+onUnmounted(() => {
+    if (paymentPreview.value) URL.revokeObjectURL(paymentPreview.value)
+})
 
 function submitPaid() {
     paidForm.post(route('manage.emergency-fund.mark-paid', props.efRequest.id), {

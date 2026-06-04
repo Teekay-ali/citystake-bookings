@@ -1,6 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useDarkMode } from '@/Composables/useDarkMode';
 import { usePage } from '@inertiajs/vue3';
 import { useToast } from 'vue-toastification';
@@ -33,12 +33,15 @@ function handleFlash(flash) {
     if (flash?.warning) toast.warning(flash.warning)
 }
 
+const onScroll = () => { isScrolled.value = window.scrollY > 10; };
+
 onMounted(() => {
     handleFlash(page.props.flash);
+    window.addEventListener('scroll', onScroll, { passive: true });
+});
 
-    window.addEventListener('scroll', () => {
-        isScrolled.value = window.scrollY > 10;
-    }, { passive: true });
+onUnmounted(() => {
+    window.removeEventListener('scroll', onScroll);
 });
 
 watch(() => page.props.flash, handleFlash, { deep: true });

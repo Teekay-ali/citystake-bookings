@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import {
     Calendar,
@@ -59,6 +59,8 @@ const paystackLoaded = ref(false);
 const toast = useToast();
 
 // Load Paystack script
+onUnmounted(() => clearInterval(countdownInterval));
+
 onMounted(() => {
 
     // Start countdown

@@ -121,18 +121,19 @@ function formatTime(dateStr) {
     return date.toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })
 }
 
+const onVisibilityChange = () => { if (!document.hidden) fetchUnreadCount() }
+
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     // Poll every 45 seconds
     pollInterval = setInterval(fetchUnreadCount, 45000)
     // Also refresh on tab focus
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) fetchUnreadCount()
-    })
+    document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    document.removeEventListener('visibilitychange', onVisibilityChange)
     clearInterval(pollInterval)
 })
 </script>

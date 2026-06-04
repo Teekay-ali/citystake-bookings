@@ -85,6 +85,8 @@ watch(() => form.building_id, () => {
     unitsLoaded.value    = false
 })
 
+let unitFetchController = null
+
 watch([() => form.unit_type_id, () => form.check_in, () => form.check_out], async ([unitTypeId, checkIn, checkOut]) => {
     form.unit_id    = ''
     availableUnits.value = []
@@ -92,11 +94,16 @@ watch([() => form.unit_type_id, () => form.check_in, () => form.check_out], asyn
 
     if (!unitTypeId || !checkIn || !checkOut) return
 
+    // Cancel any in-flight request before starting a new one
+    if (unitFetchController) unitFetchController.abort()
+    unitFetchController = new AbortController()
+
     loadingUnits.value = true
     try {
         const res = await fetch(
             route('manage.bookings.available-units') +
-            `?unit_type_id=${unitTypeId}&check_in=${checkIn}&check_out=${checkOut}`
+            `?unit_type_id=${unitTypeId}&check_in=${checkIn}&check_out=${checkOut}`,
+            { signal: unitFetchController.signal }
         )
         availableUnits.value = await res.json()
         unitsLoaded.value    = true
@@ -106,8 +113,8 @@ watch([() => form.unit_type_id, () => form.check_in, () => form.check_out], asyn
             const match = availableUnits.value.find(u => u.id == props.prefill.unit_id)
             if (match) form.unit_id = match.id
         }
-    } catch {
-        availableUnits.value = []
+    } catch (e) {
+        if (e.name !== 'AbortError') availableUnits.value = []
     } finally {
         loadingUnits.value = false
     }

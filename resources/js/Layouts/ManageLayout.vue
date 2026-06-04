@@ -51,21 +51,25 @@ async function checkConnectivity() {
     }
 }
 
+const handleOffline = () => { isOnline.value = false }
+const handleSwMessage = (event) => {
+    if (event.data?.type === 'ONLINE')  isOnline.value = true
+    if (event.data?.type === 'OFFLINE') isOnline.value = false
+}
+
+let connectivityInterval = null
+
 onMounted(() => {
     checkConnectivity()
 
-    window.addEventListener('online', checkConnectivity)
-    window.addEventListener('offline', () => isOnline.value = false)
+    window.addEventListener('online',  checkConnectivity)
+    window.addEventListener('offline', handleOffline)
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data?.type === 'ONLINE')  isOnline.value = true
-            if (event.data?.type === 'OFFLINE') isOnline.value = false
-        })
+        navigator.serviceWorker.addEventListener('message', handleSwMessage)
     }
 
-    const interval = setInterval(checkConnectivity, 15000)
-    onUnmounted(() => clearInterval(interval))
+    connectivityInterval = setInterval(checkConnectivity, 15000)
 })
 
 const openMenus = ref(
@@ -204,6 +208,12 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
     document.removeEventListener('click', handleSearchClickOutside)
+    window.removeEventListener('online',  checkConnectivity)
+    window.removeEventListener('offline', handleOffline)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleSwMessage)
+    }
+    clearInterval(connectivityInterval)
 })
 
 // ── Quick actions ─────────────────────────────────────────────

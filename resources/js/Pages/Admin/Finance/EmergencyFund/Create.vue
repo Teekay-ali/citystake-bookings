@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { ArrowLeft, ShieldAlert, AlertTriangle, Upload, FileText } from 'lucide-vue-next'
@@ -36,12 +36,13 @@ function onEvidenceChange(e) {
     const file = e.target.files[0]
     if (!file) return
     form.evidence = file
-    if (file.type.startsWith('image/')) {
-        evidencePreview.value = URL.createObjectURL(file)
-    } else {
-        evidencePreview.value = null
-    }
+    if (evidencePreview.value) URL.revokeObjectURL(evidencePreview.value)
+    evidencePreview.value = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
 }
+
+onUnmounted(() => {
+    if (evidencePreview.value) URL.revokeObjectURL(evidencePreview.value)
+})
 
 function submit() {
     form.post(route('manage.emergency-fund.store'), { forceFormData: true })

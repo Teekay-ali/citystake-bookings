@@ -135,20 +135,37 @@ function submitResume() {
 }
 
 // ── Late checkout ──────────────────────────────────────────────
-const lateCheckoutForm = useForm({ action: '' })
+const lateCheckoutForm         = useForm({ action: '' })
+const isLateCheckoutProcessing = ref(false)
 
 function approveLateCheckout(action) {
+    if (isLateCheckoutProcessing.value) return
+    isLateCheckoutProcessing.value = true
     router.post(route('manage.bookings.late-checkout.approve', props.booking.id), {
         action,
         hours: action === 'approved' ? lateCheckoutHours.value : null,
-    }, { preserveScroll: true })
+    }, {
+        preserveScroll: true,
+        onFinish: () => { isLateCheckoutProcessing.value = false },
+    })
 }
 
 function settleLateCheckout() {
-    router.post(route('manage.bookings.late-checkout.settle', props.booking.id), {}, { preserveScroll: true })
+    if (isLateCheckoutProcessing.value) return
+    isLateCheckoutProcessing.value = true
+    router.post(route('manage.bookings.late-checkout.settle', props.booking.id), {}, {
+        preserveScroll: true,
+        onFinish: () => { isLateCheckoutProcessing.value = false },
+    })
 }
+
 function requestLateCheckout() {
-    router.post(route('manage.bookings.late-checkout.request', props.booking.id), {}, { preserveScroll: true })
+    if (isLateCheckoutProcessing.value) return
+    isLateCheckoutProcessing.value = true
+    router.post(route('manage.bookings.late-checkout.request', props.booking.id), {}, {
+        preserveScroll: true,
+        onFinish: () => { isLateCheckoutProcessing.value = false },
+    })
 }
 
 // ── Caution fee ────────────────────────────────────────────────
@@ -208,23 +225,40 @@ const modifyForm      = useForm({
 
 const modifyUnits        = ref([])
 const loadingModifyUnits = ref(false)
+let modifyFetchController = null
 
 watch([() => modifyForm.check_in, () => modifyForm.check_out], async ([checkIn, checkOut]) => {
     if (!checkIn || !checkOut) return
+    if (modifyFetchController) modifyFetchController.abort()
+    modifyFetchController = new AbortController()
     modifyForm.unit_id = ''
     modifyUnits.value  = []
     loadingModifyUnits.value = true
     try {
         const res = await fetch(
             route('manage.bookings.available-units') +
-            `?unit_type_id=${props.booking.unit_type_id}&check_in=${checkIn}&check_out=${checkOut}&exclude_booking=${props.booking.id}`
+            `?unit_type_id=${props.booking.unit_type_id}&check_in=${checkIn}&check_out=${checkOut}&exclude_booking=${props.booking.id}`,
+            { signal: modifyFetchController.signal }
         )
         modifyUnits.value = await res.json()
-    } catch {
-        modifyUnits.value = []
+    } catch (e) {
+        if (e.name !== 'AbortError') modifyUnits.value = []
     } finally {
         loadingModifyUnits.value = false
     }
+})
+
+// Keep modifyForm in sync if Inertia refreshes the booking prop
+watch(() => props.booking, (booking) => {
+    modifyForm.check_in         = booking.check_in
+    modifyForm.check_out        = booking.check_out
+    modifyForm.nights           = booking.nights
+    modifyForm.unit_id          = booking.unit_id
+    modifyForm.guests           = booking.guests
+    modifyForm.guest_name       = booking.guest_name
+    modifyForm.guest_email      = booking.guest_email
+    modifyForm.guest_phone      = booking.guest_phone
+    modifyForm.special_requests = booking.special_requests ?? ''
 })
 
 // Sync nights when dates change
@@ -755,7 +789,8 @@ const inputCls = (hasError = false) => [
                             </p>
                             <div v-if="!booking.late_checkout_requested">
                                 <button @click="requestLateCheckout"
-                                        class="w-full py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-all">
+                                        :disabled="isLateCheckoutProcessing"
+                                        class="w-full py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 text-gray-600 dark:text-gray-400 transition-all">
                                     Request Late Checkout
                                 </button>
                             </div>
@@ -779,15 +814,17 @@ const inputCls = (hasError = false) => [
                                     </div>
                                     <div class="flex gap-2">
                                         <button @click="approveLateCheckout('approved')"
-                                                :disabled="!lateCheckoutHours"
+                                                :disabled="!lateCheckoutHours || isLateCheckoutProcessing"
                                                 class="flex-1 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-lg transition-all">Approve</button>
                                         <button @click="approveLateCheckout('rejected')"
-                                                class="flex-1 py-1.5 text-xs border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">Reject</button>
+                                                :disabled="isLateCheckoutProcessing"
+                                                class="flex-1 py-1.5 text-xs border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40 transition-all">Reject</button>
                                     </div>
                                 </div>
                                 <button v-if="booking.late_checkout_status === 'approved' && can('confirm-checkin')"
                                         @click="settleLateCheckout"
-                                        class="w-full py-1.5 text-xs bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all">
+                                        :disabled="isLateCheckoutProcessing"
+                                        class="w-full py-1.5 text-xs bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white rounded-lg transition-all">
                                     Mark Fee as Settled
                                 </button>
                             </div>
