@@ -585,14 +585,6 @@ const daysUntilCheckIn = computed(() => {
                                 <span class="text-gray-600">{{ booking.nights }} night(s) × {{ formatPrice(booking.subtotal / booking.nights) }}</span>
                                 <span class="text-gray-900">{{ formatPrice(booking.subtotal) }}</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Cleaning fee</span>
-                                <span class="text-gray-900">{{ formatPrice(booking.cleaning_fee) }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Service charge</span>
-                                <span class="text-gray-900">{{ formatPrice(booking.service_charge) }}</span>
-                            </div>
                             <div class="flex justify-between pt-2 border-t border-gray-200 font-semibold text-base">
                                 <span class="text-gray-900">Total Paid</span>
                                 <span class="text-gray-900">{{ formatPrice(booking.total_amount) }}</span>

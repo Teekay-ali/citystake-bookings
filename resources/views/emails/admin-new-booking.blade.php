@@ -68,14 +68,6 @@
                 <span>₦{{ number_format($booking->subtotal, 0) }}</span>
             </div>
             <div class="total-row">
-                <span>Cleaning fee</span>
-                <span>₦{{ number_format($booking->cleaning_fee, 0) }}</span>
-            </div>
-            <div class="total-row">
-                <span>Service charge</span>
-                <span>₦{{ number_format($booking->service_charge, 0) }}</span>
-            </div>
-            <div class="total-row">
                 <span>Total Amount</span>
                 <span>₦{{ number_format($booking->total_amount, 0) }}</span>
             </div>

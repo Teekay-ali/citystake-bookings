@@ -22,8 +22,6 @@ class UnitType extends Model
         'bedroom_type',
         'max_guests',
         'base_price_per_night',
-        'cleaning_fee',
-        'service_charge_percent',
         'description',
         'specific_amenities',
         'is_active',
@@ -31,8 +29,6 @@ class UnitType extends Model
 
     protected $casts = [
         'base_price_per_night' => 'decimal:2',
-        'cleaning_fee' => 'decimal:2',
-        'service_charge_percent' => 'decimal:2',
         'specific_amenities' => 'array',
         'is_active' => 'boolean',
     ];

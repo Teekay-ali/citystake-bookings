@@ -164,14 +164,6 @@ const canCancel = computed(() => {
                                 <span class="text-gray-600">{{ booking.nights }} night(s) × {{ formatPrice(booking.subtotal / booking.nights) }}</span>
                                 <span class="text-gray-900">{{ formatPrice(booking.subtotal) }}</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Cleaning fee</span>
-                                <span class="text-gray-900">{{ formatPrice(booking.cleaning_fee) }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Service charge</span>
-                                <span class="text-gray-900">{{ formatPrice(booking.service_charge) }}</span>
-                            </div>
                             <div class="flex justify-between pt-2 border-t border-gray-200 font-semibold text-base">
                                 <span class="text-gray-900">Total Paid</span>
                                 <span class="text-gray-900">{{ formatPrice(booking.total_amount) }}</span>
@@ -272,14 +264,6 @@ const canCancel = computed(() => {
                                 <div class="flex justify-between text-gray-600 dark:text-gray-400">
                                     <span>{{ booking.nights }} nights</span>
                                     <span>{{ formatPrice(booking.subtotal) }}</span>
-                                </div>
-                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                    <span>Cleaning fee</span>
-                                    <span>{{ formatPrice(booking.cleaning_fee) }}</span>
-                                </div>
-                                <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                                    <span>Service charge</span>
-                                    <span>{{ formatPrice(booking.service_charge) }}</span>
                                 </div>
                                 <div v-if="booking.caution_fee > 0" class="flex justify-between text-gray-600 dark:text-gray-400">
         <span class="flex items-center gap-1.5">

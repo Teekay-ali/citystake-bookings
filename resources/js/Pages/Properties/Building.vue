@@ -210,10 +210,7 @@ function bookingForUnitType(unitTypeId) {
                                                 class="mb-4"
                                             />
 
-                                            <div class="flex items-center justify-between">
-                                                <p class="text-xs text-gray-400">
-                                                    + ₦{{ Number(unitType.cleaning_fee).toLocaleString() }} cleaning fee
-                                                </p>
+                                            <div class="flex items-center justify-end">
                                                 <Link :href="route('properties.show', [building.slug, unitType.slug])"
                                                       class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl hover:opacity-90 transition-all group/btn">
                                                     View & Book

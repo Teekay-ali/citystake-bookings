@@ -23,8 +23,6 @@ const form = useForm({
     bedroom_type: '2-bed',
     max_guests: 4,
     base_price_per_night: '',
-    cleaning_fee: '',
-    service_charge_percent: 10,
     description: '',
     specific_amenities: [],
     is_active: true,
@@ -253,58 +251,6 @@ const submit = () => {
                                 </p>
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Cleaning Fee <span class="text-red-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">₦</span>
-                                    <input
-                                        v-model.number="form.cleaning_fee"
-                                        type="number"
-                                        min="0"
-                                        step="500"
-                                        required
-                                        placeholder="5000"
-                                        :class="[
-                                            'w-full pl-8 pr-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
-                                            form.errors.cleaning_fee
-                                                ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
-                                                : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white'
-                                        ]"
-                                    />
-                                </div>
-                                <p v-if="form.errors.cleaning_fee" class="mt-2 text-sm text-red-600 dark:text-red-400">
-                                    {{ form.errors.cleaning_fee }}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Service Charge (%) <span class="text-red-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    <input
-                                        v-model.number="form.service_charge_percent"
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        step="0.5"
-                                        required
-                                        placeholder="10"
-                                        :class="[
-                                            'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
-                                            form.errors.service_charge_percent
-                                                ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
-                                                : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white'
-                                        ]"
-                                    />
-                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">%</span>
-                                </div>
-                                <p v-if="form.errors.service_charge_percent" class="mt-2 text-sm text-red-600 dark:text-red-400">
-                                    {{ form.errors.service_charge_percent }}
-                                </p>
-                            </div>
                         </div>
                     </div>
 

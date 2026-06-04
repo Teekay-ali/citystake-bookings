@@ -112,7 +112,7 @@ class BookingController extends Controller
 
         $buildings = $this->accessibleBuildings()
             ->with([
-                'unitTypes:id,building_id,name,bedroom_type,base_price_per_night,cleaning_fee,service_charge_percent,max_guests',
+                'unitTypes:id,building_id,name,bedroom_type,base_price_per_night,max_guests',
                 'unitTypes.units:id,unit_type_id,unit_number,floor,status,is_available',
             ])
             ->select('id', 'name', 'caution_fee_amount', 'standard_checkout_time', 'late_checkout_fee_per_hour')
@@ -213,45 +213,40 @@ class BookingController extends Controller
                 }
             }
 
-            // Calculate pricing (reuse existing logic)
-            $subtotal      = $unitType->base_price_per_night * $nights;
-            $discount      = DiscountService::resolve($nights);
-            $discountAmt   = $discount['percent'] > 0
-                ? round($subtotal * ($discount['percent'] / 100), 2)
-                : 0;
-            $cautionFee = $nights === 1
-                ? (float) $unitType->base_price_per_night
-                : (float) ($building->caution_fee_amount ?? 70000);
-
-            $totalAmount = ($subtotal - $discountAmt) + $cautionFee;
+            // Calculate pricing using the model method so nothing is missed
+            $bookingModel = new Booking([
+                'check_in'  => $validated['check_in'],
+                'check_out' => $validated['check_out'],
+            ]);
+            $bookingModel->calculateTotal($unitType);
 
             // Create booking
             $booking = Booking::create([
                 'booking_reference' => Booking::generateReference(),
-                'building_id' => $building->id,
-                'unit_type_id' => $unitType->id,
-                'unit_id' => $availableUnit->id,
-                'user_id' => null,
+                'building_id'       => $building->id,
+                'unit_type_id'      => $unitType->id,
+                'unit_id'           => $availableUnit->id,
+                'user_id'           => null,
                 'created_by_admin_id' => auth()->id(),
-                'check_in' => $validated['check_in'],
-                'check_out' => $validated['check_out'],
-                'guests' => $validated['guests'],
-                'nights' => $nights,
-                'guest_name' => $validated['guest_name'],
-                'guest_email' => $validated['guest_email'],
-                'guest_phone' => $validated['guest_phone'],
-                'special_requests' => $validated['special_requests'] ?? null,
-                'subtotal' => $subtotal,
-                'total_amount' => $totalAmount,
-                'discount_type'    => $discount['type'],
-                'discount_percent' => $discount['percent'],
-                'discount_amount'  => $discountAmt,
-                'caution_fee' => $cautionFee,
-                'status' => 'confirmed',
-                'payment_status' => 'paid',
-                'payment_method' => $validated['payment_method'],
-                'paystack_reference' => $validated['payment_reference'],
-                'paid_at' => now(),
+                'check_in'          => $validated['check_in'],
+                'check_out'         => $validated['check_out'],
+                'guests'            => $validated['guests'],
+                'nights'            => $bookingModel->nights,
+                'guest_name'        => $validated['guest_name'],
+                'guest_email'       => $validated['guest_email'],
+                'guest_phone'       => $validated['guest_phone'],
+                'special_requests'  => $validated['special_requests'] ?? null,
+                'subtotal'          => $bookingModel->subtotal,
+                'total_amount'      => $bookingModel->total_amount,
+                'discount_type'     => $bookingModel->discount_type,
+                'discount_percent'  => $bookingModel->discount_percent,
+                'discount_amount'   => $bookingModel->discount_amount,
+                'caution_fee'       => $bookingModel->caution_fee,
+                'status'            => 'confirmed',
+                'payment_status'    => 'paid',
+                'payment_method'    => $validated['payment_method'],
+                'paystack_reference'=> $validated['payment_reference'],
+                'paid_at'           => now(),
             ]);
 
             FinancialTransaction::create([

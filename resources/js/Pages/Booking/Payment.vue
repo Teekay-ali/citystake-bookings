@@ -309,14 +309,6 @@ const payWithMonnify = () => {
                             <span>{{ formatPrice(booking.subtotal / booking.nights) }} × {{ booking.nights }} nights</span>
                             <span>{{ formatPrice(booking.subtotal) }}</span>
                         </div>
-                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                            <span>Cleaning fee</span>
-                            <span>{{ formatPrice(booking.cleaning_fee) }}</span>
-                        </div>
-                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                            <span>Service charge</span>
-                            <span>{{ formatPrice(booking.service_charge) }}</span>
-                        </div>
                     </div>
 
                     <!-- Total -->

@@ -131,8 +131,6 @@ const calculateNights = computed(() => {
 const estimatedTotal = computed(() => {
     if (calculateNights.value === 0) return 0
     const subtotal = calculateNights.value * parseFloat(props.unitType.base_price_per_night)
-    const cleaning = parseFloat(props.unitType.cleaning_fee) || 0
-    const service  = subtotal * ((parseFloat(props.unitType.service_charge_percent) || 0) / 100)
     const cautionFee = calculateNights.value === 1
         ? parseFloat(props.unitType.base_price_per_night)
         : parseFloat(props.building.caution_fee_amount ?? 70000)
@@ -140,7 +138,7 @@ const estimatedTotal = computed(() => {
     if (calculateNights.value >= 7) {
         discountAmount = Math.round(subtotal * 0.05 * 100) / 100
     }
-    return (subtotal - discountAmount) + cleaning + service + cautionFee
+    return (subtotal - discountAmount) + cautionFee
 })
 
 const allAmenities = computed(() => {
@@ -609,14 +607,7 @@ const proceedToBooking = () => {
                                         <span>{{ formatPrice(unitType.base_price_per_night) }} × {{ calculateNights }} nights</span>
                                         <span>{{ formatPrice(calculateNights * parseFloat(unitType.base_price_per_night)) }}</span>
                                     </div>
-                                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                                        <span>Cleaning fee</span>
-                                        <span>{{ formatPrice(unitType.cleaning_fee) }}</span>
-                                    </div>
-                                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                                        <span>Service charge</span>
-                                        <span>{{ formatPrice((calculateNights * parseFloat(unitType.base_price_per_night)) * (parseFloat(unitType.service_charge_percent) / 100)) }}</span>
-                                    </div>
+
 
                                     <div v-if="calculateNights > 0" class="flex justify-between text-sm">
                                         <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
