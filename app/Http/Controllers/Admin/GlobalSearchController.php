@@ -58,11 +58,19 @@ class GlobalSearchController extends Controller
                 'url'      => route('manage.availability.index'),
             ]);
 
-        // Staff/guests — by name or email
+        // Staff/guests — by name or email, scoped to accessible buildings for non-global users
         $users = User::where(function ($q) use ($query) {
             $q->where('name', 'like', "%{$query}%")
                 ->orWhere('email', 'like', "%{$query}%");
         })
+            ->when($buildingIds, function ($q) use ($buildingIds) {
+                $q->where(function ($inner) use ($buildingIds) {
+                    // Guests with bookings in accessible buildings
+                    $inner->whereHas('bookings', fn($b) => $b->whereIn('building_id', $buildingIds))
+                        // Staff assigned to accessible buildings
+                        ->orWhereHas('buildings', fn($b) => $b->whereIn('buildings.id', $buildingIds));
+                });
+            })
             ->limit(3)
             ->get(['id', 'name', 'email', 'is_staff', 'is_admin'])
             ->map(fn($u) => [

@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -61,6 +62,21 @@ class AdminUserController extends Controller
 
         AuditLog::log('admin.password_reset', $user, null, ['reset_by' => auth()->id()]);
 
-        return back()->with('success', "Password reset. New password: {$newPassword}");
+        try {
+            Mail::send([], [], function ($mail) use ($user, $newPassword) {
+                $mail->to($user->email, $user->name)
+                    ->subject('Your password has been reset')
+                    ->html(
+                        '<p>Hi ' . e($user->name) . ',</p>' .
+                        '<p>Your account password has been reset by an administrator.</p>' .
+                        '<p><strong>New password:</strong> ' . e($newPassword) . '</p>' .
+                        '<p>Please log in and change your password immediately.</p>'
+                    );
+            });
+        } catch (\Exception $e) {
+            \Log::error('Failed to send password reset email', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+
+        return back()->with('success', "{$user->name}'s password has been reset and emailed to them.");
     }
 }

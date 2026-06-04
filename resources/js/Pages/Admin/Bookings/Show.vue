@@ -328,10 +328,10 @@ const inputCls = (hasError = false) => [
             </div>
 
             <!-- ── Body ── -->
-            <div class="flex flex-1 overflow-hidden">
+            <div class="flex flex-col lg:flex-row flex-1 overflow-hidden">
 
                 <!-- ── Left: scrollable details ── -->
-                <div class="flex-1 overflow-y-auto p-6 space-y-5">
+                <div class="flex-1 overflow-y-auto min-h-0">
 
                     <!-- Guest + Property row -->
                     <div class="grid grid-cols-2 gap-4">
@@ -604,8 +604,7 @@ const inputCls = (hasError = false) => [
                 </div>
 
                 <!-- ── Right: actions sidebar ── -->
-                <div class="w-72 shrink-0 border-l border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 overflow-y-auto flex flex-col">
-
+                <div class="w-full lg:w-72 shrink-0 lg:border-l border-t lg:border-t-0 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 overflow-y-auto">
                     <div class="p-4 border-b border-gray-200 dark:border-gray-800">
                         <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Actions</p>
                     </div>

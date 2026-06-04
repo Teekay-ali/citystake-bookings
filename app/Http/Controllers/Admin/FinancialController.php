@@ -132,9 +132,17 @@ class FinancialController extends Controller
             'transaction_date' => 'required|date',
         ]);
 
+        // Resolve building scope before fetching the record to avoid existence probing
+        $user        = auth()->user();
+        $buildingIds = $user->hasGlobalAccess() ? null : ($user->accessibleBuildingIds() ?? []);
+
         if ($type === 'maintenance') {
-            $record = MaintenanceReport::findOrFail($id);
             abort_unless(auth()->user()->can('pay-maintenance'), 403);
+            $record = MaintenanceReport::findOrFail($id);
+
+            if ($buildingIds !== null) {
+                abort_unless(in_array($record->building_id, $buildingIds), 403);
+            }
 
             $record->update([
                 'status'          => 'completed',
@@ -150,8 +158,12 @@ class FinancialController extends Controller
             $refId       = $record->id;
 
         } else {
-            $record = ProcurementRequest::findOrFail($id);
             abort_unless(auth()->user()->can('purchase-procurement'), 403);
+            $record = ProcurementRequest::findOrFail($id);
+
+            if ($buildingIds !== null) {
+                abort_unless(in_array($record->building_id, $buildingIds), 403);
+            }
 
             $record->update([
                 'status'       => 'purchased',
@@ -164,15 +176,6 @@ class FinancialController extends Controller
             $buildingId  = $record->building_id;
             $refType     = ProcurementRequest::class;
             $refId       = $record->id;
-        }
-
-        $user        = auth()->user();
-        $buildingIds = $user->hasGlobalAccess()
-            ? null
-            : ($user->accessibleBuildingIds() ?? []);
-
-        if ($buildingIds !== null) {
-            abort_unless(in_array($record->building_id, $buildingIds), 403);
         }
 
         FinancialTransaction::create([

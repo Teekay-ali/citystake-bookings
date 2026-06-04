@@ -103,6 +103,7 @@ class UnitType extends Model
     public function getAvailableUnitsCount(string $checkIn, string $checkOut): int
     {
         return $this->units()
+            ->where('is_available', true)
             ->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
                 $query->whereNotIn('status', ['cancelled', 'paused'])
                     ->where(function ($q) use ($checkIn, $checkOut) {

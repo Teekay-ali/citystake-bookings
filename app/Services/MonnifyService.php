@@ -29,7 +29,9 @@ class MonnifyService
      */
     protected function getAccessToken(): string
     {
-        return Cache::remember('monnify_access_token', 55 * 60, function () {
+        $cacheKey = config('app.env') . '_monnify_access_token';
+
+        return Cache::remember($cacheKey, 55 * 60, function () {
             $credentials = base64_encode("{$this->apiKey}:{$this->secretKey}");
 
             $response = $this->client->post("{$this->baseUrl}/api/v1/auth/login", [
@@ -77,6 +79,37 @@ class MonnifyService
 
         } catch (GuzzleException $e) {
             Log::error('Monnify Verify Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function refundTransaction(string $transactionReference, float $amount, string $reason = 'Refund'): array
+    {
+        try {
+            $token = $this->getAccessToken();
+
+            $response = $this->client->post("{$this->baseUrl}/api/v1/merchant/transactions/refund", [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => [
+                    'transactionReference' => $transactionReference,
+                    'refundReason'         => $reason,
+                    'refundAmount'         => $amount,
+                ],
+            ]);
+
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            if (! ($data['requestSuccessful'] ?? false)) {
+                throw new \RuntimeException('Monnify refund failed: ' . ($data['responseMessage'] ?? 'unknown error'));
+            }
+
+            return $data['responseBody'];
+
+        } catch (GuzzleException $e) {
+            Log::error('Monnify Refund Error: ' . $e->getMessage());
             throw $e;
         }
     }

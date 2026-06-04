@@ -10,6 +10,7 @@ use App\Models\FinancialTransaction;
 use App\Notifications\NewBookingNotification;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -23,7 +24,7 @@ class MonnifyWebhookController extends Controller
         $hash      = $request->header('monnify-signature');
         $payload   = $request->getContent();
 
-        $computed = hash('sha512', $payload . $secret);
+        $computed = hash_hmac('sha512', $payload, $secret);
 
         if (! hash_equals($computed, (string) $hash)) {
             Log::warning('Monnify webhook: invalid signature');
@@ -80,30 +81,31 @@ class MonnifyWebhookController extends Controller
             return response()->json(['message' => 'Amount mismatch'], 200);
         }
 
-        // ── 6. Confirm booking ────────────────────────────────────────
-        $booking->update([
-            'payment_status'    => 'paid',
-            'status'            => 'confirmed',
-            'payment_method'    => 'monnify',
-            'monnify_reference' => $transactionRef,
-            'paid_at'           => now(),
-        ]);
+        // ── 6 & 7. Confirm booking + financial transaction (atomic) ──────
+        DB::transaction(function () use ($booking, $paymentReference, $transactionRef) {
+            $booking->update([
+                'payment_status'    => 'paid',
+                'status'            => 'confirmed',
+                'payment_method'    => 'monnify',
+                'monnify_reference' => $transactionRef,
+                'paid_at'           => now(),
+            ]);
 
-        // ── 7. Financial transaction ──────────────────────────────────
-        FinancialTransaction::firstOrCreate(
-            ['payment_reference' => $paymentReference, 'reference_type' => Booking::class],
-            [
-                'building_id'    => $booking->building_id,
-                'recorded_by'    => $booking->user_id ?? 1,
-                'type'           => 'income',
-                'category'       => 'booking',
-                'reference_id'   => $booking->id,
-                'description'    => "Booking {$booking->booking_reference} - {$booking->guest_name}",
-                'amount'         => $booking->total_amount,
-                'payment_method' => 'monnify',
-                'transaction_date' => now()->toDateString(),
-            ]
-        );
+            FinancialTransaction::firstOrCreate(
+                ['payment_reference' => $paymentReference, 'reference_type' => Booking::class],
+                [
+                    'building_id'     => $booking->building_id,
+                    'recorded_by'     => $booking->user_id ?? 1,
+                    'type'            => 'income',
+                    'category'        => 'booking',
+                    'reference_id'    => $booking->id,
+                    'description'     => "Booking {$booking->booking_reference} - {$booking->guest_name}",
+                    'amount'          => $booking->total_amount,
+                    'payment_method'  => 'monnify',
+                    'transaction_date' => now()->toDateString(),
+                ]
+            );
+        });
 
         // ── 8. Notifications & emails ─────────────────────────────────
         try {

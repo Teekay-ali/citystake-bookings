@@ -230,6 +230,7 @@ class Booking extends Model
         return $this->status !== 'cancelled'
             && $this->status !== 'completed'
             && $this->status !== 'checked_in'
+            && $this->status !== 'paused'
             && $this->check_in > now();
     }
 

@@ -11,6 +11,7 @@ use App\Notifications\NewBookingNotification;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -68,26 +69,29 @@ class PaystackWebhookController extends Controller
             return;
         }
 
-        $booking->update([
-            'payment_status'     => 'paid',
-            'status'             => 'confirmed',
-            'paystack_reference' => $reference,
-            'paid_at'            => now(),
-        ]);
+        DB::transaction(function () use ($booking, $reference) {
+            $booking->update([
+                'payment_status'     => 'paid',
+                'status'             => 'confirmed',
+                'paystack_reference' => $reference,
+                'paid_at'            => now(),
+            ]);
 
-        FinancialTransaction::create([
-            'building_id'       => $booking->building_id,
-            'recorded_by'       => $booking->user_id ?? 1,
-            'type'              => 'income',
-            'category'          => 'booking',
-            'reference_type'    => Booking::class,
-            'reference_id'      => $booking->id,
-            'description'       => "Booking {$booking->booking_reference} - {$booking->guest_name} (webhook)",
-            'amount'            => $booking->total_amount,
-            'payment_method'    => 'paystack',
-            'payment_reference' => $reference,
-            'transaction_date'  => now()->toDateString(),
-        ]);
+            FinancialTransaction::firstOrCreate(
+                ['payment_reference' => $reference, 'reference_type' => Booking::class],
+                [
+                    'building_id'     => $booking->building_id,
+                    'recorded_by'     => $booking->user_id ?? 1,
+                    'type'            => 'income',
+                    'category'        => 'booking',
+                    'reference_id'    => $booking->id,
+                    'description'     => "Booking {$booking->booking_reference} - {$booking->guest_name} (webhook)",
+                    'amount'          => $booking->total_amount,
+                    'payment_method'  => 'paystack',
+                    'transaction_date' => now()->toDateString(),
+                ]
+            );
+        });
 
         try {
             Mail::to($booking->guest_email)->send(new BookingConfirmation($booking->load(['building', 'unitType', 'unit'])));

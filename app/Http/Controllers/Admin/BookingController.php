@@ -231,8 +231,8 @@ class BookingController extends Controller
                 'building_id' => $building->id,
                 'unit_type_id' => $unitType->id,
                 'unit_id' => $availableUnit->id,
-                'user_id' => null, // Admin-created bookings don't have user_id
-                'created_by_admin_id' => auth()->id(), // Add this - the admin who created it
+                'user_id' => null,
+                'created_by_admin_id' => auth()->id(),
                 'check_in' => $validated['check_in'],
                 'check_out' => $validated['check_out'],
                 'guests' => $validated['guests'],
@@ -378,7 +378,7 @@ class BookingController extends Controller
         if ($datesChanged || $unitChanged) {
             $conflict = Booking::where('unit_id', $unitId)
                 ->where('id', '!=', $booking->id)
-                ->whereNotIn('status', ['cancelled'])
+                ->whereNotIn('status', ['cancelled', 'paused'])
                 ->where('check_in', '<', $checkOut)
                 ->where('check_out', '>', $checkIn)
                 ->exists();
@@ -451,7 +451,7 @@ class BookingController extends Controller
         $unitType = UnitType::findOrFail($request->unit_type_id);
 
         $bookedUnitIds = Booking::where('unit_type_id', $unitType->id)
-            ->whereNotIn('status', ['cancelled'])
+            ->whereNotIn('status', ['cancelled', 'paused'])
             ->where('check_in', '<', $request->check_out)
             ->where('check_out', '>', $request->check_in)
             ->when($request->exclude_booking, fn($q) => $q->where('id', '!=', $request->exclude_booking))
@@ -501,6 +501,22 @@ class BookingController extends Controller
             'checkin_payment_method' => $validated['checkin_payment_method'],
             'checkin_notes'          => $validated['checkin_notes'] ?? null,
         ]);
+
+        // Record the check-in payment in the financial ledger if any amount was collected
+        if ((float) $validated['amount_received'] > 0) {
+            FinancialTransaction::create([
+                'building_id'       => $booking->building_id,
+                'recorded_by'       => auth()->id(),
+                'type'              => 'income',
+                'category'          => 'booking',
+                'reference_type'    => Booking::class,
+                'reference_id'      => $booking->id,
+                'description'       => "Check-in payment: {$booking->booking_reference} - {$booking->guest_name}",
+                'amount'            => $validated['amount_received'],
+                'payment_method'    => $validated['checkin_payment_method'],
+                'transaction_date'  => now()->toDateString(),
+            ]);
+        }
 
         AuditLog::log('booking.checked_in', $booking, ['status' => 'confirmed'], ['status' => 'checked_in', 'checked_in_by' => auth()->id()]);
 

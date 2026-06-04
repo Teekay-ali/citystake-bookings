@@ -61,6 +61,12 @@ class SocialAuthController extends Controller
         // Find or create user by email
         $user = User::firstOrNew(['email' => $socialUser->getEmail()]);
 
+        // Block staff/admin accounts before creating any records
+        if ($user->exists && ($user->is_staff || $user->is_admin)) {
+            return redirect()->route('login')
+                ->withErrors(['social' => 'Staff accounts must sign in with email and password.']);
+        }
+
         if (! $user->exists) {
             $user->name              = $socialUser->getName();
             $user->email             = $socialUser->getEmail();
@@ -79,11 +85,6 @@ class SocialAuthController extends Controller
             'provider_token'         => $socialUser->token,
             'provider_refresh_token' => $socialUser->refreshToken,
         ]);
-
-        if ($user->is_staff || $user->is_admin) {
-            return redirect()->route('login')
-                ->withErrors(['social' => 'Staff accounts must sign in with email and password.']);
-        }
 
         Auth::login($user, remember: true);
 

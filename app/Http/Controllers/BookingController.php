@@ -432,8 +432,10 @@ class BookingController extends Controller
         $refundNote       = '';
 
         // Calculate refund per Terms page policy
-        if ($booking->isPaid() && $booking->paystack_reference) {
+        $paymentMethod = $booking->payment_method;
+        $isRefundable  = $booking->isPaid() && in_array($paymentMethod, ['paystack', 'monnify']);
 
+        if ($isRefundable) {
             // Use base amount — exclude any late checkout fee that was added
             $baseAmount = $booking->total_amount - ($booking->late_checkout_fee ?? 0);
 
@@ -468,25 +470,40 @@ class BookingController extends Controller
 
             if ($refundAmount > 0) {
                 try {
-                    $paystackService = new PaystackService();
-                    $paystackService->refundTransaction(
-                        $booking->paystack_reference,
-                        (int) ($refundAmount * 100) // convert to kobo
-                    );
+                    if ($booking->payment_method === 'monnify' && $booking->monnify_reference) {
+                        $monnifyService = new MonnifyService();
+                        $monnifyService->refundTransaction(
+                            $booking->monnify_reference,
+                            $refundAmount,
+                            "Booking {$booking->booking_reference} cancellation refund"
+                        );
+                    } elseif ($booking->paystack_reference) {
+                        $paystackService = new PaystackService();
+                        $paystackService->refundTransaction(
+                            $booking->paystack_reference,
+                            (int) ($refundAmount * 100) // convert to kobo
+                        );
+                    }
                 } catch (\Exception $e) {
                     Log::error('Refund failed for booking ' . $booking->booking_reference, [
-                        'error' => $e->getMessage(),
+                        'error'          => $e->getMessage(),
+                        'payment_method' => $booking->payment_method,
                     ]);
                     // Don't block the cancellation — flag it for manual review
                 }
             }
 
-            Mail::to($booking->guest_email)->send(new BookingCancelled($booking));
-
-            $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
-            Notification::send($recipients, new BookingCancelledNotification($booking));
-
         });
+
+        // Send notifications outside the transaction so network I/O doesn't hold DB locks
+        try {
+            Mail::to($booking->guest_email)->send(new BookingCancelled($booking));
+        } catch (\Exception $e) {
+            Log::error('Cancellation email failed for booking ' . $booking->booking_reference, ['error' => $e->getMessage()]);
+        }
+
+        $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
+        Notification::send($recipients, new BookingCancelledNotification($booking));
 
         $message = 'Booking cancelled successfully.';
         if ($refundNote) {
