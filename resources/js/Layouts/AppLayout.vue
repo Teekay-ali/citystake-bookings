@@ -3,7 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useDarkMode } from '@/Composables/useDarkMode';
 import { usePage } from '@inertiajs/vue3';
-import { useToast } from 'vue-toastification';
+import { useAppToast } from '@/Composables/useAppToast';
 import { onClickOutside } from '@vueuse/core';
 import { Sun, Moon, Menu, X } from 'lucide-vue-next';
 import CookieConsent from '@/Components/CookieConsent.vue';
@@ -17,7 +17,7 @@ const isScrolled = ref(false);
 const { isDark, toggle } = useDarkMode();
 
 const page = usePage();
-const toast = useToast();
+const toast = useAppToast();
 
 const props = defineProps({
     hideFooter: {

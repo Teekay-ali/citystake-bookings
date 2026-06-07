@@ -69,7 +69,7 @@ const selectClass = "w-full pl-3 pr-8 py-2 bg-white dark:bg-gray-950 border bord
 <template>
     <Head title="Blocked Dates" />
 
-    <div class="p-6 lg:p-8">
+    <div class="p-4 lg:p-6 flex flex-col gap-4 min-h-full">
 
         <!-- ── Header ── -->
         <div class="flex items-center justify-between mb-6">

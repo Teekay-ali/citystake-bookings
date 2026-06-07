@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { useToast } from 'vue-toastification';
+import { useAppToast } from '@/Composables/useAppToast';
 import { Calendar, Users, MapPin, User, Mail, Phone, MessageSquare, Receipt, CheckCircle } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -10,7 +10,7 @@ const props = defineProps({
     bookingData: Object,
 });
 
-const toast = useToast();
+const toast = useAppToast();
 
 const user = usePage().props.auth.user;
 

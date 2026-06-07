@@ -95,7 +95,7 @@ class MonnifyWebhookController extends Controller
                 ['payment_reference' => $paymentReference, 'reference_type' => Booking::class],
                 [
                     'building_id'     => $booking->building_id,
-                    'recorded_by'     => $booking->user_id ?? 1,
+                    'recorded_by'     => $booking->user_id ?? $booking->created_by_admin_id,
                     'type'            => 'income',
                     'category'        => 'booking',
                     'reference_id'    => $booking->id,

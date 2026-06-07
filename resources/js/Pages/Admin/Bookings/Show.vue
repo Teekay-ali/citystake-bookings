@@ -4,7 +4,7 @@ import DocumentManager from '@/Components/DocumentManager.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
-import { useToast } from 'vue-toastification'
+import { useAppToast } from '@/Composables/useAppToast'
 import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
@@ -18,7 +18,7 @@ const props = defineProps({
 })
 
 const page  = usePage()
-const toast = useToast()
+const toast = useAppToast()
 
 const can = (p) => page.props.auth.user?.permissions?.includes(p)
 

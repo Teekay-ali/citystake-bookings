@@ -69,7 +69,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
 <template>
     <Head title="Procurement" />
 
-    <div class="p-6 lg:p-8">
+    <div class="p-4 lg:p-6 flex flex-col gap-1 min-h-full">
 
         <!-- ── Header ── -->
         <div class="flex items-center justify-between mb-6">

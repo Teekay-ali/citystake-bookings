@@ -107,7 +107,7 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
 <template>
     <Head title="Properties" />
 
-    <div class="p-6 lg:p-8">
+    <div class="p-4 lg:p-6 flex flex-col gap-4 min-h-full">
 
         <!-- ── Header ── -->
         <div class="flex items-center justify-between mb-6">

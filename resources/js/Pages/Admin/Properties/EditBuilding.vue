@@ -15,13 +15,13 @@ import {
 } from 'lucide-vue-next';
 import ImageManager from '@/Components/ImageManager.vue';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
-import { useToast } from 'vue-toastification';
+import { useAppToast } from '@/Composables/useAppToast';
 
 const props = defineProps({
     building: Object,
 });
 
-const toast = useToast();
+const toast = useAppToast();
 const buildingImages = ref(props.building.images ?? []);
 const showDeleteModal = ref(false);
 const isDeleting = ref(false);

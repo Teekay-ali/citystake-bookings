@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted, onUnmounted } from 'vue';
-import { useToast } from 'vue-toastification';
+import { useAppToast } from '@/Composables/useAppToast';
 import {
     Calendar,
     Users,
@@ -56,7 +56,7 @@ const updateCountdown = () => {
 const isProcessing = ref(false);
 const paystackLoaded = ref(false);
 
-const toast = useToast();
+const toast = useAppToast();
 
 // Load Paystack script
 onUnmounted(() => clearInterval(countdownInterval));

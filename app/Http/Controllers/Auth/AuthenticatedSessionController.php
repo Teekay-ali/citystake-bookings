@@ -38,7 +38,18 @@ class AuthenticatedSessionController extends Controller
             AuditLog::log('auth.login', auth()->user(), null, ['email' => auth()->user()->email]);
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = auth()->user();
+        $flash = ['success' => 'Welcome back, ' . $user->name . '!'];
+
+        if ($user->is_admin || $user->is_staff) {
+            $destination = $user->hasRole(['super-admin', 'ceo'])
+                ? route('manage.dashboard', absolute: false)
+                : route('manage.home', absolute: false);
+
+            return redirect()->intended($destination)->with($flash);
+        }
+
+        return redirect()->intended(route('home', absolute: false))->with($flash);
     }
 
     /**

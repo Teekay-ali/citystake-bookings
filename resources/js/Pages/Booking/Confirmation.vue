@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
-import { useToast } from 'vue-toastification';
+import { useAppToast } from '@/Composables/useAppToast';
 import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import { CheckCircle, Calendar, MapPin, Users, Download, Home, Phone, Mail, Clock, Info, XCircle } from 'lucide-vue-next';
 
@@ -10,7 +10,7 @@ const props = defineProps({
     booking: Object,
 });
 
-const toast = useToast();
+const toast = useAppToast();
 const showCancelModal = ref(false);
 const isCancelling = ref(false);
 

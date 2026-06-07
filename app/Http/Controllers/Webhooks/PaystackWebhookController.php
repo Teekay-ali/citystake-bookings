@@ -24,7 +24,7 @@ class PaystackWebhookController extends Controller
         $signature = $request->header('x-paystack-signature');
         $secret    = config('services.paystack.secret_key');
 
-        if (!$signature || $signature !== hash_hmac('sha512', $request->getContent(), $secret)) {
+        if (!$signature || !hash_equals(hash_hmac('sha512', $request->getContent(), $secret), $signature)) {
             Log::warning('Paystack webhook: invalid signature');
             return response('Unauthorized', 401);
         }
@@ -81,7 +81,7 @@ class PaystackWebhookController extends Controller
                 ['payment_reference' => $reference, 'reference_type' => Booking::class],
                 [
                     'building_id'     => $booking->building_id,
-                    'recorded_by'     => $booking->user_id ?? 1,
+                    'recorded_by'     => $booking->user_id ?? $booking->created_by_admin_id,
                     'type'            => 'income',
                     'category'        => 'booking',
                     'reference_id'    => $booking->id,

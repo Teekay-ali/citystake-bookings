@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
-import { useToast } from 'vue-toastification'
+import { useAppToast } from '@/Composables/useAppToast'
 import {
     LayoutDashboard, CalendarDays, Building2, Ban, BarChart3,
     Users, Menu, X, LogOut, User, ClipboardList,
@@ -14,7 +14,7 @@ import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
 import { useFloating, offset, shift, flip } from '@floating-ui/vue'
 
-const toast = useToast()
+const toast = useAppToast()
 const { isDark, toggle: toggleDark } = useDarkMode()
 
 const page = usePage()
@@ -685,6 +685,8 @@ function canSeeItem(item) {
 
                 <!-- Notification bell -->
                 <NotificationBell />
+
+                <div class="h-6 w-px bg-gray-200 dark:bg-gray-700" />
 
                 <!-- User avatar -->
                 <div class="relative user-footer-container">

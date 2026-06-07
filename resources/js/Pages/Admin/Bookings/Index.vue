@@ -88,7 +88,7 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
 <template>
     <Head title="All Bookings" />
 
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 lg:p-8">
+    <div class="p-4 lg:p-6 flex flex-col gap-1 min-h-full">
 
         <!-- ── Header ── -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">

@@ -145,106 +145,76 @@
     --dp-border-color-hover: rgb(209 213 219);
 }
 
-/* Elegant Toast Styles */
+/* ── Toast ── */
 .Vue-Toastification__container {
     @apply bottom-6 right-6;
+    width: 384px !important;
 }
 
-.custom-toast {
-    @apply rounded-2xl shadow-xl border backdrop-blur-sm;
-    @apply min-h-0 py-3 px-4;
+/* Override all type-specific backgrounds from the default CSS */
+.Vue-Toastification__toast,
+.Vue-Toastification__toast--success,
+.Vue-Toastification__toast--error,
+.Vue-Toastification__toast--warning,
+.Vue-Toastification__toast--info {
+    @apply rounded-lg shadow-lg pointer-events-auto;
+    @apply bg-white dark:bg-gray-800 !important;
+    @apply ring-1 ring-black/5 dark:ring-white/10 !important;
+    padding: 1rem;
+    min-height: auto;
+    overflow: hidden;
     font-family: 'Inter var', 'Inter', sans-serif;
 }
 
-.Vue-Toastification__toast {
-    @apply rounded-2xl;
-    padding: 0.875rem 1rem;
-    min-height: auto;
-}
+/* Hide the built-in icon — ToastContent renders its own */
+.Vue-Toastification__icon { display: none !important; }
 
-.Vue-Toastification__toast--success {
-    @apply bg-white/95 dark:bg-gray-900/95 border-green-200 dark:border-green-800;
-}
-
-.Vue-Toastification__toast--success .Vue-Toastification__toast-body {
-    @apply text-gray-900 dark:text-white;
-}
-
-.Vue-Toastification__toast--error {
-    @apply bg-white/95 dark:bg-gray-900/95 border-red-200 dark:border-red-800;
-}
-
-.Vue-Toastification__toast--error .Vue-Toastification__toast-body {
-    @apply text-gray-900 dark:text-white;
-}
-
-.Vue-Toastification__toast--warning {
-    @apply bg-white/95 dark:bg-gray-900/95 border-yellow-200 dark:border-yellow-800;
-}
-
-.Vue-Toastification__toast--warning .Vue-Toastification__toast-body {
-    @apply text-gray-900 dark:text-white;
-}
-
-.Vue-Toastification__toast--info {
-    @apply bg-white/95 dark:bg-gray-900/95 border-blue-200 dark:border-blue-800;
-}
-
-.Vue-Toastification__toast--info .Vue-Toastification__toast-body {
-    @apply text-gray-900 dark:text-white;
-}
-
-.Vue-Toastification__toast-body {
-    @apply text-sm font-medium;
+/* Body: fill available width */
+.Vue-Toastification__toast-body,
+.Vue-Toastification__toast--success .Vue-Toastification__toast-body,
+.Vue-Toastification__toast--error   .Vue-Toastification__toast-body,
+.Vue-Toastification__toast--warning .Vue-Toastification__toast-body,
+.Vue-Toastification__toast--info    .Vue-Toastification__toast-body {
     padding: 0;
     margin: 0;
+    width: 100%;
+    color: inherit;
 }
 
-.Vue-Toastification__icon {
-    @apply w-5 h-5;
-    margin-right: 0.75rem;
-}
+/* Progress bar */
+.Vue-Toastification__progress-bar           { height: 2px; @apply bg-gray-100 dark:bg-gray-700; }
+.Vue-Toastification__toast--success .Vue-Toastification__progress-bar { @apply bg-green-400; }
+.Vue-Toastification__toast--error   .Vue-Toastification__progress-bar { @apply bg-red-400; }
+.Vue-Toastification__toast--warning .Vue-Toastification__progress-bar { @apply bg-amber-400; }
+.Vue-Toastification__toast--info    .Vue-Toastification__progress-bar { @apply bg-blue-400; }
 
-.Vue-Toastification__progress-bar {
-    @apply h-1;
-}
-
-.Vue-Toastification__toast--success .Vue-Toastification__progress-bar {
-    @apply bg-green-500;
-}
-
-.Vue-Toastification__toast--error .Vue-Toastification__progress-bar {
-    @apply bg-red-500;
-}
-
-.Vue-Toastification__toast--warning .Vue-Toastification__progress-bar {
-    @apply bg-yellow-500;
-}
-
-.Vue-Toastification__toast--info .Vue-Toastification__progress-bar {
-    @apply bg-blue-500;
-}
-
+/* Close button */
 .Vue-Toastification__close-button {
-    @apply text-gray-400 hover:text-gray-600 dark:hover:text-gray-300;
+    @apply rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-300;
+    @apply focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
     opacity: 1;
+    align-self: flex-start;
+    margin: -2px -4px 0 0;
+    font-size: 1.1rem;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
-/* Smooth animations */
-.Vue-Toastification__fade-enter-active,
+/* Slide in from right with spring */
+.Vue-Toastification__fade-enter-active {
+    transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
 .Vue-Toastification__fade-leave-active,
 .Vue-Toastification__fade-move {
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: opacity 0.2s ease, transform 0.25s ease;
 }
-
 .Vue-Toastification__fade-enter-from {
     opacity: 0;
     transform: translateX(2rem);
 }
-
 .Vue-Toastification__fade-leave-to {
     opacity: 0;
-    transform: translateX(2rem) scale(0.95);
+    transform: translateX(2rem);
 }
 
 

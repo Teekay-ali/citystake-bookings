@@ -3,160 +3,122 @@
 namespace App\Http\Middleware;
 
 use App\Models\Booking;
+use App\Models\BookingMessage;
+use App\Models\EmergencyFundRequest;
+use App\Models\MaintenanceReport;
+use App\Models\PaymentApproval;
+use App\Models\ProcurementRequest;
+use App\Models\Task;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use App\Models\BookingMessage;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that is loaded on the first page visit.
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determine the current asset version.
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
+        $user          = $request->user();
+        $isManageRoute = $request->routeIs('manage.*');
+
+        // Compute once — reused across all badge closures
+        $buildingIds   = ($user && $isManageRoute && ! $user->hasGlobalAccess())
+            ? $user->accessibleBuildingIds()
+            : null;
+
+        $applyBuildings = fn ($query) => $buildingIds
+            ? $query->whereIn('building_id', $buildingIds)
+            : $query;
+
         return array_merge(parent::share($request), [
+
             'auth' => [
-                'user' => $request->user() ? [
-                    'id'                => $request->user()->id,
-                    'name'              => $request->user()->name,
-                    'email'             => $request->user()->email,
-                    'is_admin'          => $request->user()->is_admin,
-                    'is_staff'          => $request->user()?->is_staff ?? false,
-                    'roles'             => $request->routeIs('manage.*') ? $request->user()->getRoleNames() : [],
-                    'permissions'       => $request->routeIs('manage.*') ? $request->user()->getAllPermissions()->pluck('name') : [],
-                    'buildings'         => $request->user()->hasGlobalAccess()
-                        ? null
-                        : $request->user()->buildings()->pluck('buildings.id'),
-                    'email_verified_at' => $request->user()->email_verified_at,
-                    'phone' => $request->user()->phone,
-                    'email_marketing'    => (bool) $request->user()->email_marketing,
-                    'email_reminders'    => (bool) $request->user()->email_reminders,
-                    'email_newsletters'  => (bool) $request->user()->email_newsletters,
+                'user' => $user ? [
+                    'id'                => $user->id,
+                    'name'              => $user->name,
+                    'email'             => $user->email,
+                    'is_admin'          => $user->is_admin,
+                    'is_staff'          => $user->is_staff ?? false,
+                    'roles'             => $isManageRoute ? $user->getRoleNames()              : [],
+                    'permissions'       => $isManageRoute ? $user->getAllPermissions()->pluck('name') : [],
+                    'buildings'         => $buildingIds,
+                    'email_verified_at' => $user->email_verified_at,
+                    'phone'             => $user->phone,
+                    'email_marketing'   => (bool) $user->email_marketing,
+                    'email_reminders'   => (bool) $user->email_reminders,
+                    'email_newsletters' => (bool) $user->email_newsletters,
                 ] : null,
             ],
+
             'flash' => [
                 'success' => fn () => $request->session()->pull('success'),
                 'error'   => fn () => $request->session()->pull('error'),
                 'info'    => fn () => $request->session()->pull('info'),
                 'warning' => fn () => $request->session()->pull('warning'),
             ],
+
             'appName' => config('app.name'),
-            'lateCheckoutPendingCount' => auth()->check() && request()->routeIs('manage.*')
-                ? (function () {
-                    $user = auth()->user();
-                    $query = Booking::where('late_checkout_status', 'pending');
-                    if (! $user->hasGlobalAccess()) {
-                        $query->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
-                    }
-                    return $query->count();
-                })()
+
+            // ── Badge counts (all lazy closures — skipped on partial Inertia navigations) ──
+
+            'lateCheckoutPendingCount' => fn () => ($user && $isManageRoute)
+                ? $applyBuildings(Booking::where('late_checkout_status', 'pending'))->count()
                 : 0,
-            'unreadNotifications' => auth()->check() && request()->routeIs('manage.*')
-                ? auth()->user()->unreadNotifications()->count()
+
+            'unreadNotifications' => fn () => ($user && $isManageRoute)
+                ? $user->unreadNotifications()->count()
                 : 0,
-            'unreadMessages' => auth()->check() && request()->routeIs('manage.*')
+
+            'unreadMessages' => fn () => ($user && $isManageRoute)
                 ? BookingMessage::where('sender_type', 'guest')
                     ->whereNull('read_at')
-                    ->whereHas('booking', function ($q) {
-                        $user = auth()->user();
-                        if (!$user->hasGlobalAccess()) {
-                            $q->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
-                        }
-                    })
+                    ->whereHas('booking', fn ($q) => $applyBuildings($q))
                     ->count()
                 : 0,
-            // Badges
-            'pendingEmergencyFund' => auth()->check() && request()->routeIs('manage.*')
-                ? (function () {
-                    $user = auth()->user();
-                    // Accountant doesn't need to act on pending — they submitted it
-                    if ($user->hasRole('accountant')) return 0;
-                    $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
-                    // Manager sees 'pending', CEO sees 'manager_approved'
-                    $statuses = $user->hasRole('manager') ? ['pending'] : ['manager_approved'];
-                    return \App\Models\EmergencyFundRequest::whereIn('status', $statuses)
-                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
-                        ->count();
-                })()
+
+            'pendingEmergencyFund' => fn () => ($user && $isManageRoute && ! $user->hasRole('accountant'))
+                ? $applyBuildings(
+                    EmergencyFundRequest::whereIn('status',
+                        $user->hasRole('manager') ? ['pending'] : ['manager_approved']
+                    )
+                )->count()
                 : 0,
 
-            'pendingPaymentApprovals' => auth()->check() && request()->routeIs('manage.*')
-                ? (function () {
-                    $user = auth()->user();
-                    if ($user->hasRole('accountant')) return 0; // they submitted, not reviewing
-                    $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
-                    return \App\Models\PaymentApproval::where('status', 'pending')
-                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
-                        ->count();
-                })()
+            'pendingPaymentApprovals' => fn () => ($user && $isManageRoute && ! $user->hasRole('accountant'))
+                ? $applyBuildings(PaymentApproval::where('status', 'pending'))->count()
                 : 0,
 
-            'pendingMaintenance' => auth()->check() && request()->routeIs('manage.*')
-                ? (function () {
-                    $user = auth()->user();
-                    $buildingIds = $user->hasGlobalAccess()
-                        ? null
-                        : $user->accessibleBuildingIds();
-                    return \App\Models\MaintenanceReport::whereIn('status', ['pending', 'manager_approved', 'accountant_approved'])
-                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
-                        ->count();
-                })()
+            'pendingMaintenance' => fn () => ($user && $isManageRoute)
+                ? $applyBuildings(
+                    MaintenanceReport::whereIn('status', ['pending', 'manager_approved', 'accountant_approved'])
+                )->count()
                 : 0,
 
-            'pendingProcurement' => auth()->check() && request()->routeIs('manage.*')
-                ? (function () {
-                    $user = auth()->user();
-                    $buildingIds = $user->hasGlobalAccess()
-                        ? null
-                        : $user->accessibleBuildingIds();
-                    return \App\Models\ProcurementRequest::whereIn('status', ['pending', 'accountant_approved'])
-                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
-                        ->count();
-                })()
+            'pendingProcurement' => fn () => ($user && $isManageRoute)
+                ? $applyBuildings(
+                    ProcurementRequest::whereIn('status', ['pending', 'accountant_approved'])
+                )->count()
                 : 0,
 
-            'pendingTasks' => auth()->check() && request()->routeIs('manage.*')
-                ? (function () {
-                    $user        = auth()->user();
-                    $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
-                    return \App\Models\Task::where('assigned_to', auth()->id())
+            'pendingTasks' => fn () => ($user && $isManageRoute)
+                ? $applyBuildings(
+                    Task::where('assigned_to', $user->id)
                         ->whereIn('status', ['pending', 'in_progress'])
-                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
-                        ->count();
-                })()
+                )->count()
                 : 0,
 
-            'pendingCautionRefunds' => auth()->check() && request()->routeIs('manage.*')
-                ? (function () {
-                    $user = auth()->user();
-                    // Only show to roles that can approve (manager and above)
-                    if (!$user->can('manage-bookings')) return 0;
-                    $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
-                    return Booking::where('caution_refund_requested', true)
-                        ->where('caution_fee_refunded', false)
-                        ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
-                        ->count();
-                })()
+            'pendingCautionRefunds' => fn () => ($user && $isManageRoute && $user->can('manage-bookings'))
+                ? $applyBuildings(
+                    Booking::where('caution_refund_requested', true)
+                           ->where('caution_fee_refunded', false)
+                )->count()
                 : 0,
 
         ]);
     }
-
 }

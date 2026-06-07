@@ -133,7 +133,7 @@ const canCheckIn = computed(() => {
 <template>
     <Head title="Booking Calendar" />
 
-    <div class="p-6 lg:p-8">
+    <div class="p-4 lg:p-6 flex flex-col gap-1 min-h-full">
 
         <!-- ── Header ── -->
         <div class="flex items-center justify-between mb-6">

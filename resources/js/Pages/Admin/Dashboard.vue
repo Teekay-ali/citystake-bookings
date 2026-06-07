@@ -124,7 +124,7 @@ const initials = (name) => {
 <template>
     <Head title="Dashboard" />
 
-    <div class="p-6 lg:p-8 space-y-6">
+    <div class="p-4 lg:p-6 flex flex-col gap-4 min-h-full">
 
         <!-- ── Header ── -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

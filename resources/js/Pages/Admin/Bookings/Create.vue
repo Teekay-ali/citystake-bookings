@@ -2,7 +2,7 @@
 import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
-import { useToast } from 'vue-toastification';
+import { useAppToast } from '@/Composables/useAppToast';
 import {
     ArrowLeft, Calendar, Users, Mail, Phone,
     CreditCard, User, MessageSquare, Building2,
@@ -14,7 +14,7 @@ const props = defineProps({
     prefill:   Object,
 })
 
-const toast = useToast();
+const toast = useAppToast();
 
 const form = useForm({
     building_id:       props.prefill?.building_id  ?? '',
@@ -169,10 +169,10 @@ const inputCls = (hasError) => [
     <ManageLayout>
         <Head title="New Booking" />
 
-        <!-- ── Page shell: fixed height, two-column ── -->
-        <div class="flex flex-col h-full overflow-hidden">
+        <!-- ── Page shell ── -->
+        <div class="flex flex-col min-h-full lg:h-full lg:overflow-hidden">
             <!-- Top bar -->
-            <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shrink-0">
+            <div class="flex items-center justify-between px-4 lg:px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shrink-0">
                 <div class="flex items-center gap-3">
                     <Link
                         :href="route('manage.bookings.index')"
@@ -186,18 +186,18 @@ const inputCls = (hasError) => [
                 </div>
             </div>
 
-            <!-- Body: left form + right summary -->
-            <div class="flex flex-1 overflow-hidden">
+            <!-- Body: stacked on mobile, side-by-side on lg -->
+            <div class="flex flex-col lg:flex-row lg:flex-1 lg:overflow-hidden">
 
-                <!-- ── Left: scrollable form ── -->
-                <div class="flex-1 overflow-y-auto p-6 space-y-5">
+                <!-- ── Form ── -->
+                <div class="flex-1 lg:overflow-y-auto p-4 lg:p-6 space-y-5">
 
                     <!-- Property & Unit Type -->
                     <section>
                         <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                             <Building2 class="w-3.5 h-3.5" /> Property
                         </p>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
                                     Building <span class="text-red-500">*</span>
@@ -255,7 +255,7 @@ const inputCls = (hasError) => [
                                 <p v-if="form.errors.check_out" class="mt-1 text-xs text-red-600">{{ form.errors.check_out }}</p>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <!-- Nights -->
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
@@ -326,8 +326,8 @@ const inputCls = (hasError) => [
                         <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                             <User class="w-3.5 h-3.5" /> Guest Information
                         </p>
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div class="col-span-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
                                     Full Name <span class="text-red-500">*</span>
                                 </label>
@@ -384,7 +384,7 @@ const inputCls = (hasError) => [
                         <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                             <CreditCard class="w-3.5 h-3.5" /> Payment
                         </p>
-                        <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                             <!-- POS -->
                             <label
                                 :class="[
@@ -446,8 +446,8 @@ const inputCls = (hasError) => [
                     <div class="h-4" />
                 </div>
 
-                <!-- ── Right: sticky summary ── -->
-                <div class="w-72 shrink-0 border-l border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex flex-col overflow-y-auto">
+                <!-- ── Summary ── -->
+                <div class="w-full lg:w-72 lg:shrink-0 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex flex-col lg:overflow-y-auto">
 
                     <div class="p-5 border-b border-gray-200 dark:border-gray-800">
                         <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1.5">

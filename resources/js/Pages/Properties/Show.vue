@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { useToast } from 'vue-toastification';
+import { useAppToast } from '@/Composables/useAppToast';
 import axios from 'axios';
 import {
     Calendar,
@@ -42,7 +42,7 @@ const props = defineProps({
 });
 
 const isReserving = ref(false);
-const toast = useToast();
+const toast = useAppToast();
 
 const lightboxOpen = ref(false);
 const lightboxIndex = ref(0);
