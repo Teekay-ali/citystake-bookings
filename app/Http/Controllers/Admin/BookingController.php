@@ -777,10 +777,13 @@ class BookingController extends Controller
         return Inertia::render('Admin/Bookings/LateCheckoutRequests', [
             'requests' => $requests,
             'filters'  => ['status' => $request->status],
-            'counts'   => [
-                'pending'  => Booking::scopedToUser($user)->where('late_checkout_status', 'pending')->count(),
-                'approved' => Booking::scopedToUser($user)->where('late_checkout_status', 'approved')->count(),
-            ],
+            'counts'   => Booking::scopedToUser($user)
+                ->whereNotNull('late_checkout_status')
+                ->selectRaw('late_checkout_status, COUNT(*) as count')
+                ->groupBy('late_checkout_status')
+                ->pluck('count', 'late_checkout_status')
+                ->only(['pending', 'approved'])
+                ->toArray(),
         ]);
     }
 

@@ -22,9 +22,7 @@ class HomeController extends Controller
     {
         $user        = auth()->user();
         $today       = Carbon::today();
-        $buildingIds = $user->hasGlobalAccess()
-            ? Building::pluck('id')->toArray()
-            : ($user->accessibleBuildingIds() ?? []);
+        $buildingIds = $this->scopedBuildingIds();
 
         $data = [
             'user'       => [

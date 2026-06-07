@@ -38,34 +38,48 @@ class DashboardController extends Controller
             'total_users'      => User::count(),
         ];
 
-        $scopedIds = $isGlobal ? Building::pluck('id')->toArray() : ($buildingIds ?? []);
+        $scopedIds = $this->scopedBuildingIds();
+
+        // Single query for all revenue aggregates
+        $now       = now();
+        $lastMonth = $now->copy()->subMonth();
+        $revenueRow = FinancialTransaction::whereIn('building_id', $scopedIds)
+            ->where('type', 'income')
+            ->selectRaw("
+                SUM(amount) as total,
+                SUM(CASE WHEN YEAR(transaction_date) = ? AND MONTH(transaction_date) = ? THEN amount ELSE 0 END) as this_month,
+                SUM(CASE WHEN YEAR(transaction_date) = ?                                THEN amount ELSE 0 END) as this_year,
+                SUM(CASE WHEN YEAR(transaction_date) = ? AND MONTH(transaction_date) = ? THEN amount ELSE 0 END) as last_month
+            ", [$now->year, $now->month, $now->year, $lastMonth->year, $lastMonth->month])
+            ->first();
 
         $revenue = [
-            'total'      => FinancialTransaction::whereIn('building_id', $scopedIds)->where('type', 'income')->sum('amount'),
-            'this_month' => FinancialTransaction::whereIn('building_id', $scopedIds)->where('type', 'income')
-                ->whereYear('transaction_date', now()->year)
-                ->whereMonth('transaction_date', now()->month)->sum('amount'),
-            'this_year'  => FinancialTransaction::whereIn('building_id', $scopedIds)->where('type', 'income')
-                ->whereYear('transaction_date', now()->year)->sum('amount'),
-            'last_month' => FinancialTransaction::whereIn('building_id', $scopedIds)->where('type', 'income')
-                ->whereYear('transaction_date', now()->subMonth()->year)
-                ->whereMonth('transaction_date', now()->subMonth()->month)->sum('amount'),
+            'total'      => (float) ($revenueRow->total      ?? 0),
+            'this_month' => (float) ($revenueRow->this_month ?? 0),
+            'this_year'  => (float) ($revenueRow->this_year  ?? 0),
+            'last_month' => (float) ($revenueRow->last_month ?? 0),
         ];
 
         $revenue['growth_percentage'] = $revenue['last_month'] > 0
             ? round((($revenue['this_month'] - $revenue['last_month']) / $revenue['last_month']) * 100, 1)
             : ($revenue['this_month'] > 0 ? 100 : 0);
 
+        $start = Carbon::now()->subMonths(5)->startOfMonth();
+        $monthlyRevenueRaw = $bookings()
+            ->where('payment_status', 'paid')
+            ->where('created_at', '>=', $start)
+            ->selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mo, SUM(total_amount) as total')
+            ->groupBy('yr', 'mo')
+            ->get()
+            ->keyBy(fn ($row) => sprintf('%d-%02d', $row->yr, $row->mo));
+
         $monthlyRevenue = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
+            $key   = $month->format('Y-m');
             $monthlyRevenue[] = [
                 'month' => $month->format('M Y'),
-                'total' => (float) $bookings()
-                    ->where('payment_status', 'paid')
-                    ->whereMonth('created_at', $month->month)
-                    ->whereYear('created_at', $month->year)
-                    ->sum('total_amount'),
+                'total' => (float) ($monthlyRevenueRaw[$key]?->total ?? 0),
             ];
         }
 
@@ -82,18 +96,29 @@ class DashboardController extends Controller
                 'total'    => $item->total,
             ]);
 
+        // Single query each instead of 2 + 6 separate counts
+        $paymentCounts = $bookings()
+            ->selectRaw('payment_status, COUNT(*) as count')
+            ->groupBy('payment_status')
+            ->pluck('count', 'payment_status');
+
         $paymentBreakdown = [
-            'paid'    => $bookings()->where('payment_status', 'paid')->count(),
-            'pending' => $bookings()->where('payment_status', 'pending')->count(),
+            'paid'    => (int) ($paymentCounts['paid']    ?? 0),
+            'pending' => (int) ($paymentCounts['pending'] ?? 0),
         ];
 
+        $statusCounts = $bookings()
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
         $statusBreakdown = [
-            'confirmed'  => $bookings()->where('status', 'confirmed')->count(),
-            'pending'    => $bookings()->where('status', 'pending')->count(),
-            'cancelled'  => $bookings()->where('status', 'cancelled')->count(),
-            'completed'  => $bookings()->where('status', 'completed')->count(),
-            'checked_in' => $bookings()->where('status', 'checked_in')->count(),
-            'paused'     => $bookings()->where('status', 'paused')->count(),
+            'confirmed'  => (int) ($statusCounts['confirmed']  ?? 0),
+            'pending'    => (int) ($statusCounts['pending']    ?? 0),
+            'cancelled'  => (int) ($statusCounts['cancelled']  ?? 0),
+            'completed'  => (int) ($statusCounts['completed']  ?? 0),
+            'checked_in' => (int) ($statusCounts['checked_in'] ?? 0),
+            'paused'     => (int) ($statusCounts['paused']     ?? 0),
         ];
 
         $recentBookings = $bookings()

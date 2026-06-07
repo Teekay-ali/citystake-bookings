@@ -21,9 +21,7 @@ class TaskController extends Controller
     public function index(Request $request)
     {
         $user        = auth()->user();
-        $buildingIds = $user->hasGlobalAccess()
-            ? Building::pluck('id')->toArray()
-            : $user->accessibleBuildingIds();
+        $buildingIds = $this->scopedBuildingIds();
 
         $buildingId = $request->input('building_id');
         $scopedIds  = ($buildingId && in_array((int)$buildingId, $buildingIds))

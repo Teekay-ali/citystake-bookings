@@ -31,7 +31,7 @@ class OccupancyAnalyticsController extends Controller
         $buildingId = $request->input('building_id');
 
         $user        = auth()->user();
-        $buildings   = $this->accessibleBuildings()->get();
+        $buildings   = $this->accessibleBuildings()->get(['id', 'name']);
 
         // For scoped users, restrict to their accessible buildings
         // If they've also filtered by a specific building, honour that too
@@ -112,7 +112,7 @@ class OccupancyAnalyticsController extends Controller
     {
         $buildings = Building::where('is_active', true)
             ->when($scopedBuildingIds, fn($q) => $q->whereIn('id', $scopedBuildingIds))
-            ->get();
+            ->get(['id', 'name']);
 
         return collect($buildings)->map(function ($building) use ($year, $month) {
             $occupancy = $this->calculateOverallOccupancy($year, $month, $building->id);

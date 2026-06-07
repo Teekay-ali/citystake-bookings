@@ -271,31 +271,28 @@ class AnalyticsController extends Controller
                 'adr'       => $r->nights > 0 ? round($r->total / $r->nights, 2) : 0,
             ])->toArray();
 
-        // YoY comparison — this year vs last year totals by month
-        $yoy = collect(range(1, 12))->map(function ($m) use ($year, $scopedIds) {
-            $thisYear = Booking::where('payment_status', 'paid')
-                ->whereIn('building_id', $scopedIds)
-                ->whereYear('check_in', $year)->whereMonth('check_in', $m)
-                ->sum('total_amount');
+        // YoY + KPIs — single query for both years, grouped by year+month
+        $yoyRows = Booking::where('payment_status', 'paid')
+            ->whereIn('building_id', $scopedIds)
+            ->whereIn(DB::raw('YEAR(check_in)'), [$year - 1, $year])
+            ->selectRaw('YEAR(check_in) as yr, MONTH(check_in) as mo, SUM(total_amount) as total, COUNT(*) as cnt, SUM(nights) as nights')
+            ->groupBy('yr', 'mo')
+            ->get()
+            ->groupBy('yr');
 
-            $lastYear = Booking::where('payment_status', 'paid')
-                ->whereIn('building_id', $scopedIds)
-                ->whereYear('check_in', $year - 1)->whereMonth('check_in', $m)
-                ->sum('total_amount');
+        $thisYearRows = $yoyRows->get($year,      collect())->keyBy('mo');
+        $lastYearRows = $yoyRows->get($year - 1,  collect())->keyBy('mo');
 
-            return [
-                'month'     => Carbon::create($year, $m, 1)->format('M'),
-                'this_year' => (float)$thisYear,
-                'last_year' => (float)$lastYear,
-            ];
-        })->toArray();
+        $yoy = collect(range(1, 12))->map(fn ($m) => [
+            'month'     => Carbon::create($year, $m, 1)->format('M'),
+            'this_year' => (float) ($thisYearRows->get($m)?->total ?? 0),
+            'last_year' => (float) ($lastYearRows->get($m)?->total ?? 0),
+        ])->toArray();
 
-        // Summary KPIs for the year
-        $totalRevenue  = Booking::where('payment_status', 'paid')->whereIn('building_id', $scopedIds)->whereYear('check_in', $year)->sum('total_amount');
-        $totalBookings = Booking::where('payment_status', 'paid')->whereIn('building_id', $scopedIds)->whereYear('check_in', $year)->count();
-        $totalNights   = Booking::where('payment_status', 'paid')->whereIn('building_id', $scopedIds)->whereYear('check_in', $year)->sum('nights');
-
-        $lastYearRevenue = Booking::where('payment_status', 'paid')->whereIn('building_id', $scopedIds)->whereYear('check_in', $year - 1)->sum('total_amount');
+        $totalRevenue  = $thisYearRows->sum('total');
+        $totalBookings = $thisYearRows->sum('cnt');
+        $totalNights   = $thisYearRows->sum('nights');
+        $lastYearRevenue = $lastYearRows->sum('total');
         $yoyGrowth = $lastYearRevenue > 0 ? round((($totalRevenue - $lastYearRevenue) / $lastYearRevenue) * 100, 1) : null;
 
         return [

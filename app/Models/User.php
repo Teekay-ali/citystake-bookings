@@ -80,13 +80,21 @@ class User extends Authenticatable implements MustVerifyEmail
      * Returns building IDs this user can access.
      * Returns null if user has global access (no restriction).
      */
+    private ?array $_accessibleBuildingIds = null;
+    private bool $_accessibleBuildingIdsLoaded = false;
+
     public function accessibleBuildingIds(): ?array
     {
         if ($this->hasGlobalAccess()) {
             return null;
         }
 
-        return $this->buildings()->pluck('buildings.id')->toArray();
+        if (! $this->_accessibleBuildingIdsLoaded) {
+            $this->_accessibleBuildingIds       = $this->buildings()->pluck('buildings.id')->toArray();
+            $this->_accessibleBuildingIdsLoaded = true;
+        }
+
+        return $this->_accessibleBuildingIds;
     }
 
     // ─── Email preference helpers (unchanged) ─────────────────────

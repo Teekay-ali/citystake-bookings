@@ -44,7 +44,7 @@ class HandleInertiaRequests extends Middleware
                     'email'             => $user->email,
                     'is_admin'          => $user->is_admin,
                     'is_staff'          => $user->is_staff ?? false,
-                    'roles'             => $isManageRoute ? $user->getRoleNames()              : [],
+                    'roles'             => $isManageRoute ? $user->getRoleNames() : [],
                     'permissions'       => $isManageRoute ? $user->getAllPermissions()->pluck('name') : [],
                     'buildings'         => $buildingIds,
                     'email_verified_at' => $user->email_verified_at,
