@@ -66,6 +66,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-staff-queries',
             'manage-roles',
             'manage-guests',
+            'manage-changelogs',
 
             // Analytics
             'view-analytics',
@@ -139,6 +140,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'manage-emergency-fund',
                 'view-audit-logs',
                 'manage-guests',
+                'manage-changelogs',
             ],
 
             'head-of-procurement' => [

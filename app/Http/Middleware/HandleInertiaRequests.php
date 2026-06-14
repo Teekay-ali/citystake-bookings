@@ -119,6 +119,25 @@ class HandleInertiaRequests extends Middleware
                 )->count()
                 : 0,
 
+            'unreadChangelogs' => auth()->check() && request()->routeIs('manage.*')
+                ? (function () {
+                    $user = auth()->user();
+                    if (!$user->is_admin) return [];
+                    return \App\Models\Changelog::published()
+                        ->whereNotIn('id', $user->changelogReads()->pluck('changelog_id'))
+                        ->latest('published_at')
+                        ->get(['id', 'title', 'body', 'version', 'type', 'published_at'])
+                        ->map(fn($c) => [
+                            'id'           => $c->id,
+                            'title'        => $c->title,
+                            'body'         => $c->body,
+                            'version'      => $c->version,
+                            'type'         => $c->type,
+                            'published_at' => $c->published_at->toISOString(),
+                        ]);
+                })()
+                : [],
+
         ]);
     }
 }

@@ -291,7 +291,11 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        abort_unless(auth()->user()->can('view-bookings'), 403);
+        $user = auth()->user();
+        abort_unless($user->can('view-bookings'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
 
         $booking->load([
             'building', 'unitType', 'unit', 'user', 'adjustments',
@@ -789,7 +793,11 @@ class BookingController extends Controller
 
     public function requestCautionRefund(Request $request, Booking $booking)
     {
-        abort_unless(auth()->user()->can('confirm-checkin'), 403);
+        $user = auth()->user();
+        abort_unless($user->can('confirm-checkin'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
 
         if ($booking->caution_fee <= 0) {
             return back()->with('error', 'This booking has no caution fee.');
@@ -837,7 +845,11 @@ class BookingController extends Controller
 
     public function refundCautionFee(Request $request, Booking $booking)
     {
-        abort_unless(auth()->user()->can('manage-bookings'), 403);
+        $user = auth()->user();
+        abort_unless($user->can('manage-bookings'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
 
         if ($booking->caution_fee <= 0) {
             return back()->with('error', 'This booking has no caution fee.');

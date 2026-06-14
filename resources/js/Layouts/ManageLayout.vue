@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
+import ChangelogModal from '@/Components/ChangelogModal.vue'
 import { useAppToast } from '@/Composables/useAppToast'
 import {
     LayoutDashboard, CalendarDays, Building2, Ban, BarChart3,
@@ -306,7 +307,7 @@ const navGroups = computed(() => [
         items: [
             {
                 label: 'Team', icon: Users,
-                match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.staff-queries.*|manage.audit-logs.*',
+                match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.staff-queries.*|manage.audit-logs.*|manage.changelogs.*',
                 permission: 'manage-staff|manage-guests|manage-roles|manage-staff-queries|view-audit-logs',
                 children: [
                     { label: 'Staff',          route: 'manage.staff.index',          match: 'manage.staff.*',          permission: 'manage-staff' },
@@ -315,6 +316,7 @@ const navGroups = computed(() => [
                     { label: 'Roles',          route: 'manage.roles.index',          match: 'manage.roles.*',          permission: 'manage-roles' },
                     { label: 'Staff Queries',  route: 'manage.staff-queries.index',  match: 'manage.staff-queries.*',  permission: 'manage-staff-queries' },
                     { label: 'Audit Logs',     route: 'manage.audit-logs.index',     match: 'manage.audit-logs.*',     permission: 'view-audit-logs' },
+                    { label: 'Updates',        route: 'manage.changelogs.index',     match: 'manage.changelogs.*',     permission: 'manage-changelogs' },
                 ]
             },
         ]
@@ -819,6 +821,8 @@ function canSeeItem(item) {
                 </div>
             </Transition>
         </Teleport>
+
+        <ChangelogModal />
 
     </div>
 </template>

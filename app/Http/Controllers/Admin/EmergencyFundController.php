@@ -151,7 +151,11 @@ class EmergencyFundController extends Controller
 
     public function show(EmergencyFundRequest $emergencyFund): Response
     {
-        abort_unless(auth()->user()->can('manage-emergency-fund'), 403);
+        $user = auth()->user();
+        abort_unless($user->can('manage-emergency-fund'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($emergencyFund->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
 
         $emergencyFund->load(['requestedBy:id,name', 'approvedBy:id,name', 'building:id,name,monthly_emergency_limit']);
 

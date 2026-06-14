@@ -120,11 +120,16 @@ class PaymentApprovalController extends Controller
 
     public function show(PaymentApproval $paymentApproval)
     {
-        abort_unless(auth()->user()->can('manage-payment-approvals'), 403);
+        $user = auth()->user();
+        abort_unless($user->can('manage-payment-approvals'), 403);
+
+        // Building scope
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($paymentApproval->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
 
         // Accountant can only see their own
-        if (auth()->user()->hasRole('accountant') &&
-            $paymentApproval->requested_by !== auth()->id()) {
+        if ($user->hasRole('accountant') && $paymentApproval->requested_by !== $user->id) {
             abort(403);
         }
 

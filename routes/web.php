@@ -5,6 +5,7 @@ use  App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BlockedDateController;
 use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
+use App\Http\Controllers\Admin\ChangelogController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\EmergencyFundController;
 use App\Http\Controllers\Admin\ImageController;
@@ -152,7 +153,7 @@ Route::middleware('auth')->group(function () {
         ->name('bookings.messages.send');
 });
 
-// Admin routes
+// Admin routes prefix('manage.*')
 Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('manage.')->group(function () {
 
     Route::get('/search', App\Http\Controllers\Admin\GlobalSearchController::class)
@@ -357,6 +358,13 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
         ->name('messages.index');
     Route::post('/bookings/{booking}/messages', [BookingMessageController::class, 'staffSend'])
         ->name('bookings.messages.send');
+
+    // Changelogs
+    Route::get('changelogs', [ChangelogController::class, 'index'])->name('changelogs.index');
+    Route::post('changelogs', [ChangelogController::class, 'store'])->name('changelogs.store');
+    Route::post('changelogs/mark-read', [ChangelogController::class, 'markRead'])->name('changelogs.mark-read');
+    Route::post('changelogs/{changelog}/publish', [ChangelogController::class, 'publish'])->name('changelogs.publish');
+    Route::delete('changelogs/{changelog}', [ChangelogController::class, 'destroy'])->name('changelogs.destroy');
 
 });
 

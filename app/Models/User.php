@@ -65,6 +65,12 @@ class User extends Authenticatable implements MustVerifyEmail
             ->select('buildings.*'); // always qualify - prevents ambiguous column on any join
     }
 
+    public function changelogReads(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Changelog::class, 'changelog_reads')
+            ->withPivot('read_at');
+    }
+
     // ─── Helpers ──────
 
     /**
