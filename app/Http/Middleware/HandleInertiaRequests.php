@@ -119,24 +119,28 @@ class HandleInertiaRequests extends Middleware
                 )->count()
                 : 0,
 
-            'unreadChangelogs' => auth()->check() && request()->routeIs('manage.*')
-                ? (function () {
-                    $user = auth()->user();
-                    if (!$user->is_admin) return [];
-                    return \App\Models\Changelog::published()
-                        ->whereNotIn('id', $user->changelogReads()->pluck('changelog_id'))
-                        ->latest('published_at')
-                        ->get(['id', 'title', 'body', 'version', 'type', 'published_at'])
-                        ->map(fn($c) => [
-                            'id'           => $c->id,
-                            'title'        => $c->title,
-                            'body'         => $c->body,
-                            'version'      => $c->version,
-                            'type'         => $c->type,
-                            'published_at' => $c->published_at->toISOString(),
-                        ]);
-                })()
+            'unreadChangelogs' => fn () => ($user && $isManageRoute && $user->is_admin)
+                ? \App\Models\Changelog::published()
+                    ->whereNotIn('id', $user->changelogReads()->pluck('changelog_id'))
+                    ->latest('published_at')
+                    ->get(['id', 'title', 'body', 'version', 'type', 'published_at'])
+                    ->map(fn($c) => [
+                        'id'           => $c->id,
+                        'title'        => $c->title,
+                        'body'         => $c->body,
+                        'version'      => $c->version,
+                        'type'         => $c->type,
+                        'published_at' => $c->published_at->toISOString(),
+                    ])
                 : [],
+
+            'unreadStaffMessages' => fn () => ($user && $isManageRoute && ($user->is_staff || $user->is_admin))
+                ? $user->receivedMessages()
+                    ->whereNull('staff_message_recipients.read_at')
+                    ->whereNull('staff_message_recipients.deleted_at')
+                    ->whereNull('staff_messages.parent_id')
+                    ->count()
+                : 0,
 
         ]);
     }

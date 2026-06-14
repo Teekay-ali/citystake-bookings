@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\EmergencyFundController;
 use App\Http\Controllers\Admin\ImageController;
 use App\Http\Controllers\Admin\PaymentApprovalController;
+use App\Http\Controllers\Admin\StaffMessageController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\BookingAdjustmentController;
 use App\Http\Controllers\BookingMessageController;
@@ -281,6 +282,14 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/procurement/{procurement}/approve', [ProcurementController::class, 'approve'])->name('procurement.approve');
     Route::delete('/procurement/{procurement}', [ProcurementController::class, 'destroy'])->name('procurement.destroy');
 
+    // Staff Messages
+    Route::get('staff-messages', [StaffMessageController::class, 'index'])->name('staff-messages.index');
+    Route::post('staff-messages', [StaffMessageController::class, 'store'])->name('staff-messages.store');
+    Route::get('staff-messages/unread-count', [StaffMessageController::class, 'unreadCount'])->name('staff-messages.unread-count');
+    Route::get('staff-messages/{staffMessage}', [StaffMessageController::class, 'show'])->name('staff-messages.show');
+    Route::post('staff-messages/{staffMessage}/reply', [StaffMessageController::class, 'reply'])->name('staff-messages.reply');
+    Route::delete('staff-messages/{staffMessage}', [StaffMessageController::class, 'destroy'])->name('staff-messages.destroy');
+
 
     // Staff Queries
     Route::get('/staff-queries', [StaffQueryController::class, 'index'])->name('staff-queries.index');
@@ -317,7 +326,6 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/financials/export', [FinancialController::class, 'export'])->name('financials.export');
     Route::get('/financials/deposits', [FinancialController::class, 'deposits'])->name('financials.deposits');
 
-
     // Emergency Fund
     Route::get('/emergency-fund', [EmergencyFundController::class, 'index'])->name('emergency-fund.index');
     Route::get('/emergency-fund/create', [EmergencyFundController::class, 'create'])->name('emergency-fund.create');
@@ -327,6 +335,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/emergency-fund/{emergencyFund}/mark-paid', [EmergencyFundController::class, 'markPaid'])->name('emergency-fund.mark-paid');
     Route::post('/emergency-fund/{emergencyFund}/manager-decide', [EmergencyFundController::class, 'managerDecide'])->name('emergency-fund.manager-decide');
     Route::delete('/emergency-fund/{emergencyFund}', [EmergencyFundController::class, 'destroy'])->name('emergency-fund.destroy');
+
     // Payment Approvals
     Route::get('/payment-approvals', [PaymentApprovalController::class, 'index'])->name('payment-approvals.index');
     Route::get('/payment-approvals/create', [PaymentApprovalController::class, 'create'])->name('payment-approvals.create');

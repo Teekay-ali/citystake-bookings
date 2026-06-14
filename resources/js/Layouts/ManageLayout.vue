@@ -9,8 +9,9 @@ import {
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, Sun, Moon,
     ChevronLeft, ChevronRight, ShieldAlert, ChevronDown,
-    Search, Plus, Banknote, BadgeCheck, WifiOff
+    Search, Plus, Banknote, BadgeCheck, WifiOff, MessageSquare
 } from 'lucide-vue-next'
+import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
 import { useFloating, offset, shift, flip } from '@floating-ui/vue'
@@ -307,11 +308,12 @@ const navGroups = computed(() => [
         items: [
             {
                 label: 'Team', icon: Users,
-                match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.staff-queries.*|manage.audit-logs.*|manage.changelogs.*',
-                permission: 'manage-staff|manage-guests|manage-roles|manage-staff-queries|view-audit-logs',
+                match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.staff-queries.*|manage.audit-logs.*|manage.changelogs.*|manage.staff-messages.*',
+                permission: 'manage-staff|manage-guests|manage-roles|manage-staff-queries|view-audit-logs|manage-changelogs|view-bookings',
                 children: [
                     { label: 'Staff',          route: 'manage.staff.index',          match: 'manage.staff.*',          permission: 'manage-staff' },
                     { label: 'Guests',         route: 'manage.guests.index',         match: 'manage.guests.*',         permission: 'manage-guests' },
+                    { label: 'Messages',       route: 'manage.staff-messages.index', match: 'manage.staff-messages.*' },
                     { label: 'Admin Accounts', route: 'manage.admin-accounts.index', match: 'manage.admin-accounts.*', permission: 'manage-roles' },
                     { label: 'Roles',          route: 'manage.roles.index',          match: 'manage.roles.*',          permission: 'manage-roles' },
                     { label: 'Staff Queries',  route: 'manage.staff-queries.index',  match: 'manage.staff-queries.*',  permission: 'manage-staff-queries' },
@@ -684,6 +686,9 @@ function canSeeItem(item) {
                     <Sun v-if="isDark" class="w-4 h-4" />
                     <Moon v-else class="w-4 h-4" />
                 </button>
+
+                <!-- Message bell -->
+                <MessageBell />
 
                 <!-- Notification bell -->
                 <NotificationBell />
