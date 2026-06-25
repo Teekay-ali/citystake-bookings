@@ -101,10 +101,11 @@ class ProcurementController extends Controller
             'supplier_account_number'  => 'nullable|string|max:20',
             'supplier_account_name'    => 'nullable|string|max:255',
             'items'          => 'required|array|min:1',
-            'items.*.name'       => 'required|string|max:255',
-            'items.*.description'=> 'nullable|string|max:500',
-            'items.*.quantity'   => 'required|integer|min:1',
-            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.name'        => 'required|string|max:255',
+            'items.*.description' => 'nullable|string|max:500',
+            'items.*.quantity'    => 'required|integer|min:1',
+            'items.*.unit_price'  => 'required|numeric|min:0',
+            'items.*.track_stock' => 'boolean',
         ]);
 
         $pr = ProcurementRequest::create([
@@ -133,12 +134,20 @@ class ProcurementController extends Controller
                 'quantity'    => $item['quantity'],
                 'unit_price'  => $item['unit_price'],
                 'total_price' => $lineTotal,
+                'track_stock' => $item['track_stock'] ?? true,
             ]);
         }
 
         $pr->update(['total_amount' => $total]);
 
         AuditLog::log('procurement.submitted', $pr, null, ['reference' => $pr->reference, 'title' => $pr->title, 'total' => $pr->total_amount]);
+
+        $this->notifyProcurement(
+            $pr,
+            'New Procurement Request',
+            "\"{$pr->title}\" has been submitted and needs accountant approval.",
+            ['accountant'],
+        );
 
         return redirect()->route('manage.procurement.index')
             ->with('success', 'Procurement request submitted successfully.');
@@ -187,15 +196,14 @@ class ProcurementController extends Controller
 
             AuditLog::log('procurement.rejected', $procurement, null, ['reason' => $validated['notes']]);
 
-            $submitter = User::find($procurement->submitted_by);
-            if ($submitter && $submitter->id !== auth()->id()) {
-                $rejectionReason = $validated['notes'] ?? 'No reason provided.';
-                $submitter->notify(new ProcurementStatusNotification(
-                    $procurement,
-                    'Procurement Request Rejected',
-                    "\"{$procurement->title}\" has been rejected. Reason: {$rejectionReason}"
-                ));
-            }
+            $rejectionReason = $validated['notes'] ?? 'No reason provided.';
+            $this->notifyProcurement(
+                $procurement,
+                'Procurement Request Rejected',
+                "\"{$procurement->title}\" has been rejected. Reason: {$rejectionReason}",
+                [],
+                [$procurement->submitted_by],
+            );
 
             return back()->with('success', 'Request rejected.');
         }
@@ -207,12 +215,12 @@ class ProcurementController extends Controller
                 'accountant_approved_at' => now(),
             ]);
 
-            $recipients = NotificationService::getUsersByRoles(['ceo'], $procurement->building_id);
-            Notification::send($recipients, new ProcurementStatusNotification(
+            $this->notifyProcurement(
                 $procurement,
                 'Procurement Awaiting CEO Approval',
-                "Procurement request \"{$procurement->title}\" has been approved by the accountant and needs your sign-off."
-            ));
+                "Procurement request \"{$procurement->title}\" has been approved by the accountant and needs your sign-off.",
+                ['ceo'],
+            );
 
         } elseif ($procurement->canCeoApprove() && $user->can('approve-procurement-ceo')) {
             $procurement->update([
@@ -221,12 +229,12 @@ class ProcurementController extends Controller
                 'ceo_approved_at' => now(),
             ]);
 
-            $recipients = NotificationService::getUsersByRoles(['head-of-procurement', 'accountant'], $procurement->building_id);
-            Notification::send($recipients, new ProcurementStatusNotification(
+            $this->notifyProcurement(
                 $procurement,
                 'Procurement Approved - Ready to Purchase',
-                "CEO has approved \"{$procurement->title}\". Proceed with purchase."
-            ));
+                "CEO has approved \"{$procurement->title}\". Proceed with purchase.",
+                ['head-of-procurement', 'manager', 'accountant'],
+            );
 
         } elseif ($procurement->canMarkPurchased() && $user->can('purchase-procurement')) {
             $procurement->update([
@@ -235,17 +243,22 @@ class ProcurementController extends Controller
                 'purchased_at' => now(),
             ]);
 
-            $recipients = NotificationService::getUsersByRoles(['manager'], $procurement->building_id);
-            Notification::send($recipients, new ProcurementStatusNotification(
+            $this->notifyProcurement(
                 $procurement,
                 'Procurement Purchased',
-                "\"{$procurement->title}\" has been purchased and is awaiting receipt confirmation."
-            ));
+                "\"{$procurement->title}\" has been purchased and is awaiting receipt confirmation.",
+                ['manager'],
+            );
 
         } elseif ($procurement->canConfirmReceipt() && $user->can('confirm-procurement-receipt')) {
             $procurement->load('items');
 
             foreach ($procurement->items as $item) {
+                // Skip services, labour, or one-off assets that aren't inventory
+                if (! $item->track_stock) {
+                    continue;
+                }
+
                 $stockItem = StockItem::whereRaw('LOWER(name) = ?', [strtolower($item->name)])
                     ->where('building_id', $procurement->building_id)
                     ->first();
@@ -285,6 +298,15 @@ class ProcurementController extends Controller
                 'receipt_confirmed_by' => $user->id,
                 'receipt_confirmed_at' => now(),
             ]);
+
+            // Notify the original submitter (and admin observers) that it's complete
+            $this->notifyProcurement(
+                $procurement,
+                'Procurement Completed',
+                "\"{$procurement->title}\" has been received and marked complete.",
+                [],
+                [$procurement->submitted_by],
+            );
         } else {
             return back()->with('error', 'You are not authorized to perform this action.');
         }
@@ -317,6 +339,42 @@ class ProcurementController extends Controller
         if (!$user->hasGlobalAccess() &&
             !in_array($procurement->building_id, $user->accessibleBuildingIds())) {
             abort(403);
+        }
+    }
+
+    /**
+     * Send a procurement notification to the given roles plus super-admin observers,
+     * and any explicit extra user IDs (e.g. the submitter). The acting user is never
+     * notified of their own action, and recipients are de-duplicated.
+     */
+    private function notifyProcurement(
+        ProcurementRequest $procurement,
+        string $title,
+        string $message,
+        array $roles = [],
+        array $extraUserIds = [],
+    ): void {
+        $recipients = collect();
+
+        if (! empty($roles)) {
+            $recipients = $recipients->merge(
+                NotificationService::getUsersByRoles($roles, $procurement->building_id)
+            );
+        }
+
+        // Super-admins always observe procurement activity (oversight on spend)
+        $recipients = $recipients->merge(
+            User::role('super-admin')->where('is_active', true)->get()
+        );
+
+        if (! empty($extraUserIds)) {
+            $recipients = $recipients->merge(User::whereIn('id', $extraUserIds)->get());
+        }
+
+        $recipients = $recipients->unique('id')->reject(fn ($u) => $u->id === auth()->id());
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new ProcurementStatusNotification($procurement, $title, $message));
         }
     }
 }

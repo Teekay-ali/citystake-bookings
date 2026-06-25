@@ -105,7 +105,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-vendors', 'manage-vendors',
                 'submit-complaints', 'manage-complaints', 'view-complaints',
                 'submit-maintenance', 'approve-maintenance-manager', 'view-maintenance',
-                'submit-procurement', 'confirm-procurement-receipt', 'view-procurement',
+                'submit-procurement', 'purchase-procurement', 'confirm-procurement-receipt', 'view-procurement',
                 'view-stock', 'manage-stock', 'log-stock-usage',
                 'manage-staff-queries', 'manage-guests',
                 'manage-emergency-fund',

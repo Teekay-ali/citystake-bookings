@@ -81,6 +81,10 @@ class HandleInertiaRequests extends Middleware
                     ->count()
                 : 0,
 
+            'newEnquiries' => fn () => ($user && $isManageRoute)
+                ? $applyBuildings(\App\Models\BookingEnquiry::where('status', 'new'))->count()
+                : 0,
+
             'pendingEmergencyFund' => fn () => ($user && $isManageRoute && ! $user->hasRole('accountant'))
                 ? $applyBuildings(
                     EmergencyFundRequest::whereIn('status',

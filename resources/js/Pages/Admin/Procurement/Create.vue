@@ -24,12 +24,12 @@ const form = useForm({
     supplier_account_number: '',
     supplier_account_name:   '',
     items: [
-        { name: '', description: '', quantity: 1, unit_price: '' }
+        { name: '', description: '', quantity: 1, unit_price: '', track_stock: true }
     ],
 })
 
 function addItem() {
-    form.items.push({ name: '', description: '', quantity: 1, unit_price: '' })
+    form.items.push({ name: '', description: '', quantity: 1, unit_price: '', track_stock: true })
 }
 
 function removeItem(index) {
@@ -156,8 +156,16 @@ function submit() {
                                 </div>
                             </div>
 
-                            <!-- Line total -->
-                            <div class="flex justify-end mt-2">
+                            <!-- Stock tracking + line total -->
+                            <div class="flex items-center justify-between mt-3">
+                                <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                                    <input v-model="item.track_stock" type="checkbox"
+                                           class="rounded border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-gray-900 dark:focus:ring-white bg-white dark:bg-gray-950" />
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                                        Add to stock on receipt
+                                        <span class="text-gray-400 dark:text-gray-500">(uncheck for services &amp; one-off assets)</span>
+                                    </span>
+                                </label>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">
                                     Line total:
                                     <span class="font-medium text-gray-900 dark:text-white">

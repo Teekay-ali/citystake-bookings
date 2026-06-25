@@ -34,13 +34,14 @@ const statusConfig = {
 
 const actionLabel = computed(() => {
     const roles = user.value?.roles ?? []
+    const permissions = user.value?.permissions ?? []
     if (props.procurement.can_accountant_approve && (roles.includes('accountant') || roles.includes('super-admin')))
         return 'Accountant Approval'
     if (props.procurement.can_ceo_approve && (roles.includes('ceo') || roles.includes('super-admin')))
         return 'CEO Approval'
-    if (props.procurement.can_mark_purchased && (roles.includes('head-of-procurement') || roles.includes('super-admin')))
+    if (props.procurement.can_mark_purchased && (permissions.includes('purchase-procurement') || roles.includes('super-admin')))
         return 'Confirm Payment/Purchase'
-    if (props.procurement.can_confirm_receipt && (roles.includes('manager') || roles.includes('super-admin')))
+    if (props.procurement.can_confirm_receipt && (permissions.includes('confirm-procurement-receipt') || roles.includes('super-admin')))
         return 'Confirm Receipt'
     return null
 })
@@ -143,7 +144,13 @@ const timelineSteps = computed(() => [
                             <tr v-for="item in procurement.items" :key="item.id"
                                 class="hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition-colors">
                                 <td class="px-5 py-3.5 align-top">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.name }}</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                        {{ item.name }}
+                                        <span v-if="!item.track_stock"
+                                              class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                            Not stocked
+                                        </span>
+                                    </p>
                                     <p v-if="item.description" class="text-[11px] text-gray-400 mt-0.5 leading-snug">{{ item.description }}</p>
                                 </td>
                                 <td class="px-5 py-3.5 text-right text-sm text-gray-500 dark:text-gray-400 tabular-nums align-top">{{ item.quantity }}</td>

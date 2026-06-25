@@ -42,7 +42,7 @@ const formatDate = (date) => {
 };
 
 const submit = () => {
-    form.post(route('bookings.store', {
+    form.post(route('enquiries.store', {
         building: props.building.slug,
         unitType: props.unitType.slug,
     }), {
@@ -58,7 +58,7 @@ const submit = () => {
 
 <template>
     <AppLayout :hide-footer="true">
-        <Head title="Confirm Booking" />
+        <Head title="Request to Book" />
 
         <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
             <div class="max-w-5xl mx-auto px-6 lg:px-8">
@@ -84,14 +84,14 @@ const submit = () => {
                         <div class="flex-1 h-px bg-gray-200 dark:bg-gray-800 max-w-12"></div>
                         <div class="flex items-center gap-2 opacity-40">
                             <span class="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-400 flex items-center justify-center text-xs font-semibold">2</span>
-                            <span class="text-sm font-medium text-gray-400">Payment</span>
+                            <span class="text-sm font-medium text-gray-400">Reception confirms</span>
                         </div>
                     </div>
                     <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-2">
-                        Confirm and pay
+                        Request to book
                     </h1>
                     <p class="text-lg text-gray-600 dark:text-gray-400">
-                        Review your booking details
+                        Send your details and our team will contact you to confirm availability and arrange payment
                     </p>
                 </div>
 
@@ -249,7 +249,7 @@ const submit = () => {
                                 <div class="space-y-3 mb-6">
                                     <h3 class="font-medium text-gray-900 dark:text-white mb-4 flex items-center">
                                         <Receipt class="w-5 h-5 mr-2" />
-                                        Price details
+                                        Estimated price
                                     </h3>
                                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
                                         <span>{{ formatPrice(bookingData.subtotal / bookingData.nights) }} × {{ bookingData.nights }} nights</span>
@@ -281,9 +281,10 @@ const submit = () => {
                                 <!-- Total -->
                                 <div class="pt-6 border-t border-gray-100 dark:border-gray-900">
                                     <div class="flex justify-between items-baseline">
-                                        <span class="text-lg font-medium text-gray-900 dark:text-white">Total (NGN)</span>
+                                        <span class="text-lg font-medium text-gray-900 dark:text-white">Estimated total (NGN)</span>
                                         <span class="text-2xl font-light text-gray-900 dark:text-white">{{ formatPrice(bookingData.total_amount) }}</span>
                                     </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Final amount is confirmed by our team when they contact you.</p>
                                 </div>
                             </div>
 
@@ -299,13 +300,13 @@ const submit = () => {
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Processing...
+                                    Sending...
                                 </span>
-                                <span v-else>Confirm and pay</span>
+                                <span v-else>Send booking request</span>
                             </button>
 
                             <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                                You won't be charged until payment is complete
+                                No payment now - we will contact you to confirm and arrange payment
                             </p>
                         </div>
                     </div>

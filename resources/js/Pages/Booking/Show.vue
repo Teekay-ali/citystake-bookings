@@ -459,15 +459,6 @@ const daysUntilCheckIn = computed(() => {
 
                         <!-- Actions -->
                         <div class="space-y-3 no-print">
-                            <Link
-                                v-if="booking.payment_status !== 'paid'"
-                                :href="route('bookings.payment', booking.booking_reference)"
-                                class="w-full flex items-center justify-center px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-all"
-                            >
-                                <CreditCard class="w-4 h-4 mr-2" />
-                                Complete Payment
-                            </Link>
-
                             <button
                                 v-if="booking.payment_status === 'paid'"
                                 @click="printConfirmation"
@@ -476,16 +467,6 @@ const daysUntilCheckIn = computed(() => {
                                 <Download class="w-4 h-4 mr-2" />
                                 Print Receipt
                             </button>
-
-                            <a
-                                v-if="booking.payment_status === 'paid'"
-                                :href="route('bookings.invoice', booking.id)"
-                                target="_blank"
-                                class="w-full flex items-center justify-center px-4 py-2.5 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl transition-all"
-                            >
-                                <FileText class="w-4 h-4 mr-2" />
-                                Download Invoice
-                            </a>
 
                             <!-- Book Again -->
                             <Link

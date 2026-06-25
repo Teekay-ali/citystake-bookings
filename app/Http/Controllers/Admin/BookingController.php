@@ -121,12 +121,17 @@ class BookingController extends Controller
         return Inertia::render('Admin/Bookings/Create', [
             'buildings'  => $buildings,
             'prefill' => [
-                'building_id'  => request('building_id'),
-                'unit_type_id' => request('unit_type_id'),
-                'unit_id'      => request('unit_id'),
-                'check_in'     => request('check_in'),
-                'check_out'    => request('check_out'),
-                'nights'       => request('nights'),
+                'building_id'      => request('building_id'),
+                'unit_type_id'     => request('unit_type_id'),
+                'unit_id'          => request('unit_id'),
+                'check_in'         => request('check_in'),
+                'check_out'        => request('check_out'),
+                'nights'           => request('nights'),
+                'guests'           => request('guests'),
+                'guest_name'       => request('guest_name'),
+                'guest_email'      => request('guest_email'),
+                'guest_phone'      => request('guest_phone'),
+                'special_requests' => request('special_requests'),
             ],
         ]);
     }
@@ -268,7 +273,10 @@ class BookingController extends Controller
             // Send confirmation email to guest
             Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
 
-            $recipients = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
+            $recipients = NotificationService::getUsersByRoles(['manager'], $booking->building_id)
+                ->merge(\App\Models\User::role('super-admin')->where('is_active', true)->get())
+                ->unique('id')
+                ->reject(fn ($u) => $u->id === auth()->id());
             Notification::send($recipients, new NewBookingNotification($booking));
 
             return redirect()->route('manage.bookings.show', $booking->id)
@@ -287,6 +295,17 @@ class BookingController extends Controller
                 ->with('error', 'Unable to create booking. Please try again or contact support.')
                 ->withInput();
         }
+    }
+
+    public function downloadInvoice(Booking $booking)
+    {
+        $user = auth()->user();
+        abort_unless($user->can('view-bookings'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
+
+        return \App\Services\InvoiceService::download($booking);
     }
 
     public function show(Booking $booking)
@@ -488,7 +507,7 @@ class BookingController extends Controller
 
         $validated = $request->validate([
             'amount_received'        => 'required|numeric|min:0',
-            'checkin_payment_method' => 'required|in:pos,bank_transfer,paystack',
+            'checkin_payment_method' => 'required|in:pos,bank_transfer,cash',
             'checkin_notes'          => 'nullable|string|max:500',
         ]);
 

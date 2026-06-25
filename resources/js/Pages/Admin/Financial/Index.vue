@@ -463,7 +463,6 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                                     <option value="cash">Cash</option>
                                     <option value="bank_transfer">Bank Transfer</option>
                                     <option value="pos">POS</option>
-                                    <option value="paystack">Paystack</option>
                                     <option value="other">Other</option>
                                 </select>
                             </div>
@@ -568,7 +567,6 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                                     <option value="cash">Cash</option>
                                     <option value="bank_transfer">Bank Transfer</option>
                                     <option value="pos">POS</option>
-                                    <option value="paystack">Paystack</option>
                                     <option value="other">Other</option>
                                 </select>
                             </div>

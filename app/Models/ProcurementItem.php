@@ -17,11 +17,13 @@ class ProcurementItem extends Model
         'quantity',
         'unit_price',
         'total_price',
+        'track_stock',
     ];
 
     protected $casts = [
         'unit_price'  => 'decimal:2',
         'total_price' => 'decimal:2',
+        'track_stock' => 'boolean',
     ];
 
     public function request(): BelongsTo

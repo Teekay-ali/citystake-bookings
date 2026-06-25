@@ -34,8 +34,8 @@ use App\Http\Controllers\Admin\FinancialController;
 use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
-use App\Http\Controllers\Webhooks\MonnifyWebhookController;
-use App\Http\Controllers\Webhooks\PaystackWebhookController;
+use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
+use App\Http\Controllers\EnquiryController;
 use App\Http\Middleware\EnsureUserIsStaff;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -100,12 +100,13 @@ Route::post('/properties/{building:slug}/{unitType:slug}/check-availability', [U
 Route::get('/properties/{building:slug}/{unitType:slug}/unavailable-dates', [UnitTypeController::class, 'unavailableDates'])
     ->name('properties.unavailable-dates');
 
-// Paystack webhook — outside auth, CSRF excluded via bootstrap/app.php
-Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])
-    ->name('webhooks.paystack');
-
-Route::post('/webhooks/monnify', [MonnifyWebhookController::class, 'handle'])
-    ->name('webhooks.monnify');
+// Public booking enquiry ("Request to book" — no payment, no login required)
+Route::get('/properties/{building:slug}/{unitType:slug}/book', [EnquiryController::class, 'create'])
+    ->name('enquiries.create');
+Route::post('/properties/{building:slug}/{unitType:slug}/book', [EnquiryController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('enquiries.store');
+Route::get('/booking-request/sent', [EnquiryController::class, 'thankYou'])->name('enquiries.thank-you');
 
 // Authenticated routes
 Route::middleware('auth')->group(function () {
@@ -129,19 +130,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::patch('/profile/email-preferences', [EmailPreferencesController::class, 'update'])->name('profile.email-preferences.update');
-
-    // Booking routes
-    Route::get('/properties/{building:slug}/{unitType:slug}/book', [BookingController::class, 'create'])->name('bookings.create');
-    Route::post('/properties/{building:slug}/{unitType:slug}/book', [BookingController::class, 'store'])
-        ->middleware('throttle:5,1')
-        ->name('bookings.store');
-    Route::get('/bookings/{bookingReference}/payment', [BookingController::class, 'payment'])->name('bookings.payment');
-    Route::get('/bookings/{bookingReference}/verify', [BookingController::class, 'verifyPayment'])->name('bookings.verify');
-    Route::get('/bookings/{bookingReference}/verify-monnify', [BookingController::class, 'verifyMonnifyPayment'])
-        ->name('bookings.verify-monnify');
-    Route::get('/bookings/{booking}/confirmation', [BookingController::class, 'confirmation'])->name('bookings.confirmation');
-    Route::get('/bookings/{booking}/invoice', [BookingController::class, 'downloadInvoice'])
-        ->name('bookings.invoice');
 
     // My Bookings
     Route::get('/my-bookings', [BookingController::class, 'index'])->name('bookings.index');
@@ -171,6 +159,13 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     // Availability Board
     Route::get('/availability', [AvailabilityController::class, 'index'])->name('availability.index');
 
+    // Booking enquiries (guest "request to book")
+    Route::get('/enquiries', [AdminEnquiryController::class, 'index'])->name('enquiries.index');
+    Route::get('/enquiries/{enquiry}', [AdminEnquiryController::class, 'show'])->name('enquiries.show');
+    Route::patch('/enquiries/{enquiry}/status', [AdminEnquiryController::class, 'updateStatus'])->name('enquiries.update-status');
+    Route::post('/enquiries/{enquiry}/convert', [AdminEnquiryController::class, 'convert'])->name('enquiries.convert');
+    Route::delete('/enquiries/{enquiry}', [AdminEnquiryController::class, 'destroy'])->name('enquiries.destroy');
+
     // Bookings
     Route::get('/bookings/late-checkout-requests', [AdminBookingController::class, 'lateCheckoutRequests'])->name('bookings.late-checkout.index');
     Route::get('/bookings/create', [AdminBookingController::class, 'create'])->name('bookings.create');
@@ -180,6 +175,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
     Route::get('/bookings/available-units', [AdminBookingController::class, 'availableUnits'])->name('bookings.available-units');
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
+    Route::get('/bookings/{booking}/invoice', [AdminBookingController::class, 'downloadInvoice'])->name('bookings.invoice');
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
     Route::post('/bookings/{booking}/check-out', [AdminBookingController::class, 'checkOut'])->name('bookings.check-out');
     Route::post('/bookings/{booking}/pause', [AdminBookingController::class, 'pauseBooking'])->name('bookings.pause');

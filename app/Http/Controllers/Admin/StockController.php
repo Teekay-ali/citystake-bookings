@@ -19,8 +19,7 @@ class StockController extends Controller
         $user = auth()->user();
 
         $query = StockItem::with(['building', 'createdBy'])
-            ->where('is_active', true)
-            ->latest();
+            ->where('is_active', true);
 
         if (!$user->hasGlobalAccess()) {
             $query->whereIn('building_id', $user->accessibleBuildingIds());
@@ -34,11 +33,29 @@ class StockController extends Controller
             $query->where('category', $request->category);
         }
 
-        if ($request->low_stock) {
-            $query->whereColumn('quantity', '<=', 'low_stock_threshold');
+        if ($request->search) {
+            $query->where('name', 'like', "%{$request->search}%");
         }
 
-        $items = $query->paginate(20)->withQueryString();
+        // Status filter: out (0), low (<= threshold but > 0), in (> threshold)
+        if ($request->status === 'out') {
+            $query->where('quantity', '<=', 0);
+        } elseif ($request->status === 'low') {
+            $query->where('quantity', '>', 0)->whereColumn('quantity', '<=', 'low_stock_threshold');
+        } elseif ($request->status === 'in') {
+            $query->whereColumn('quantity', '>', 'low_stock_threshold');
+        }
+
+        // Sorting
+        $items = match ($request->sort) {
+            'name'     => $query->orderBy('name'),
+            'quantity' => $query->orderByDesc('quantity'),
+            'oldest'   => $query->oldest(),
+            // 'lowest' (default): closest to / below threshold first
+            default    => $query->orderByRaw('(quantity - low_stock_threshold) asc'),
+        };
+
+        $items = $items->paginate(20)->withQueryString();
 
         $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
             $q->whereIn('id', $user->accessibleBuildingIds());
@@ -50,18 +67,29 @@ class StockController extends Controller
             ->distinct()
             ->pluck('category');
 
-        $lowStockCount = StockItem::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
-            $q->whereIn('building_id', $user->accessibleBuildingIds());
-        })->whereColumn('quantity', '<=', 'low_stock_threshold')
+        // Status counts in a single query (scoped to building access)
+        $counts = StockItem::query()
             ->where('is_active', true)
-            ->count();
+            ->when(!$user->hasGlobalAccess(), fn ($q) => $q->whereIn('building_id', $user->accessibleBuildingIds()))
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN quantity > low_stock_threshold THEN 1 ELSE 0 END) as in_stock,
+                SUM(CASE WHEN quantity > 0 AND quantity <= low_stock_threshold THEN 1 ELSE 0 END) as low,
+                SUM(CASE WHEN quantity <= 0 THEN 1 ELSE 0 END) as `out`
+            ')
+            ->first();
 
         return Inertia::render('Admin/Stock/Index', [
-            'items'         => $items,
-            'buildings'     => $buildings,
-            'categories'    => $categories,
-            'lowStockCount' => $lowStockCount,
-            'filters'       => $request->only(['building_id', 'category', 'low_stock']),
+            'items'      => $items,
+            'buildings'  => $buildings,
+            'categories' => $categories,
+            'stats'      => [
+                'total'    => (int) $counts->total,
+                'in_stock' => (int) $counts->in_stock,
+                'low'      => (int) $counts->low,
+                'out'      => (int) $counts->out,
+            ],
+            'filters'    => $request->only(['building_id', 'category', 'status', 'search', 'sort']),
         ]);
     }
 

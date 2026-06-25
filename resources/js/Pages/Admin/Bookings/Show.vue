@@ -345,10 +345,10 @@ const inputCls = (hasError = false) => [
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Link :href="route('bookings.invoice', booking.id)"
+                    <a :href="route('manage.bookings.invoice', booking.id)" target="_blank"
                           class="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                         <Download class="w-3.5 h-3.5" /> Invoice
-                    </Link>
+                    </a>
                     <Link :href="route('manage.messages.index', { booking: booking.booking_reference })"
                           class="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                         <MessageSquare class="w-3.5 h-3.5" />
@@ -365,10 +365,10 @@ const inputCls = (hasError = false) => [
             <div class="flex flex-col lg:flex-row flex-1 overflow-hidden">
 
                 <!-- ── Left: scrollable details ── -->
-                <div class="flex-1 overflow-y-auto min-h-0">
+                <div class="flex-1 overflow-y-auto min-h-0 p-4 lg:p-6 space-y-4">
 
                     <!-- Guest + Property row -->
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                         <!-- Guest -->
                         <div class="border border-gray-200 dark:border-gray-800 rounded-xl p-4">
@@ -432,7 +432,7 @@ const inputCls = (hasError = false) => [
                         <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                             <Calendar class="w-3.5 h-3.5" /> Stay Details
                         </p>
-                        <div class="grid grid-cols-4 gap-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
                                 <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Check-in</p>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ fmtDate(booking.check_in) }}</p>
@@ -492,9 +492,9 @@ const inputCls = (hasError = false) => [
                                     {{ booking.payment_status === 'paid' ? `Paid · ${booking.payment_method?.replace('_', ' ')}` : 'Pending' }}
                                 </span>
                             </div>
-                            <div v-if="booking.paystack_reference || booking.payment_reference" class="flex justify-between text-xs">
+                            <div v-if="booking.payment_reference" class="flex justify-between text-xs">
                                 <span class="text-gray-400">Reference</span>
-                                <span class="text-gray-600 dark:text-gray-400 font-mono text-[11px]">{{ booking.paystack_reference || booking.payment_reference }}</span>
+                                <span class="text-gray-600 dark:text-gray-400 font-mono text-[11px]">{{ booking.payment_reference }}</span>
                             </div>
                         </div>
                     </div>
@@ -535,33 +535,33 @@ const inputCls = (hasError = false) => [
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Type</label>
-                                    <select v-model="adjForm.amount_type" :class="inputCls">
+                                    <select v-model="adjForm.amount_type" :class="inputCls()">
                                         <option value="fixed">Fixed (₦)</option>
                                         <option value="percent">Percent (%)</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Amount</label>
-                                    <input v-model="adjForm.amount_value" type="number" step="0.01" min="0" :class="inputCls" />
+                                    <input v-model="adjForm.amount_value" type="number" step="0.01" min="0" :class="inputCls()" />
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">Reason *</label>
-                                <input v-model="adjForm.reason" type="text" :class="inputCls" />
+                                <input v-model="adjForm.reason" type="text" :class="inputCls()" />
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Date</label>
-                                    <input v-model="adjForm.transaction_date" type="date" :class="inputCls" />
+                                    <input v-model="adjForm.transaction_date" type="date" :class="inputCls()" />
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Reference</label>
-                                    <input v-model="adjForm.payment_reference" type="text" :class="inputCls" />
+                                    <input v-model="adjForm.payment_reference" type="text" :class="inputCls()" />
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">Notes</label>
-                                <input v-model="adjForm.notes" type="text" :class="inputCls" />
+                                <input v-model="adjForm.notes" type="text" :class="inputCls()" />
                             </div>
                             <div class="flex gap-2">
                                 <button type="submit" :disabled="adjForm.processing"
@@ -633,8 +633,6 @@ const inputCls = (hasError = false) => [
                             </div>
                         </div>
                     </div>
-
-                    <div class="h-4" />
                 </div>
 
                 <!-- ── Right: actions sidebar ── -->
@@ -662,7 +660,7 @@ const inputCls = (hasError = false) => [
                                         <option value="">Select method</option>
                                         <option value="pos">POS</option>
                                         <option value="bank_transfer">Bank Transfer</option>
-                                        <option value="paystack">Paystack</option>
+                                        <option value="cash">Cash</option>
                                     </select>
                                 </div>
                                 <div>

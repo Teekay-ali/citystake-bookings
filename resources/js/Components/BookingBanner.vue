@@ -20,22 +20,7 @@ const nights = computed(() => {
 const config = computed(() => {
     if (!props.booking) return null
     const s = props.booking.status
-    const p = props.booking.payment_status
 
-    if (p === 'pending' || s === 'pending') {
-        return {
-            bar: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
-            icon: Clock,
-            iconClass: 'text-amber-500',
-            label: 'Booking pending payment',
-            sub: `Complete payment to confirm your stay · ${formatDate(props.booking.check_in)} – ${formatDate(props.booking.check_out)} · ${nights.value} night${nights.value !== 1 ? 's' : ''}`,
-            cta: 'Complete Payment',
-            ctaHref: route('bookings.payment', props.booking.booking_reference),
-            ctaClass: 'bg-amber-500 hover:bg-amber-600 text-white',
-            secondaryHref: route('bookings.show', props.booking.id),
-            secondaryLabel: 'View booking',
-        }
-    }
     if (s === 'confirmed') {
         return {
             bar: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',

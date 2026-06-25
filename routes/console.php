@@ -10,8 +10,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('bookings:expire-unpaid')->everyFifteenMinutes();
-
 Schedule::command('tasks:send-overdue-reminders')->dailyAt('08:00');
 
 // Send booking reminders daily at 9 AM

@@ -9,7 +9,7 @@ import {
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, Sun, Moon,
     ChevronLeft, ChevronRight, ShieldAlert, ChevronDown,
-    Search, Plus, Banknote, BadgeCheck, WifiOff, MessageSquare
+    Search, Plus, Banknote, BadgeCheck, WifiOff
 } from 'lucide-vue-next'
 import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
@@ -29,6 +29,7 @@ const pendingProcurement      = computed(() => page.props.pendingProcurement ?? 
 const pendingCautionRefunds   = computed(() => page.props.pendingCautionRefunds ?? 0)
 const pendingTasks            = computed(() => page.props.pendingTasks ?? 0)
 const unreadMessages = computed(() => page.props.unreadMessages ?? 0)
+const newEnquiries   = computed(() => page.props.newEnquiries ?? 0)
 
 const sidebarOpen = ref(false)
 const collapsed = ref(
@@ -263,10 +264,11 @@ const navGroups = computed(() => [
         items: [
             {
                 label: 'Bookings', icon: ClipboardList,
-                match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in|manage.availability.*|manage.bookings.calendar|manage.messages.*|manage.bookings.late-checkout.index',
+                match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in|manage.enquiries.*|manage.availability.*|manage.bookings.calendar|manage.messages.*|manage.bookings.late-checkout.index',
                 permission: 'view-bookings',
                 children: [
-                    { label: 'All Bookings',   route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
+                    { label: 'All Bookings',     route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
+                    { label: 'Booking Requests', route: 'manage.enquiries.index',              match: 'manage.enquiries.*',                  permission: 'view-bookings', badge: newEnquiries.value },
                     { label: 'Availability',   route: 'manage.availability.index',           match: 'manage.availability.*',               permission: 'manage-availability' },
                     { label: 'Calendar',       route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',            permission: 'manage-availability' },
                     { label: 'Messages',       route: 'manage.messages.index',               match: 'manage.messages.*',                   permission: 'manage-bookings', badge: unreadMessages },

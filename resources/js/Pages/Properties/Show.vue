@@ -147,16 +147,6 @@ const allAmenities = computed(() => {
     return [...new Set([...buildingAmenities, ...unitAmenities])];
 });
 
-const userBookingBanner = computed(() => {
-    if (!props.userBooking) return null;
-
-    const isPending = props.userBooking.payment_status === 'pending';
-    const checkIn = new Date(props.userBooking.check_in).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const checkOut = new Date(props.userBooking.check_out).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-
-    return { isPending, checkIn, checkOut };
-});
-
 const getAmenityIcon = (amenity) => {
     const amenityLower = amenity.toLowerCase();
 
@@ -234,7 +224,7 @@ const proceedToBooking = () => {
 
     isReserving.value = true;
 
-    router.get(route('bookings.create', [props.building.slug, props.unitType.slug]), {
+    router.get(route('enquiries.create', [props.building.slug, props.unitType.slug]), {
         check_in: checkIn.value,
         check_out: checkOut.value,
         guests: guests.value,
@@ -651,9 +641,8 @@ const proceedToBooking = () => {
                                     </p>
                                 </div>
 
-                                <!-- Reserve Button (if authenticated) -->
+                                <!-- Request to book -->
                                 <button
-                                    v-if="$page.props.auth.user"
                                     @click="proceedToBooking"
                                     :disabled="isReserving"
                                     class="w-full px-6 py-4 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
@@ -665,20 +654,11 @@ const proceedToBooking = () => {
                                         </svg>
                                         Processing...
                                     </span>
-                                    <span v-else>Reserve</span>
+                                    <span v-else>Request to book</span>
                                 </button>
 
-                                <!-- Sign in link (if not authenticated) -->
-                                <Link
-                                    v-else
-                                    :href="route('login')"
-                                    class="block w-full bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium py-4 px-6 rounded-full transition-all text-center"
-                                >
-                                    Sign in to reserve
-                                </Link>
-
                                 <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                                    You won't be charged yet
+                                    No payment now — our team will contact you to confirm
                                 </p>
 
                             </div>
@@ -703,15 +683,8 @@ const proceedToBooking = () => {
                 :disabled="isReserving"
                 class="px-6 py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white dark:text-gray-900 text-sm font-medium rounded-full transition-all"
             >
-                {{ isReserving ? 'Loading...' : 'Reserve' }}
+                {{ isReserving ? 'Loading...' : 'Request to book' }}
             </button>
-            <Link
-                v-else-if="userBooking && userBookingBanner?.isPending"
-                :href="route('bookings.payment', userBooking.booking_reference)"
-                class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-full transition-all"
-            >
-                Complete Payment
-            </Link>
             <Link
                 v-else
                 :href="route('bookings.show', userBooking.id)"
