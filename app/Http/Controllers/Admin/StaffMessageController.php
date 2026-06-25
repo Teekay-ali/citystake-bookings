@@ -52,63 +52,64 @@ class StaffMessageController extends Controller
 
         $roles = Role::orderBy('name')->pluck('name');
 
+        // Optionally load a selected thread inline (split-panel chat)
+        $activeThread = null;
+        if ($request->filled('thread')) {
+            $message = StaffMessage::whereNull('parent_id')->find($request->thread);
+            if ($message) {
+                $isRecipient = $message->recipients()->where('user_id', $user->id)->exists();
+                $isSender    = $message->sender_id === $user->id;
+
+                if ($isRecipient || $isSender) {
+                    if ($isRecipient) {
+                        $message->recipients()->updateExistingPivot($user->id, ['read_at' => now()]);
+                    }
+                    $message->load(['sender:id,name', 'recipients:id,name', 'replies.sender:id,name']);
+                    foreach ($message->replies as $reply) {
+                        if ($reply->recipients()->where('user_id', $user->id)->exists()) {
+                            $reply->recipients()->updateExistingPivot($user->id, ['read_at' => now()]);
+                        }
+                    }
+                    $activeThread = $this->formatThread($message, $user);
+                }
+            }
+        }
+
         return Inertia::render('Admin/StaffMessages/Index', [
-            'inbox'       => $inbox,
-            'sent'        => $sent,
-            'staffUsers'  => $users,
-            'roles'       => $roles,
+            'inbox'        => $inbox,
+            'sent'         => $sent,
+            'staffUsers'   => $users,
+            'roles'        => $roles,
+            'activeThread' => $activeThread,
+            'filters'      => ['tab' => $request->tab, 'thread' => $request->thread],
         ]);
+    }
+
+    private function formatThread(StaffMessage $message, User $user): array
+    {
+        return [
+            'id'             => $message->id,
+            'subject'        => $message->subject,
+            'body'           => $message->body,
+            'broadcast_role' => $message->broadcast_role,
+            'created_at'     => $message->created_at->toISOString(),
+            'sender'         => $message->sender,
+            'recipients'     => $message->recipients->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]),
+            'is_mine'        => $message->sender_id === $user->id,
+            'replies'        => $message->replies->map(fn ($r) => [
+                'id'         => $r->id,
+                'body'       => $r->body,
+                'created_at' => $r->created_at->toISOString(),
+                'sender'     => $r->sender,
+                'is_mine'    => $r->sender_id === $user->id,
+            ]),
+        ];
     }
 
     public function show(StaffMessage $staffMessage)
     {
-        $this->staffOnly();
-        $user = auth()->user();
-
-        // Must be sender or recipient
-        $isRecipient = $staffMessage->recipients()->where('user_id', $user->id)->exists();
-        $isSender    = $staffMessage->sender_id === $user->id;
-        abort_unless($isRecipient || $isSender, 403);
-
-        // Mark as read
-        if ($isRecipient) {
-            $staffMessage->recipients()->updateExistingPivot($user->id, ['read_at' => now()]);
-        }
-
-        $staffMessage->load([
-            'sender:id,name',
-            'recipients:id,name',
-            'replies.sender:id,name',
-            'replies.recipients:id,name',
-        ]);
-
-        // Mark replies as read too
-        foreach ($staffMessage->replies as $reply) {
-            if ($reply->recipients()->where('user_id', $user->id)->exists()) {
-                $reply->recipients()->updateExistingPivot($user->id, ['read_at' => now()]);
-            }
-        }
-
-        return Inertia::render('Admin/StaffMessages/Show', [
-            'staffMessage' => [
-                'id'             => $staffMessage->id,
-                'subject'        => $staffMessage->subject,
-                'body'           => $staffMessage->body,
-                'broadcast_role' => $staffMessage->broadcast_role,
-                'created_at'     => $staffMessage->created_at->toISOString(),
-                'sender'         => $staffMessage->sender,
-                'recipients'     => $staffMessage->recipients->map(fn($r) => ['id' => $r->id, 'name' => $r->name]),
-                'replies'        => $staffMessage->replies->map(fn($r) => [
-                    'id'         => $r->id,
-                    'body'       => $r->body,
-                    'created_at' => $r->created_at->toISOString(),
-                    'sender'     => $r->sender,
-                    'is_mine'    => $r->sender_id === $user->id,
-                ]),
-                'is_mine'        => $isSender,
-            ],
-            'authId' => $user->id,
-        ]);
+        // Threads are now shown inline in the split-panel index
+        return redirect()->route('manage.staff-messages.index', ['thread' => $staffMessage->id]);
     }
 
     public function store(Request $request)
