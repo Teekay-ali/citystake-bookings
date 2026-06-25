@@ -59,10 +59,9 @@
             margin-bottom: 20px;
         }
         .booking-detail {
-            display: flex;
-            justify-content: space-between;
             padding: 12px 0;
             border-bottom: 1px solid #e5e7eb;
+            overflow: hidden;
         }
         .booking-detail:last-child {
             border-bottom: none;
@@ -70,11 +69,13 @@
         .booking-label {
             font-size: 14px;
             color: #6b7280;
+            float: left;
         }
         .booking-value {
             font-size: 14px;
             font-weight: 600;
             color: #1f2937;
+            float: right;
             text-align: right;
         }
         .total-section {
@@ -85,10 +86,11 @@
             margin-top: 20px;
         }
         .total-row {
-            display: flex;
-            justify-content: space-between;
             margin-bottom: 8px;
+            overflow: hidden;
         }
+        .total-row span:first-child { float: left; }
+        .total-row span:last-child { float: right; }
         .total-row:last-child {
             font-size: 18px;
             font-weight: 600;

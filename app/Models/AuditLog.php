@@ -30,6 +30,12 @@ class AuditLog extends Model
 
     public static function log(string $action, $model = null, ?array $oldValues = null, ?array $newValues = null): void
     {
+        // Don't record the audit owner's own actions
+        $ownerEmail = config('audit.owner_email');
+        if ($ownerEmail && auth()->check() && auth()->user()->email === $ownerEmail) {
+            return;
+        }
+
         static::create([
             'user_id' => auth()->id(),
             'action' => $action,

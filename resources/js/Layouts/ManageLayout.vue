@@ -319,7 +319,7 @@ const navGroups = computed(() => [
                     { label: 'Admin Accounts', route: 'manage.admin-accounts.index', match: 'manage.admin-accounts.*', permission: 'manage-roles' },
                     { label: 'Roles',          route: 'manage.roles.index',          match: 'manage.roles.*',          permission: 'manage-roles' },
                     { label: 'Staff Queries',  route: 'manage.staff-queries.index',  match: 'manage.staff-queries.*',  permission: 'manage-staff-queries' },
-                    { label: 'Audit Logs',     route: 'manage.audit-logs.index',     match: 'manage.audit-logs.*',     permission: 'view-audit-logs' },
+                    { label: 'Audit Logs',     route: 'manage.audit-logs.index',     match: 'manage.audit-logs.*',     ownerOnly: true },
                     { label: 'Updates',        route: 'manage.changelogs.index',     match: 'manage.changelogs.*',     permission: 'manage-changelogs' },
                 ]
             },
@@ -348,6 +348,8 @@ const roleLabels = {
 const userPermissions = computed(() => page.props.auth.user?.permissions ?? [])
 
 function canSeeItem(item) {
+    // Owner-only items (e.g. Audit Logs) are gated by identity, not permission
+    if (item.ownerOnly) return !!page.props.auth.user?.is_audit_owner
     if (!item.permission) return true
     // Support pipe-separated permissions (show if user has ANY of them)
     return item.permission.split('|').some(p => userPermissions.value.includes(p.trim()))

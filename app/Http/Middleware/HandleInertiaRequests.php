@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
                     'email'             => $user->email,
                     'is_admin'          => $user->is_admin,
                     'is_staff'          => $user->is_staff ?? false,
+                    'is_audit_owner'    => (bool) config('audit.owner_email') && $user->email === config('audit.owner_email'),
                     'roles'             => $isManageRoute ? $user->getRoleNames() : [],
                     'permissions'       => $isManageRoute ? $user->getAllPermissions()->pluck('name') : [],
                     'buildings'         => $buildingIds,

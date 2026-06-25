@@ -11,10 +11,24 @@ class AuditLogController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless(auth()->user()->can('view-audit-logs'), 403);
+        $ownerEmail = config('audit.owner_email');
+        $user       = auth()->user();
+
+        // If an owner email is configured, only that account may view the logs;
+        // otherwise fall back to the legacy permission check.
+        if ($ownerEmail) {
+            abort_unless($user->email === $ownerEmail, 403);
+        } else {
+            abort_unless($user->can('view-audit-logs'), 403);
+        }
 
         $query = AuditLog::with('user')
             ->latest();
+
+        // Hide the owner's own actions from the log
+        if ($ownerEmail) {
+            $query->whereDoesntHave('user', fn ($q) => $q->where('email', $ownerEmail));
+        }
 
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
