@@ -224,10 +224,10 @@ const quickActionsOpen = ref(false)
 
 const quickActions = [
     { label: 'Booking',             icon: CalendarDays,  route: 'manage.bookings.create',           permission: 'manage-bookings' },
-    { label: 'Complaint',           icon: AlertTriangle, route: 'manage.complaints.create',         permission: 'view-complaints' },
+    { label: 'Complaint',           icon: AlertTriangle, route: 'manage.complaints.index',          query: { new: 1 }, permission: 'view-complaints' },
     { label: 'Maintenance Request', icon: Wrench,        route: 'manage.maintenance.create',        permission: 'view-maintenance' },
     { label: 'Procurement',         icon: ShoppingCart,  route: 'manage.procurement.create',        permission: 'view-procurement' },
-    { label: 'Task',                icon: CheckSquare,   route: 'manage.tasks.create',              permission: 'manage-tasks' },
+    { label: 'Task',                icon: CheckSquare,   route: 'manage.tasks.index',               query: { new: 1 }, permission: 'manage-tasks' },
     { label: 'Payment Approval',            icon: BadgeCheck,    route: 'manage.payment-approvals.create',  permission: 'manage-payment-approvals' },
 ]
 
@@ -271,8 +271,8 @@ const navGroups = computed(() => [
                     { label: 'Booking Requests', route: 'manage.enquiries.index',              match: 'manage.enquiries.*',                  permission: 'view-bookings', badge: newEnquiries.value },
                     { label: 'Availability',   route: 'manage.availability.index',           match: 'manage.availability.*',               permission: 'manage-availability' },
                     { label: 'Calendar',       route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',            permission: 'manage-availability' },
-                    { label: 'Messages',       route: 'manage.messages.index',               match: 'manage.messages.*',                   permission: 'manage-bookings', badge: unreadMessages },
-                    { label: 'Late Checkouts', route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'approve-late-checkout', badge: pendingCount },
+                    { label: 'Messages',       route: 'manage.messages.index',               match: 'manage.messages.*',                   permission: 'manage-bookings', badge: unreadMessages.value },
+                    { label: 'Late Checkouts', route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'approve-late-checkout', badge: pendingCount.value },
                 ]
             },
         ]
@@ -408,7 +408,8 @@ function canSeeItem(item) {
             :class="[
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 collapsed ? 'lg:w-16' : 'lg:w-64',
-                'fixed top-0 left-0 h-[100dvh] w-64 bg-white dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0'
+                !isOnline ? 'top-10' : 'top-0',
+                'fixed left-0 bottom-0 w-64 bg-white dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:border-r border-gray-100 dark:border-gray-800/60'
             ]">
 
             <!-- Logo row -->
@@ -502,8 +503,8 @@ function canSeeItem(item) {
                                                       class="flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-all">
                                                     <span>{{ child.label }}</span>
                                                     <span v-if="child.badge && child.badge > 0"
-                                                          class="bg-amber-500 text-white text-xs font-medium w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
-                                            {{ child.badge }}
+                                                          class="bg-amber-500 text-white text-[10px] font-medium min-w-4 h-4 px-1 rounded-full flex items-center justify-center flex-shrink-0">
+                                            {{ child.badge > 9 ? '9+' : child.badge }}
                                         </span>
                                                 </Link>
                                             </template>
@@ -569,8 +570,8 @@ function canSeeItem(item) {
                                 </span>
                                             <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
                                             <span v-if="!collapsed && item.badge && item.badge > 0"
-                                                  class="bg-amber-500 text-white text-xs font-medium w-4 h-4 rounded-full flex items-center justify-center">
-                                    {{ item.badge }}
+                                                  class="bg-amber-500 text-white text-[10px] font-medium min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                                    {{ item.badge > 9 ? '9+' : item.badge }}
                                 </span>
                                             <span v-if="collapsed && item.badge && item.badge > 0"
                                                   class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
@@ -592,7 +593,8 @@ function canSeeItem(item) {
              class="flex-1 flex flex-col min-w-0 transition-all duration-300">
 
             <!-- ── Topbar ── -->
-            <header class="h-16 bg-white dark:bg-gray-950 flex items-center gap-3 px-4 shrink-0 sticky top-0 z-30">
+            <header :class="!isOnline ? 'top-10' : 'top-0'"
+                    class="h-16 bg-white dark:bg-gray-950 flex items-center gap-3 px-4 shrink-0 sticky z-30 border-b border-gray-100 dark:border-gray-900 transition-all">
                 <!-- Mobile hamburger -->
                 <button @click="sidebarOpen = true"
                         class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all lg:hidden">
@@ -674,7 +676,7 @@ function canSeeItem(item) {
                         <div v-if="quickActionsOpen"
                              class="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
                             <Link v-for="action in visibleQuickActions" :key="action.label"
-                                  :href="route(action.route)"
+                                  :href="route(action.route, action.query)"
                                   @click="quickActionsOpen = false"
                                   class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-800 last:border-0">
                                 <component :is="action.icon" class="w-4 h-4 text-gray-400 flex-shrink-0" />

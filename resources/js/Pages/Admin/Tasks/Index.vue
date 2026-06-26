@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
@@ -94,6 +94,12 @@ function openCreate() {
     if (props.buildings.length === 1) createForm.building_id = props.buildings[0].id
     showCreate.value = true
 }
+onMounted(() => {
+    if (canManage.value && new URLSearchParams(window.location.search).get('new')) {
+        openCreate()
+        window.history.replaceState({}, '', window.location.pathname)
+    }
+})
 function addSubtask() { createForm.subtasks.push({ title: '' }) }
 function removeSubtask(i) { createForm.subtasks.splice(i, 1) }
 function submitCreate() {

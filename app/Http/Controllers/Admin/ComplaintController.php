@@ -61,19 +61,6 @@ class ComplaintController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        $user = auth()->user();
-
-        $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
-            $q->whereIn('id', $user->accessibleBuildingIds());
-        })->where('is_active', true)->get(['id', 'name']);
-
-        return Inertia::render('Admin/Complaints/Create', [
-            'buildings' => $buildings,
-        ]);
-    }
-
     public function store(Request $request)
     {
         $validated = $request->validate([

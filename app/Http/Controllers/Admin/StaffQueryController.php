@@ -71,32 +71,6 @@ class StaffQueryController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        $user = auth()->user();
-
-        abort_unless($user->can('manage-staff-queries'), 403);
-
-        $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
-            $q->whereIn('id', $user->accessibleBuildingIds());
-        })->where('is_active', true)->get(['id', 'name']);
-
-        $staffMembers = User::whereHas('buildings', function ($q) use ($user) {
-            if (!$user->hasGlobalAccess()) {
-                $q->whereIn('buildings.id', $user->accessibleBuildingIds());
-            }
-        })->where('is_staff', true)
-            ->where('id', '!=', $user->id)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
-        return Inertia::render('Admin/StaffQueries/Create', [
-            'buildings'    => $buildings,
-            'staffMembers' => $staffMembers,
-            'types'        => StaffQuery::types(),
-        ]);
-    }
-
     public function store(Request $request)
     {
         $user = auth()->user();

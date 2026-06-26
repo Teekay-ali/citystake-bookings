@@ -95,30 +95,6 @@ class TaskController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        abort_unless(auth()->user()->can('manage-tasks'), 403);
-
-        $user = auth()->user();
-
-        $buildings = $this->accessibleBuildings()->get(['id', 'name']);
-
-        $buildingIds = $user->hasGlobalAccess()
-            ? $buildings->pluck('id')->toArray()
-            : $user->accessibleBuildingIds();
-
-        $staffMembers = User::whereHas('buildings', function ($q) use ($buildingIds) {
-            $q->whereIn('buildings.id', $buildingIds);
-        })->where(function ($q) {
-            $q->where('is_staff', true)->orWhere('is_admin', true);
-        })->orderBy('name')->get(['id', 'name']);
-
-        return Inertia::render('Admin/Tasks/Create', [
-            'buildings'    => $buildings,
-            'staffMembers' => $staffMembers,
-        ]);
-    }
-
     public function store(Request $request)
     {
         abort_unless(auth()->user()->can('manage-tasks'), 403);

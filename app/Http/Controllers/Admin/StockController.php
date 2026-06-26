@@ -93,21 +93,6 @@ class StockController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        $this->authorizeManager();
-
-        $user = auth()->user();
-
-        $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
-            $q->whereIn('id', $user->accessibleBuildingIds());
-        })->where('is_active', true)->get(['id', 'name']);
-
-        return Inertia::render('Admin/Stock/Create', [
-            'buildings' => $buildings,
-        ]);
-    }
-
     public function store(Request $request)
     {
         $this->authorizeManager();

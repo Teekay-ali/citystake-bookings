@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
@@ -64,6 +64,12 @@ function openCreate() {
     if (props.buildings.length === 1) createForm.building_id = props.buildings[0].id
     showCreate.value = true
 }
+onMounted(() => {
+    if (new URLSearchParams(window.location.search).get('new')) {
+        openCreate()
+        window.history.replaceState({}, '', window.location.pathname)
+    }
+})
 function handlePhotos(e) {
     const files = Array.from(e.target.files)
     if (files.length + createForm.photos.length > 5) { alert('Maximum 5 photos allowed.'); return }

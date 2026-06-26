@@ -230,7 +230,6 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
 
     // Staff Management
     Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
-    Route::get('/staff/create', [StaffController::class, 'create'])->name('staff.create');
     Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
     Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])->name('staff.edit');
     Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
@@ -256,7 +255,6 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
 
     // Complaints
     Route::get('/complaints', [ComplaintController::class, 'index'])->name('complaints.index');
-    Route::get('/complaints/create', [ComplaintController::class, 'create'])->name('complaints.create');
     Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
     Route::get('/complaints/{complaint}', [ComplaintController::class, 'show'])->name('complaints.show');
     Route::post('/complaints/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('complaints.resolve');
@@ -289,7 +287,6 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
 
     // Staff Queries
     Route::get('/staff-queries', [StaffQueryController::class, 'index'])->name('staff-queries.index');
-    Route::get('/staff-queries/create', [StaffQueryController::class, 'create'])->name('staff-queries.create');
     Route::post('/staff-queries', [StaffQueryController::class, 'store'])->name('staff-queries.store');
     Route::get('/staff-queries/{staffQuery}', [StaffQueryController::class, 'show'])->name('staff-queries.show');
     Route::post('/staff-queries/{staffQuery}/resolve', [StaffQueryController::class, 'resolve'])->name('staff-queries.resolve');
@@ -297,7 +294,6 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
 
     // Stock Keeping
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
-    Route::get('/stock/create', [StockController::class, 'create'])->name('stock.create');
     Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
     Route::get('/stock/{stock}', [StockController::class, 'show'])->name('stock.show');
     Route::post('/stock/{stock}/log', [StockController::class, 'logUsage'])->name('stock.log');
@@ -343,7 +339,6 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
 
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
-    Route::get('/tasks/create', [TaskController::class, 'create'])->name('tasks.create');
     Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
     Route::get('/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');

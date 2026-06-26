@@ -33,16 +33,6 @@ class StaffController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        abort_unless(auth()->user()->can('manage-staff'), 403);
-
-        return Inertia::render('Admin/Staff/Create', [
-            'roles'     => Role::orderBy('name')->get(['id', 'name']),
-            'buildings' => Building::where('is_active', true)->get(['id', 'name']),
-        ]);
-    }
-
     public function store(Request $request)
     {
         abort_unless(auth()->user()->can('manage-staff'), 403);
