@@ -1,8 +1,9 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { Plus, Package, AlertTriangle, Search, LayoutGrid, List } from 'lucide-vue-next'
+import Modal from '@/Components/Modal.vue'
+import { Plus, Package, AlertTriangle, Search, LayoutGrid, List, Pencil, X } from 'lucide-vue-next'
 
 function debounce(fn, wait) {
     let t
@@ -48,6 +49,51 @@ function clearFilters() {
     buildingId.value = ''; category.value = ''; status.value = ''; search.value = ''
 }
 
+// ── Create / Edit modals ──
+const unitOptions = ['units', 'kg', 'g', 'litres', 'ml', 'packs', 'boxes', 'rolls', 'pairs', 'sets']
+
+const showCreate = ref(false)
+const createForm = useForm({
+    building_id: props.buildings.length === 1 ? props.buildings[0].id : '',
+    name: '', category: '', unit: 'units', quantity: 0, low_stock_threshold: 5, notes: '',
+})
+function openCreate() {
+    createForm.reset()
+    createForm.clearErrors()
+    if (props.buildings.length === 1) createForm.building_id = props.buildings[0].id
+    showCreate.value = true
+}
+function submitCreate() {
+    createForm.post(route('manage.stock.store'), {
+        preserveScroll: true,
+        onSuccess: () => { showCreate.value = false; createForm.reset() },
+    })
+}
+
+const editing  = ref(null)
+const editForm = useForm({
+    name: '', category: '', unit: 'units', low_stock_threshold: 5, notes: '', is_active: true,
+})
+function openEdit(item) {
+    editing.value = item
+    editForm.clearErrors()
+    editForm.name = item.name
+    editForm.category = item.category ?? ''
+    editForm.unit = item.unit
+    editForm.low_stock_threshold = item.low_stock_threshold
+    editForm.notes = item.notes ?? ''
+    editForm.is_active = item.is_active
+}
+function submitEdit() {
+    editForm.put(route('manage.stock.update', editing.value.id), {
+        preserveScroll: true,
+        onSuccess: () => { editing.value = null },
+    })
+}
+
+const fieldCls = 'w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white'
+const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5'
+
 // Stock health: returns { label, pct, bar, text } for an item
 function health(item) {
     const qty = Number(item.quantity)
@@ -73,11 +119,11 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Stock Keeping</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Inventory management and usage tracking</p>
             </div>
-            <Link :href="route('manage.stock.create')"
+            <button @click="openCreate"
                   class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 Add Item
-            </Link>
+            </button>
         </div>
 
         <!-- ── Stat strip ── -->
@@ -177,7 +223,7 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
             </div>
             <Link v-for="item in items.data" :key="item.id"
                   :href="route('manage.stock.show', item.id)"
-                  class="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_100px_160px] gap-3 sm:gap-4 px-5 py-3.5 items-center border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition-colors">
+                  class="relative group grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_100px_160px] gap-3 sm:gap-4 px-5 py-3.5 items-center border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition-colors">
                 <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.name }}</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 truncate">
@@ -194,6 +240,10 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
                     </div>
                     <p class="text-[11px] mt-1" :class="health(item).text">{{ health(item).label }}</p>
                 </div>
+                <button @click.prevent.stop="openEdit(item)" title="Edit"
+                        class="absolute top-2 right-3 p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-all">
+                    <Pencil class="w-3.5 h-3.5" />
+                </button>
             </Link>
         </div>
 
@@ -201,19 +251,23 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link v-for="item in items.data" :key="item.id"
                   :href="route('manage.stock.show', item.id)"
-                  class="bg-white dark:bg-gray-900 border rounded-xl p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
+                  class="relative group bg-white dark:bg-gray-900 border rounded-xl p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
                   :class="item.quantity <= 0
                     ? 'border-red-200 dark:border-red-800'
                     : item.quantity <= item.low_stock_threshold
                         ? 'border-amber-200 dark:border-amber-800'
                         : 'border-gray-200 dark:border-gray-800'">
+                <button @click.prevent.stop="openEdit(item)" title="Edit"
+                        class="absolute top-3 right-3 p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-all z-10">
+                    <Pencil class="w-3.5 h-3.5" />
+                </button>
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ item.name }}</p>
                         <p v-if="item.category" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ item.category }}</p>
                     </div>
                     <AlertTriangle v-if="item.quantity <= item.low_stock_threshold"
-                                   class="w-4 h-4 shrink-0 ml-2"
+                                   class="w-4 h-4 shrink-0 ml-2 group-hover:opacity-0 transition-opacity"
                                    :class="item.quantity <= 0 ? 'text-red-500' : 'text-amber-500'" />
                 </div>
                 <div class="flex items-end justify-between mb-3">
@@ -245,6 +299,120 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
                 ]"
                   v-html="link.label" />
         </div>
+
+        <!-- ── Create modal ── -->
+        <Modal :show="showCreate" max-width="xl" @close="showCreate = false">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Add Stock Item</h2>
+                    <button @click="showCreate = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X class="w-4 h-4" /></button>
+                </div>
+                <form @submit.prevent="submitCreate" class="space-y-4">
+                    <div>
+                        <label :class="fieldLabel">Building *</label>
+                        <select v-model="createForm.building_id" :class="fieldCls">
+                            <option value="">Select building</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                        <p v-if="createForm.errors.building_id" class="mt-1 text-xs text-red-600">{{ createForm.errors.building_id }}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label :class="fieldLabel">Item Name *</label>
+                            <input v-model="createForm.name" type="text" placeholder="e.g. Toilet Paper" :class="fieldCls" />
+                            <p v-if="createForm.errors.name" class="mt-1 text-xs text-red-600">{{ createForm.errors.name }}</p>
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Category</label>
+                            <input v-model="createForm.category" type="text" placeholder="e.g. Cleaning" :class="fieldCls" />
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Unit *</label>
+                            <select v-model="createForm.unit" :class="fieldCls">
+                                <option v-for="u in unitOptions" :key="u" :value="u">{{ u }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Initial Quantity *</label>
+                            <input v-model="createForm.quantity" type="number" min="0" :class="fieldCls" />
+                            <p v-if="createForm.errors.quantity" class="mt-1 text-xs text-red-600">{{ createForm.errors.quantity }}</p>
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Low Stock Alert At *</label>
+                            <input v-model="createForm.low_stock_threshold" type="number" min="0" :class="fieldCls" />
+                        </div>
+                    </div>
+                    <div>
+                        <label :class="fieldLabel">Notes</label>
+                        <textarea v-model="createForm.notes" rows="2" :class="[fieldCls, 'resize-none']" />
+                    </div>
+                    <div class="flex gap-3 pt-1">
+                        <button type="submit" :disabled="createForm.processing"
+                                class="flex-1 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 transition-all text-sm">
+                            {{ createForm.processing ? 'Saving...' : 'Add Item' }}
+                        </button>
+                        <button type="button" @click="showCreate = false"
+                                class="px-6 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- ── Edit modal ── -->
+        <Modal :show="!!editing" max-width="xl" @close="editing = null">
+            <div v-if="editing" class="p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Edit {{ editing.name }}</h2>
+                    <button @click="editing = null" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X class="w-4 h-4" /></button>
+                </div>
+                <form @submit.prevent="submitEdit" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label :class="fieldLabel">Item Name *</label>
+                            <input v-model="editForm.name" type="text" :class="fieldCls" />
+                            <p v-if="editForm.errors.name" class="mt-1 text-xs text-red-600">{{ editForm.errors.name }}</p>
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Category</label>
+                            <input v-model="editForm.category" type="text" :class="fieldCls" />
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Unit *</label>
+                            <select v-model="editForm.unit" :class="fieldCls">
+                                <option v-for="u in unitOptions" :key="u" :value="u">{{ u }}</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label :class="fieldLabel">Low Stock Alert At *</label>
+                            <input v-model="editForm.low_stock_threshold" type="number" min="0" :class="fieldCls" />
+                        </div>
+                    </div>
+                    <div>
+                        <label :class="fieldLabel">Notes</label>
+                        <textarea v-model="editForm.notes" rows="2" :class="[fieldCls, 'resize-none']" />
+                    </div>
+                    <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-800 rounded-xl">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">Active</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Inactive items are hidden from the stock list</p>
+                        </div>
+                        <button type="button" @click="editForm.is_active = !editForm.is_active"
+                                :class="editForm.is_active ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                            <span :class="editForm.is_active ? 'translate-x-6' : 'translate-x-1'" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" />
+                        </button>
+                    </div>
+                    <div class="flex gap-3 pt-1">
+                        <button type="submit" :disabled="editForm.processing"
+                                class="flex-1 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 transition-all text-sm">
+                            {{ editForm.processing ? 'Saving...' : 'Save Changes' }}
+                        </button>
+                        <button type="button" @click="editing = null"
+                                class="px-6 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
 
     </div>
 </template>

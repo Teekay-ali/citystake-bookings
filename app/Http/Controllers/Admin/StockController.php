@@ -240,8 +240,7 @@ class StockController extends Controller
             ['name' => $stock->name, 'low_stock_threshold' => $stock->low_stock_threshold]
         );
 
-        return redirect()->route('manage.stock.show', $stock->id)
-            ->with('success', 'Stock item updated.');
+        return back()->with('success', 'Stock item updated.');
     }
 
     private function authorizeManager(): void

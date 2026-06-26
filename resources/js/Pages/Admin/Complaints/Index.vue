@@ -1,8 +1,9 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { Plus, AlertTriangle, CheckCircle2, Clock, ChevronRight, MapPin, Paperclip } from 'lucide-vue-next'
+import Modal from '@/Components/Modal.vue'
+import { Plus, AlertTriangle, CheckCircle2, Clock, ChevronRight, MapPin, Paperclip, Upload, X } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -50,6 +51,39 @@ function formatDate(d) {
 }
 
 const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
+
+// ── Create modal ──
+const showCreate = ref(false)
+const previews = ref([])
+const createForm = useForm({
+    building_id: props.buildings.length === 1 ? props.buildings[0].id : '',
+    title: '', description: '', location: '', severity: 'medium', photos: [],
+})
+function openCreate() {
+    createForm.reset(); createForm.clearErrors(); previews.value = []
+    if (props.buildings.length === 1) createForm.building_id = props.buildings[0].id
+    showCreate.value = true
+}
+function handlePhotos(e) {
+    const files = Array.from(e.target.files)
+    if (files.length + createForm.photos.length > 5) { alert('Maximum 5 photos allowed.'); return }
+    createForm.photos = [...createForm.photos, ...files]
+    files.forEach(file => {
+        const reader = new FileReader()
+        reader.onload = (ev) => previews.value.push(ev.target.result)
+        reader.readAsDataURL(file)
+    })
+}
+function removePhoto(i) { createForm.photos.splice(i, 1); previews.value.splice(i, 1) }
+function submitCreate() {
+    createForm.post(route('manage.complaints.store'), {
+        forceFormData: true, preserveScroll: true,
+        onSuccess: () => { showCreate.value = false; createForm.reset(); previews.value = [] },
+    })
+}
+
+const fieldCls = 'w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white'
+const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5'
 </script>
 
 <template>
@@ -63,11 +97,11 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Complaint Reports</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Staff-reported issues and resolutions</p>
             </div>
-            <Link :href="route('manage.complaints.create')"
+            <button @click="openCreate"
                   class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 Report Issue
-            </Link>
+            </button>
         </div>
 
         <!-- ── Summary cards — clickable filters ── -->
@@ -182,6 +216,77 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 ]"
                 v-html="link.label" />
         </div>
+
+        <!-- ── Create modal ── -->
+        <Modal :show="showCreate" max-width="2xl" @close="showCreate = false">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Report an Issue</h2>
+                    <button @click="showCreate = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X class="w-4 h-4" /></button>
+                </div>
+                <form @submit.prevent="submitCreate" class="space-y-4">
+                    <div>
+                        <label :class="fieldLabel">Building *</label>
+                        <select v-model="createForm.building_id" :class="fieldCls">
+                            <option value="">Select building</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                        <p v-if="createForm.errors.building_id" class="mt-1 text-xs text-red-600">{{ createForm.errors.building_id }}</p>
+                    </div>
+                    <div>
+                        <label :class="fieldLabel">Issue Title *</label>
+                        <input v-model="createForm.title" type="text" placeholder="Brief description of the issue" :class="fieldCls" />
+                        <p v-if="createForm.errors.title" class="mt-1 text-xs text-red-600">{{ createForm.errors.title }}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label :class="fieldLabel">Location</label>
+                            <input v-model="createForm.location" type="text" placeholder="e.g. Unit 5, Lobby" :class="fieldCls" />
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Severity *</label>
+                            <select v-model="createForm.severity" :class="fieldCls">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label :class="fieldLabel">Description *</label>
+                        <textarea v-model="createForm.description" rows="4" placeholder="Describe the issue in detail..." :class="[fieldCls, 'resize-none']" />
+                        <p v-if="createForm.errors.description" class="mt-1 text-xs text-red-600">{{ createForm.errors.description }}</p>
+                    </div>
+                    <div>
+                        <label :class="fieldLabel">Photos <span class="text-gray-400 font-normal">(up to 5, max 5MB each)</span></label>
+                        <div v-if="previews.length" class="grid grid-cols-3 gap-2 mb-3">
+                            <div v-for="(src, i) in previews" :key="i" class="relative aspect-square">
+                                <img :src="src" class="w-full h-full object-cover rounded-xl" />
+                                <button type="button" @click="removePhoto(i)" class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all">
+                                    <X class="w-3 h-3" />
+                                </button>
+                            </div>
+                        </div>
+                        <label v-if="createForm.photos.length < 5"
+                               class="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-all">
+                            <Upload class="w-4 h-4 text-gray-400" />
+                            <span class="text-sm text-gray-500 dark:text-gray-400">Click to upload photos</span>
+                            <input type="file" accept="image/*" multiple class="sr-only" @change="handlePhotos" />
+                        </label>
+                        <p v-if="createForm.errors.photos" class="mt-1 text-xs text-red-600">{{ createForm.errors.photos }}</p>
+                    </div>
+                    <div class="flex gap-3 pt-1">
+                        <button type="submit" :disabled="createForm.processing"
+                                class="flex-1 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 transition-all text-sm">
+                            {{ createForm.processing ? 'Submitting...' : 'Submit Complaint' }}
+                        </button>
+                        <button type="button" @click="showCreate = false"
+                                class="px-6 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
 
     </div>
 </template>

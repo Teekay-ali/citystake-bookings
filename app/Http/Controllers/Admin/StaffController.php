@@ -27,7 +27,9 @@ class StaffController extends Controller
             ->paginate(20);
 
         return Inertia::render('Admin/Staff/Index', [
-            'staff' => $staff,
+            'staff'     => $staff,
+            'roles'     => Role::orderBy('name')->get(['id', 'name']),
+            'buildings' => Building::where('is_active', true)->get(['id', 'name']),
         ]);
     }
 

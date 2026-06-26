@@ -1,8 +1,9 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { Head, Link, router, usePage } from '@inertiajs/vue3'
+import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { Plus, CheckCircle2, Clock, AlertTriangle, ChevronRight, User } from 'lucide-vue-next'
+import Modal from '@/Components/Modal.vue'
+import { Plus, CheckCircle2, Clock, AlertTriangle, ChevronRight, User, Trash2, X } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -81,6 +82,30 @@ function subtaskProgress(task) {
 const hasActiveFilters = () => status.value || priority.value || assignedTo.value || buildingId.value || view.value
 
 const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
+
+// ── Create modal ──
+const showCreate = ref(false)
+const createForm = useForm({
+    building_id: props.buildings.length === 1 ? props.buildings[0].id : '',
+    assigned_to: '', title: '', description: '', priority: 'medium', due_date: '', subtasks: [],
+})
+function openCreate() {
+    createForm.reset(); createForm.clearErrors()
+    if (props.buildings.length === 1) createForm.building_id = props.buildings[0].id
+    showCreate.value = true
+}
+function addSubtask() { createForm.subtasks.push({ title: '' }) }
+function removeSubtask(i) { createForm.subtasks.splice(i, 1) }
+function submitCreate() {
+    createForm.subtasks = createForm.subtasks.filter(s => s.title.trim())
+    createForm.post(route('manage.tasks.store'), {
+        preserveScroll: true,
+        onSuccess: () => { showCreate.value = false; createForm.reset() },
+    })
+}
+
+const fieldCls = 'w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white'
+const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5'
 </script>
 
 <template>
@@ -94,12 +119,11 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Tasks</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Assign and track work across your team</p>
             </div>
-            <Link v-if="canManage"
-                  :href="route('manage.tasks.create')"
+            <button v-if="canManage" @click="openCreate"
                   class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 New Task
-            </Link>
+            </button>
         </div>
 
         <!-- ── Summary cards — clickable filters ── -->
@@ -232,11 +256,10 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                     class="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                     Clear filters
                 </button>
-                <Link v-else-if="canManage"
-                      :href="route('manage.tasks.create')"
+                <button v-else-if="canManage" @click="openCreate"
                       class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-all">
                     <Plus class="w-3.5 h-3.5" /> Create First Task
-                </Link>
+                </button>
             </div>
         </div>
 
@@ -255,6 +278,87 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 ]"
                 v-html="link.label" />
         </div>
+
+        <!-- ── Create modal ── -->
+        <Modal :show="showCreate" max-width="2xl" @close="showCreate = false">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">New Task</h2>
+                    <button @click="showCreate = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X class="w-4 h-4" /></button>
+                </div>
+                <form @submit.prevent="submitCreate" class="space-y-4">
+                    <div>
+                        <label :class="fieldLabel">Title *</label>
+                        <input v-model="createForm.title" type="text" placeholder="What needs to be done?" :class="fieldCls" />
+                        <p v-if="createForm.errors.title" class="mt-1 text-xs text-red-600">{{ createForm.errors.title }}</p>
+                    </div>
+                    <div>
+                        <label :class="fieldLabel">Description</label>
+                        <textarea v-model="createForm.description" rows="3" :class="[fieldCls, 'resize-none']" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label :class="fieldLabel">Building *</label>
+                            <select v-model="createForm.building_id" :class="fieldCls">
+                                <option value="">Select building</option>
+                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
+                            <p v-if="createForm.errors.building_id" class="mt-1 text-xs text-red-600">{{ createForm.errors.building_id }}</p>
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Assign To</label>
+                            <select v-model="createForm.assigned_to" :class="fieldCls">
+                                <option value="">Unassigned</option>
+                                <option v-for="s in staffMembers" :key="s.id" :value="s.id">{{ s.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label :class="fieldLabel">Priority *</label>
+                            <select v-model="createForm.priority" :class="fieldCls">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label :class="fieldLabel">Due Date</label>
+                            <input v-model="createForm.due_date" type="date" :class="fieldCls" />
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label :class="fieldLabel + ' mb-0'">Subtasks</label>
+                            <button type="button" @click="addSubtask" class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
+                                <Plus class="w-4 h-4" /> Add
+                            </button>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="(subtask, index) in createForm.subtasks" :key="index" class="flex items-center gap-2">
+                                <div class="w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-600 shrink-0" />
+                                <input v-model="subtask.title" type="text" placeholder="Subtask description"
+                                       class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                <button type="button" @click="removeSubtask(index)" class="text-red-400 hover:text-red-600 transition-all"><Trash2 class="w-4 h-4" /></button>
+                            </div>
+                        </div>
+                        <button v-if="createForm.subtasks.length === 0" type="button" @click="addSubtask"
+                                class="mt-2 w-full px-4 py-2.5 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400 hover:border-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
+                            + Add subtasks (optional)
+                        </button>
+                    </div>
+                    <div class="flex gap-3 pt-1">
+                        <button type="submit" :disabled="createForm.processing"
+                                class="flex-1 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 transition-all text-sm">
+                            {{ createForm.processing ? 'Creating...' : 'Create Task' }}
+                        </button>
+                        <button type="button" @click="showCreate = false"
+                                class="px-6 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
 
     </div>
 </template>
