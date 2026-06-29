@@ -38,6 +38,17 @@ const collapsed = ref(
         : false
 )
 
+// The icon-only collapsed layout only applies on desktop. On mobile the
+// sidebar is a full-width drawer and must always show labels.
+const isDesktop = ref(
+    typeof window !== 'undefined'
+        ? window.matchMedia('(min-width: 1024px)').matches
+        : true
+)
+const navCollapsed = computed(() => collapsed.value && isDesktop.value)
+let desktopMq = null
+const onDesktopChange = (e) => { isDesktop.value = e.matches }
+
 // Offline detection
 const isOnline = ref(true)
 
@@ -73,6 +84,9 @@ onMounted(() => {
     }
 
     connectivityInterval = setInterval(checkConnectivity, 15000)
+
+    desktopMq = window.matchMedia('(min-width: 1024px)')
+    desktopMq.addEventListener('change', onDesktopChange)
 })
 
 const openMenus = ref(
@@ -136,7 +150,7 @@ function closeMobileSearch() {
 }
 
 function onMouseEnter(item, el) {
-    if (!collapsed.value) return
+    if (!navCollapsed.value) return
     hoveredItem.value = item.label
     tooltipAnchor.value = el
 }
@@ -217,6 +231,7 @@ onUnmounted(() => {
         navigator.serviceWorker.removeEventListener('message', handleSwMessage)
     }
     clearInterval(connectivityInterval)
+    desktopMq?.removeEventListener('change', onDesktopChange)
 })
 
 // ── Quick actions ─────────────────────────────────────────────
@@ -415,10 +430,10 @@ function canSeeItem(item) {
             <!-- Logo row -->
             <div class="h-16 flex items-center justify-between px-4 shrink-0">
                 <Link :href="route('home')"
-                      :class="collapsed ? 'mx-auto' : ''"
+                      :class="navCollapsed ? 'mx-auto' : ''"
                       class="flex items-center gap-2 min-w-0">
                     <img src="/citystake-120.png" alt="CityStake Bookings" class="h-8 w-auto dark:invert" />
-                    <span v-if="!collapsed" class="text-xl font-light tracking-tight text-gray-900 dark:text-white">CityStake</span>
+                    <span v-if="!navCollapsed" class="text-xl font-light tracking-tight text-gray-900 dark:text-white">CityStake</span>
                 </Link>
 
                 <!-- Mobile close -->
@@ -454,7 +469,7 @@ function canSeeItem(item) {
                 <template v-for="group in navGroups" :key="group.label">
                     <div v-if="group.items.some(item => canSeeItem(item) && !item.soon)" class="mb-2">
 
-                        <p v-if="!collapsed"
+                        <p v-if="!navCollapsed"
                            class="text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-widest px-3 mb-1 mt-2">
                             {{ group.label }}
                         </p>
@@ -465,7 +480,7 @@ function canSeeItem(item) {
                                 <template v-if="canSeeItem(item)">
 
                                     <!-- Item with children (submenu) -->
-                                    <template v-if="item.children && !collapsed">
+                                    <template v-if="item.children && !navCollapsed">
                                         <button
                                             type="button"
                                             @click="toggleMenu(item.label)"
@@ -512,7 +527,7 @@ function canSeeItem(item) {
                                     </template>
 
                                     <!-- Collapsed submenu — show icon only with tooltip -->
-                                    <template v-else-if="item.children && collapsed">
+                                    <template v-else-if="item.children && navCollapsed">
                                         <Link
                                             :href="route(item.children.find(c => canSeeItem(c))?.route ?? item.children[0].route)"
                                             @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
@@ -535,15 +550,15 @@ function canSeeItem(item) {
                                     <template v-else>
                                         <!-- Soon -->
                                         <div v-if="item.soon"
-                                             :class="collapsed ? 'justify-center px-0' : 'px-3'"
+                                             :class="navCollapsed ? 'justify-center px-0' : 'px-3'"
                                              class="flex items-center gap-2 py-2 rounded-lg text-sm text-gray-300 dark:text-gray-600 cursor-not-allowed"
                                              @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
                                              @mouseleave="onMouseLeave">
                                 <span class="w-5 h-5 flex items-center justify-center shrink-0">
                                     <component :is="item.icon" class="w-3.5 h-3.5" />
                                 </span>
-                                            <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
-                                            <span v-if="!collapsed"
+                                            <span v-if="!navCollapsed" class="flex-1">{{ item.label }}</span>
+                                            <span v-if="!navCollapsed"
                                                   class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 px-1.5 py-0.5 rounded-full">
                                     Soon
                                 </span>
@@ -559,7 +574,7 @@ function canSeeItem(item) {
                                       isActive(item.match)
                                           ? 'bg-gray-50 dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium'
                                           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-                                      collapsed ? 'justify-center px-0' : 'px-3'
+                                      navCollapsed ? 'justify-center px-0' : 'px-3'
                                   ]"
                                               class="relative flex items-center gap-2 py-2 rounded-lg text-sm transition-all">
                                 <span :class="isActive(item.match)
@@ -568,12 +583,12 @@ function canSeeItem(item) {
                                     <component :is="item.icon"
                                                :class="isActive(item.match) ? 'w-3 h-3 text-amber-600 dark:text-amber-400' : 'w-3.5 h-3.5'" />
                                 </span>
-                                            <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
-                                            <span v-if="!collapsed && item.badge && item.badge > 0"
+                                            <span v-if="!navCollapsed" class="flex-1">{{ item.label }}</span>
+                                            <span v-if="!navCollapsed && item.badge && item.badge > 0"
                                                   class="bg-amber-500 text-white text-[10px] font-medium min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
                                     {{ item.badge > 9 ? '9+' : item.badge }}
                                 </span>
-                                            <span v-if="collapsed && item.badge && item.badge > 0"
+                                            <span v-if="navCollapsed && item.badge && item.badge > 0"
                                                   class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
                                         </Link>
                                     </template>
