@@ -114,12 +114,12 @@ function clearFilters() {
         </div>
 
         <!-- Filters -->
-        <div class="flex items-center gap-3 flex-wrap mb-6">
+        <div v-if="buildings.length > 1 || statusFilter || buildingFilter" class="grid grid-cols-2 sm:flex sm:items-center gap-2 mb-6">
             <select
                 v-if="buildings.length > 1"
                 v-model="buildingFilter"
                 @change="applyFilters"
-                class="px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
+                class="w-full sm:w-auto px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
             >
                 <option value="">All buildings</option>
                 <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
@@ -128,7 +128,7 @@ function clearFilters() {
             <button
                 v-if="statusFilter || buildingFilter"
                 @click="clearFilters"
-                class="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                class="w-full sm:w-auto px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all sm:border-0 sm:px-0 sm:text-sm sm:font-normal"
             >
                 Clear filters
             </button>
