@@ -23,7 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Vite::prefetch(concurrency: 3);
+        // NOTE: Vite::prefetch() is intentionally disabled. On shared hosting it
+        // fires ~100 asset requests at once, tripping the concurrency limit and
+        // returning 503s. Pages lazy-load their own chunks on navigation instead.
 
         // Inline CSS on every outgoing email so styles survive clients that
         // strip <head><style> blocks.

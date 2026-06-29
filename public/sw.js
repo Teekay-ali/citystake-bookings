@@ -1,24 +1,32 @@
-self.addEventListener('fetch', event => {
-    if (event.request.method !== 'GET') return
-    const url = new URL(event.request.url)
-    if (url.origin !== self.location.origin) return
+// Take over from any previously-installed worker immediately. An older version
+// of this worker intercepted every request and returned a synthetic 503 on
+// failure, which broke asset loading — this replaces it.
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
+
+function notify(type) {
+    self.clients.matchAll().then((clients) =>
+        clients.forEach((c) => c.postMessage({ type }))
+    )
+}
+
+// Only watch top-level page navigations for connectivity. Never intercept
+// scripts, styles, or other assets — let the browser load them normally so a
+// transient failure can't be turned into a hard 503.
+self.addEventListener('fetch', (event) => {
+    if (event.request.mode !== 'navigate') return
 
     event.respondWith(
         fetch(event.request)
-            .then(response => {
-                self.clients.matchAll().then(clients =>
-                    clients.forEach(c => c.postMessage({ type: 'ONLINE' }))
-                )
-                return response
-            })
+            .then((response) => { notify('ONLINE'); return response })
             .catch(() => {
-                self.clients.matchAll().then(clients =>
-                    clients.forEach(c => c.postMessage({ type: 'OFFLINE' }))
+                notify('OFFLINE')
+                return new Response(
+                    '<!doctype html><meta charset="utf-8"><title>Offline</title>' +
+                    '<body style="font-family:sans-serif;padding:2rem;text-align:center">' +
+                    '<h1>You\'re offline</h1><p>Check your connection and try again.</p>',
+                    { status: 200, headers: { 'Content-Type': 'text/html' } }
                 )
-                return new Response('Offline', {
-                    status: 503,
-                    headers: { 'Content-Type': 'text/plain' }
-                })
             })
     )
 })
