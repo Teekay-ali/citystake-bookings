@@ -2,8 +2,16 @@
 import { Head, useForm, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
+import RichTextEditor from '@/Components/RichTextEditor.vue'
 import { Plus, Send, Trash2, CheckCircle, Clock, X } from 'lucide-vue-next'
 import { ref } from 'vue'
+
+// Plain-text preview from stored HTML for the compact list row
+function preview(html) {
+    const tmp = document.createElement('div')
+    tmp.innerHTML = html ?? ''
+    return (tmp.textContent || '').replace(/\s+/g, ' ').trim()
+}
 
 defineOptions({ layout: ManageLayout })
 
@@ -107,8 +115,7 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
 
                     <div>
                         <label :class="labelClass">Details</label>
-                        <textarea v-model="form.body" rows="5" :class="inputClass"
-                                  placeholder="Describe what changed and why it matters..." />
+                        <RichTextEditor v-model="form.body" />
                         <p v-if="form.errors.body" class="text-red-500 text-xs mt-1">{{ form.errors.body }}</p>
                     </div>
 
@@ -155,7 +162,7 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
                             </span>
                         </div>
                         <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ entry.title }}</p>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">by {{ entry.author }} · {{ entry.body }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">by {{ entry.author }} · {{ preview(entry.body) }}</p>
                     </div>
 
                     <div class="flex items-center gap-1 shrink-0">
@@ -206,7 +213,7 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ selected.title }}</h2>
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">by {{ selected.author }}</p>
 
-            <p class="text-sm text-gray-600 dark:text-gray-300 mt-4 whitespace-pre-line leading-relaxed">{{ selected.body }}</p>
+            <div class="rt-content mt-4" v-html="selected.body" />
 
             <div class="flex justify-end gap-2 mt-6">
                 <button v-if="!selected.is_published"

@@ -74,7 +74,7 @@ onMounted(() => {
                                     <span class="text-xs text-gray-400">{{ formatDate(entry.published_at) }}</span>
                                 </div>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ entry.title }}</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed whitespace-pre-line">{{ entry.body }}</p>
+                                <div class="rt-content mt-1" v-html="entry.body" />
                             </div>
                         </div>
 

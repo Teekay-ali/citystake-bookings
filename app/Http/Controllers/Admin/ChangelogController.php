@@ -46,11 +46,14 @@ class ChangelogController extends Controller
 
         $validated = $request->validate([
             'title'      => 'required|string|max:255',
-            'body'       => 'required|string|max:5000',
+            'body'       => 'required|string|max:20000',
             'version'    => 'nullable|string|max:50',
             'type'       => 'required|in:feature,fix,improvement,security',
             'send_email' => 'boolean',
         ]);
+
+        // Body is rich-text HTML from the editor — sanitize to a safe allowlist
+        $validated['body'] = $this->sanitizeBody($validated['body']);
 
         $changelog = Changelog::create([
             ...$validated,
@@ -60,6 +63,21 @@ class ChangelogController extends Controller
         AuditLog::log('changelog.created', $changelog, null, ['title' => $changelog->title]);
 
         return back()->with('success', 'Changelog entry saved as draft.');
+    }
+
+    /**
+     * Sanitize editor HTML to a safe allowlist (defends against stored XSS).
+     */
+    private function sanitizeBody(string $html): string
+    {
+        $config = \HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', 'p,br,strong,em,ul,ol,li,h3,a[href]');
+        $config->set('AutoFormat.RemoveEmpty', true);
+        $config->set('HTML.TargetBlank', true);
+        // Disable the definition cache so we don't depend on a writable cache dir
+        $config->set('Cache.DefinitionImpl', null);
+
+        return (new \HTMLPurifier($config))->purify($html);
     }
 
     public function publish(Changelog $changelog)

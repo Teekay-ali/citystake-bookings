@@ -21,7 +21,7 @@ class ChangelogPublishedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Platform Update' . ($this->changelog->version ? ' ' . $this->changelog->version : '') . ' — ' . $this->changelog->title)
+            ->subject('Platform Update' . ($this->changelog->version ? ' ' . $this->changelog->version : '') . ' - ' . $this->changelog->title)
             ->view('emails.changelog.published', [
                 'changelog'  => $this->changelog,
                 'notifiable' => $notifiable,

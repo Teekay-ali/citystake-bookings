@@ -1,8 +1,3 @@
-@php
-    // Split the body into clean lines: break on real newlines and on "•"/"·" bullets
-    $rawLines = preg_split('/\r\n|\r|\n|•|·/u', (string) $changelog->body);
-    $lines = array_values(array_filter(array_map('trim', $rawLines), fn ($l) => $l !== ''));
-@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -44,16 +39,9 @@
                                         </p>
                                         <p style="margin:0 0 18px 0; font-size:18px; font-weight:600; color:#1f2937;">{{ $changelog->title }}</p>
 
-                                        @if(count($lines))
-                                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                                @foreach($lines as $line)
-                                                    <tr>
-                                                        <td valign="top" style="padding:5px 10px 5px 0; font-size:15px; line-height:1.5; color:#6b7280;">•</td>
-                                                        <td valign="top" style="padding:5px 0; font-size:15px; line-height:1.5; color:#374151;">{{ $line }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            </table>
-                                        @endif
+                                        <div style="font-size:15px; line-height:1.6; color:#374151;">
+                                            {!! $changelog->body !!}
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
