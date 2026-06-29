@@ -1,7 +1,8 @@
 <script setup>
 import { Head, useForm, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { Plus, Send, Trash2, CheckCircle, Clock } from 'lucide-vue-next'
+import Modal from '@/Components/Modal.vue'
+import { Plus, Send, Trash2, CheckCircle, Clock, X } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 defineOptions({ layout: ManageLayout })
@@ -11,6 +12,11 @@ const props = defineProps({
 })
 
 const showForm = ref(false)
+const selected = ref(null)
+
+function openDetail(entry) {
+    selected.value = entry
+}
 
 const typeColors = {
     feature:     'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -128,44 +134,42 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
             </div>
 
             <!-- List -->
-            <div v-if="changelogs.length" class="space-y-3">
+            <div v-if="changelogs.length"
+                 class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                 <div v-for="entry in changelogs" :key="entry.id"
-                     class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                     @click="openDetail(entry)"
+                     class="group flex items-center gap-3 px-4 py-3 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors cursor-pointer">
 
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap mb-1">
-                                <span :class="['text-xs font-medium px-2 py-0.5 rounded-full', typeColors[entry.type]]">
-                                    {{ entry.type }}
-                                </span>
-                                <span v-if="entry.version" class="text-xs text-gray-400 font-mono">{{ entry.version }}</span>
-                                <span v-if="entry.is_published"
-                                      class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                    <CheckCircle class="w-3 h-3" /> Published {{ formatDate(entry.published_at) }}
-                                </span>
-                                <span v-else class="inline-flex items-center gap-1 text-xs text-gray-400">
-                                    <Clock class="w-3 h-3" /> Draft
-                                </span>
-                            </div>
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ entry.title }}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">by {{ entry.author }}</p>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span :class="['text-xs font-medium px-2 py-0.5 rounded-md capitalize', typeColors[entry.type]]">
+                                {{ entry.type }}
+                            </span>
+                            <span v-if="entry.version" class="text-xs text-gray-400 font-mono">{{ entry.version }}</span>
+                            <span v-if="entry.is_published"
+                                  class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                <CheckCircle class="w-3 h-3" /> {{ formatDate(entry.published_at) }}
+                            </span>
+                            <span v-else class="inline-flex items-center gap-1 text-xs text-gray-400">
+                                <Clock class="w-3 h-3" /> Draft
+                            </span>
                         </div>
-
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button v-if="!entry.is_published"
-                                    @click="publish(entry.id)"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">
-                                <Send class="w-3.5 h-3.5" />
-                                Publish
-                            </button>
-                            <button @click="destroy(entry.id)"
-                                    class="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded">
-                                <Trash2 class="w-4 h-4" />
-                            </button>
-                        </div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ entry.title }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">by {{ entry.author }} · {{ entry.body }}</p>
                     </div>
 
-                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-3 whitespace-pre-line leading-relaxed">{{ entry.body }}</p>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button v-if="!entry.is_published"
+                                @click.stop="publish(entry.id)"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">
+                            <Send class="w-3.5 h-3.5" />
+                            Publish
+                        </button>
+                        <button @click.stop="destroy(entry.id)"
+                                class="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded opacity-0 group-hover:opacity-100">
+                            <Trash2 class="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -175,4 +179,46 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
 
         </div>
     </div>
+
+    <!-- Detail modal -->
+    <Modal :show="!!selected" max-width="lg" @close="selected = null">
+        <div v-if="selected" class="p-6">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span :class="['text-xs font-medium px-2 py-0.5 rounded-md capitalize', typeColors[selected.type]]">
+                        {{ selected.type }}
+                    </span>
+                    <span v-if="selected.version" class="text-xs text-gray-400 font-mono">{{ selected.version }}</span>
+                    <span v-if="selected.is_published"
+                          class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                        <CheckCircle class="w-3 h-3" /> Published {{ formatDate(selected.published_at) }}
+                    </span>
+                    <span v-else class="inline-flex items-center gap-1 text-xs text-gray-400">
+                        <Clock class="w-3 h-3" /> Draft
+                    </span>
+                </div>
+                <button @click="selected = null"
+                        class="p-1.5 -mt-1 -mr-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <X class="w-4 h-4" />
+                </button>
+            </div>
+
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ selected.title }}</h2>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">by {{ selected.author }}</p>
+
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-4 whitespace-pre-line leading-relaxed">{{ selected.body }}</p>
+
+            <div class="flex justify-end gap-2 mt-6">
+                <button v-if="!selected.is_published"
+                        @click="publish(selected.id); selected = null"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">
+                    <Send class="w-3.5 h-3.5" /> Publish
+                </button>
+                <button @click="selected = null"
+                        class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </Modal>
 </template>

@@ -25,6 +25,7 @@ class ChangelogController extends Controller
             ->map(fn($c) => [
                 'id'           => $c->id,
                 'title'        => $c->title,
+                'body'         => $c->body,
                 'version'      => $c->version,
                 'type'         => $c->type,
                 'send_email'   => $c->send_email,
