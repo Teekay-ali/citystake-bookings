@@ -6,6 +6,7 @@ import {
     Search, Plus, Download, Eye, PauseCircle,
     CheckCircle, XCircle, Clock, AlertCircle,
     ChevronRight, ChevronLeft,
+    Hash, User, Building2, CalendarDays, Banknote, CircleDot,
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -69,13 +70,13 @@ const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', {
 })
 
 const statusMap = {
-    cancelled:       { icon: XCircle,     text: 'Cancelled',       cls: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800' },
-    payment_pending: { icon: AlertCircle, text: 'Payment Pending',  cls: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800' },
-    active:          { icon: Clock,       text: 'Active Stay',      cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800' },
-    checked_in:      { icon: Clock,       text: 'Checked In',       cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800' },
-    completed:       { icon: CheckCircle, text: 'Completed',        cls: 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700' },
-    confirmed:       { icon: CheckCircle, text: 'Confirmed',        cls: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800' },
-    paused:          { icon: PauseCircle, text: 'Paused',           cls:  'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-800' },
+    cancelled:       { icon: XCircle,     text: 'Cancelled',       cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400' },
+    payment_pending: { icon: AlertCircle, text: 'Payment Pending',  cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
+    active:          { icon: Clock,       text: 'Active Stay',      cls: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' },
+    checked_in:      { icon: Clock,       text: 'Checked In',       cls: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' },
+    completed:       { icon: CheckCircle, text: 'Completed',        cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },
+    confirmed:       { icon: CheckCircle, text: 'Confirmed',        cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
+    paused:          { icon: PauseCircle, text: 'Paused',           cls: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400' },
 }
 
 const getStatus = (booking) => statusMap[booking.display_status] ?? statusMap['confirmed']
@@ -162,60 +163,73 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
         </div>
 
         <!-- ── Table ── -->
-        <div class="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+        <div class="border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden bg-white dark:bg-gray-950">
 
             <!-- Desktop table -->
             <div class="hidden md:block overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                    <tr>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Reference</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Guest</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Property</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Dates</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-5 py-3"></th>
+                <table class="w-full text-[13px]">
+                    <thead class="border-b border-gray-100 dark:border-gray-800">
+                    <tr class="text-gray-500 dark:text-gray-400">
+                        <th class="px-4 py-2.5 text-left font-medium">
+                            <span class="inline-flex items-center gap-1.5"><Hash class="w-3.5 h-3.5" /> Reference</span>
+                        </th>
+                        <th class="px-4 py-2.5 text-left font-medium">
+                            <span class="inline-flex items-center gap-1.5"><User class="w-3.5 h-3.5" /> Guest</span>
+                        </th>
+                        <th class="px-4 py-2.5 text-left font-medium">
+                            <span class="inline-flex items-center gap-1.5"><Building2 class="w-3.5 h-3.5" /> Property</span>
+                        </th>
+                        <th class="px-4 py-2.5 text-left font-medium">
+                            <span class="inline-flex items-center gap-1.5"><CalendarDays class="w-3.5 h-3.5" /> Dates</span>
+                        </th>
+                        <th class="px-4 py-2.5 text-right font-medium">
+                            <span class="inline-flex items-center gap-1.5"><Banknote class="w-3.5 h-3.5" /> Amount</span>
+                        </th>
+                        <th class="px-4 py-2.5 text-left font-medium">
+                            <span class="inline-flex items-center gap-1.5"><CircleDot class="w-3.5 h-3.5" /> Status</span>
+                        </th>
+                        <th class="px-4 py-2.5"></th>
                     </tr>
                     </thead>
-                    <tbody class="bg-white dark:bg-gray-950 divide-y divide-gray-100 dark:divide-gray-800">
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     <tr
                         v-for="booking in bookings.data"
                         :key="booking.id"
-                        class="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                        <td class="px-5 py-3.5">
-                            <p class="text-xs font-mono font-medium text-gray-900 dark:text-white">{{ booking.booking_reference }}</p>
+                        :class="['cancelled', 'completed'].includes(booking.display_status) && 'text-gray-400 dark:text-gray-600'"
+                        class="group hover:bg-gray-50/60 dark:hover:bg-gray-900/40 transition-colors">
+                        <td class="px-4 py-2.5">
+                            <p class="font-mono font-medium text-gray-900 dark:text-white">{{ booking.booking_reference }}</p>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ formatDate(booking.created_at) }}</p>
                         </td>
-                        <td class="px-5 py-3.5">
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ booking.guest_name }}</p>
+                        <td class="px-4 py-2.5">
+                            <p class="font-medium text-gray-900 dark:text-white">{{ booking.guest_name }}</p>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ booking.guests }} guest{{ booking.guests > 1 ? 's' : '' }}</p>
                         </td>
-                        <td class="px-5 py-3.5">
-                            <p class="text-sm text-gray-900 dark:text-white">{{ booking.unit_type.name }}</p>
+                        <td class="px-4 py-2.5">
+                            <p class="text-gray-900 dark:text-white">{{ booking.unit_type.name }}</p>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ booking.building.name }}</p>
                         </td>
-                        <td class="px-5 py-3.5 whitespace-nowrap">
-                            <p class="text-sm text-gray-900 dark:text-white">{{ formatDate(booking.check_in) }}</p>
+                        <td class="px-4 py-2.5 whitespace-nowrap">
+                            <p class="text-gray-900 dark:text-white">{{ formatDate(booking.check_in) }}</p>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ booking.nights }} night{{ booking.nights > 1 ? 's' : '' }}</p>
                         </td>
-                        <td class="px-5 py-3.5 whitespace-nowrap">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatPrice(booking.total_amount) }}</p>
+                        <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                            <p class="font-semibold tabular-nums text-gray-900 dark:text-white">{{ formatPrice(booking.total_amount) }}</p>
                             <p class="text-xs mt-0.5" :class="booking.payment_status === 'paid' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">
                                 {{ booking.payment_status === 'paid' ? 'Paid' : 'Pending' }}
                             </p>
                         </td>
-                        <td class="px-5 py-3.5 whitespace-nowrap">
+                        <td class="px-4 py-2.5 whitespace-nowrap">
                                 <span :class="getStatus(booking).cls"
-                                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium">
+                                      class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium">
                                     <component :is="getStatus(booking).icon" class="w-3 h-3" />
                                     {{ getStatus(booking).text }}
                                 </span>
                         </td>
-                        <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                        <td class="px-4 py-2.5 text-right whitespace-nowrap">
                             <Link
                                 :href="route('manage.bookings.show', booking.id)"
-                                class="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                class="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-900 dark:hover:text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all">
                                 <Eye class="w-3.5 h-3.5" />
                                 View
                             </Link>
@@ -224,7 +238,7 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
 
                     <!-- Empty state inside table -->
                     <tr v-if="bookings.data.length === 0">
-                        <td colspan="7" class="px-5 py-16 text-center">
+                        <td colspan="7" class="px-4 py-16 text-center">
                             <p class="text-sm text-gray-400 dark:text-gray-500">No bookings found</p>
                             <button
                                 v-if="hasActiveFilters()"

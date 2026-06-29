@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Services\NotificationService;
+
 use App\Http\Controllers\Controller;
 use App\Models\StaffMessage;
 use App\Models\User;
@@ -152,7 +154,7 @@ class StaffMessageController extends Controller
         $message->recipients()->sync($recipients->pluck('id')->toArray());
 
         // Email notification
-        Notification::send($recipients, new StaffMessageNotification($message));
+        NotificationService::send($recipients, new StaffMessageNotification($message));
 
         return back()->with('success', 'Message sent.');
     }
@@ -191,7 +193,7 @@ class StaffMessageController extends Controller
         $reply->recipients()->sync($replyRecipientIds);
 
         $replyRecipients = User::whereIn('id', $replyRecipientIds)->get();
-        Notification::send($replyRecipients, new StaffMessageNotification($reply));
+        NotificationService::send($replyRecipients, new StaffMessageNotification($reply));
 
         return back()->with('success', 'Reply sent.');
     }

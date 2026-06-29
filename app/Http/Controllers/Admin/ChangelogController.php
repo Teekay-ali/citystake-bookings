@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Services\NotificationService;
+
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Changelog;
@@ -76,7 +78,7 @@ class ChangelogController extends Controller
                 ->where('is_active', true)
                 ->get();
 
-            Notification::send($recipients, new ChangelogPublishedNotification($changelog));
+            NotificationService::send($recipients, new ChangelogPublishedNotification($changelog));
         }
 
         return back()->with('success', 'Update published' . ($changelog->send_email ? ' and email sent to admins.' : '.'));

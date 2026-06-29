@@ -16,3 +16,6 @@ Schedule::command('tasks:send-overdue-reminders')->dailyAt('08:00');
 Schedule::command('bookings:send-reminders')->dailyAt('09:00');
 
 Schedule::command('bookings:send-checkout-reminders')->dailyAt('09:30');
+
+// Prune read notifications older than 30 days so the table doesn't grow unbounded
+Schedule::command('notifications:prune')->dailyAt('03:00');

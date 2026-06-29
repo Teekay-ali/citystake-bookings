@@ -89,7 +89,7 @@ class EnquiryController extends Controller
         $enquiry->loadMissing('building', 'unitType');
 
         $recipients = NotificationService::getUsersByRoles(['receptionist', 'manager'], $building->id);
-        Notification::send($recipients, new NewEnquiryNotification($enquiry));
+        NotificationService::send($recipients, new NewEnquiryNotification($enquiry));
 
         return redirect()->route('enquiries.thank-you');
     }

@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { usePage } from '@inertiajs/vue3'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { usePage, router, Link } from '@inertiajs/vue3'
 import {
     Bell, Home, XCircle, Clock, ShoppingCart,
     Wrench, AlertTriangle, CheckSquare, Banknote,
@@ -37,21 +37,6 @@ const props = defineProps({
     }
 })
 
-const userPermissions = computed(() => page.props.auth.user?.permissions ?? [])
-
-const permissionMap = {
-    'procurement': 'view-procurement',
-    'maintenance': 'view-maintenance',
-    'complaint':   'view-complaints',
-    'booking':     'view-bookings',
-    'task':        'view-tasks',
-}
-
-function canAccessNotification(notification) {
-    const required = permissionMap[notification.data?.icon]
-    if (!required) return true
-    return userPermissions.value.includes(required)
-}
 async function fetchNotifications() {
     loading.value = true
     try {
@@ -89,9 +74,8 @@ async function markRead(notification) {
     }
     open.value = false
 
-    // Only navigate if user has permission
-    if (canAccessNotification(notification)) {
-        window.location.href = notification.data.url
+    if (notification.data?.url) {
+        router.visit(notification.data.url)
     }
 }
 
@@ -226,6 +210,16 @@ onUnmounted(() => {
                         />
                     </button>
                 </div>
+
+                <!-- Footer -->
+                <Link
+                    v-if="notifications.length > 0"
+                    :href="route('manage.notifications.page')"
+                    @click="open = false"
+                    class="block px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+                >
+                    View all notifications
+                </Link>
             </div>
         </Transition>
     </div>

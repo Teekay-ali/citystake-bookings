@@ -94,7 +94,7 @@ class ComplaintController extends Controller
         AuditLog::log('complaint.submitted', $complaint, null, ['title' => $complaint->title, 'severity' => $complaint->severity]);
 
         $recipients = NotificationService::getUsersByRoles(['manager', 'ceo'], $complaint->building_id);
-        Notification::send($recipients, new ComplaintSubmittedNotification($complaint));
+        NotificationService::send($recipients, new ComplaintSubmittedNotification($complaint));
 
         return redirect()->route('manage.complaints.index')
             ->with('success', 'Complaint submitted successfully.');

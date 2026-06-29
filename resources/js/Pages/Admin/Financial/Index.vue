@@ -7,6 +7,8 @@ import {
     AlertCircle, Plus, X, Eye, EyeOff
 } from 'lucide-vue-next'
 import { useFinancialVisibility } from '@/Composables/useFinancialVisibility'
+import { useDarkMode } from '@/Composables/useDarkMode'
+import VueApexCharts from 'vue3-apexcharts'
 
 defineOptions({ layout: ManageLayout })
 
@@ -25,6 +27,16 @@ const props = defineProps({
 const { financialsVisible, toggle } = useFinancialVisibility()
 
 const user = computed(() => usePage().props.auth.user)
+
+// Merged pending queue with an explicit kind (avoids inferring type from fields)
+const pendingItems = computed(() => [
+    ...(props.pendingMaintenance ?? []).map(r => ({ ...r, kind: 'maintenance' })),
+    ...(props.pendingProcurement ?? []).map(r => ({ ...r, kind: 'procurement' })),
+])
+
+function scrollToPending() {
+    document.getElementById('pending-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 // ── Filters ───────────────────────────────────────────────────
 const period     = ref(props.filters.period)
@@ -130,17 +142,69 @@ function formatDate(d) {
     return new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-// ── Trend chart ───────────────────────────────────────────────
-const TREND_HEIGHT_PX = 140
+// ── Charts (ApexCharts) ───────────────────────────────────────
+const { isDark } = useDarkMode()
 
-const maxTrend = computed(() =>
-    Math.max(...(props.trend ?? []).map(t => Math.max(t.income, t.expenses, 0)), 1)
-)
+const months3 = computed(() => (props.trend ?? []).map(t => t.month.split(' ')[0]))
 
-function trendBarHeight(value) {
-    if (!value || maxTrend.value === 0) return '2px'
-    return Math.max((value / maxTrend.value) * TREND_HEIGHT_PX, 3) + 'px'
+function formatCompact(n) {
+    const v = Math.abs(Number(n) || 0)
+    if (v >= 1_000_000) return '₦' + (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm'
+    if (v >= 1_000)     return '₦' + (n / 1_000).toFixed(0) + 'k'
+    return '₦' + (n ?? 0)
 }
+
+const axisColor = computed(() => (isDark.value ? '#9ca3af' : '#9ca3af'))
+const gridColor = computed(() => (isDark.value ? '#1f2937' : '#f3f4f6'))
+
+// Income vs Expenses — grouped columns
+const incomeExpenseSeries = computed(() => [
+    { name: 'Income',   data: (props.trend ?? []).map(t => Math.round(t.income)) },
+    { name: 'Expenses', data: (props.trend ?? []).map(t => Math.round(t.expenses)) },
+])
+
+const incomeExpenseOptions = computed(() => ({
+    chart: { type: 'bar', height: 240, toolbar: { show: false }, fontFamily: 'inherit', background: 'transparent', animations: { speed: 400 } },
+    theme: { mode: isDark.value ? 'dark' : 'light' },
+    colors: ['#10b981', '#ef4444'],
+    plotOptions: { bar: { columnWidth: '58%', borderRadius: 3, borderRadiusApplication: 'end' } },
+    dataLabels: { enabled: false },
+    stroke: { show: false },
+    grid: { borderColor: gridColor.value, strokeDashArray: 0, yaxis: { lines: { show: false } }, padding: { left: 4, right: 4, top: -8 } },
+    xaxis: {
+        categories: months3.value,
+        labels: { style: { colors: axisColor.value, fontSize: '11px' } },
+        axisBorder: { show: false }, axisTicks: { show: false },
+    },
+    yaxis: { labels: { style: { colors: axisColor.value, fontSize: '11px' }, formatter: formatCompact } },
+    legend: { show: false },
+    tooltip: { theme: isDark.value ? 'dark' : 'light', y: { formatter: (v) => formatAmount(v) } },
+}))
+
+// Net profit — smooth area with zero baseline
+const netSeries = computed(() => [
+    { name: 'Net Profit', data: (props.trend ?? []).map(t => Math.round(t.net)) },
+])
+
+const netOptions = computed(() => ({
+    chart: { type: 'area', height: 240, toolbar: { show: false }, fontFamily: 'inherit', background: 'transparent', animations: { speed: 400 }, sparkline: { enabled: false } },
+    theme: { mode: isDark.value ? 'dark' : 'light' },
+    colors: ['#10b981'],
+    stroke: { curve: 'smooth', width: 2 },
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 100] } },
+    dataLabels: { enabled: false },
+    markers: { size: 0, hover: { size: 4 } },
+    grid: { borderColor: gridColor.value, strokeDashArray: 0, yaxis: { lines: { show: false } }, padding: { left: 4, right: 4, top: -8 } },
+    xaxis: {
+        categories: months3.value,
+        labels: { style: { colors: axisColor.value, fontSize: '11px' } },
+        axisBorder: { show: false }, axisTicks: { show: false },
+        tooltip: { enabled: false },
+    },
+    yaxis: { labels: { style: { colors: axisColor.value, fontSize: '11px' }, formatter: formatCompact } },
+    annotations: { yaxis: [{ y: 0, borderColor: isDark.value ? '#374151' : '#d1d5db', strokeDashArray: 0 }] },
+    tooltip: { theme: isDark.value ? 'dark' : 'light', y: { formatter: (v) => (v >= 0 ? '+' : '') + formatAmount(v) } },
+}))
 
 const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
 const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
@@ -183,21 +247,21 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
         </div>
 
         <!-- ── Pending payment queue ── -->
-        <div v-if="(pendingMaintenance.length + pendingProcurement.length) > 0"
-             class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
+        <div v-if="pendingItems.length > 0" id="pending-queue"
+             class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6 scroll-mt-20">
             <div class="flex items-center gap-2 mb-3">
                 <AlertCircle class="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <h2 class="text-sm font-semibold text-amber-700 dark:text-amber-400">
-                    Pending Payments ({{ pendingMaintenance.length + pendingProcurement.length }})
+                    Pending Payments ({{ pendingItems.length }})
                 </h2>
             </div>
             <div class="space-y-2">
-                <div v-for="item in [...pendingMaintenance, ...pendingProcurement]" :key="item.id"
+                <div v-for="item in pendingItems" :key="item.kind + '-' + item.id"
                      class="flex items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-amber-100 dark:border-amber-800 rounded-lg p-3.5">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-0.5">
-                            <span class="text-xs font-medium text-amber-600 dark:text-amber-400">
-                                {{ item.reference ? 'Procurement' : 'Maintenance' }}
+                            <span class="text-xs font-medium text-amber-600 dark:text-amber-400 capitalize">
+                                {{ item.kind }}
                             </span>
                             <span class="text-xs text-gray-400 dark:text-gray-500">{{ item.building?.name }}</span>
                         </div>
@@ -208,7 +272,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                         </p>
                     </div>
                     <button
-                        @click="openPayModal(item.reference ? 'procurement' : 'maintenance', item)"
+                        @click="openPayModal(item.kind, item)"
                         class="inline-flex items-center px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-all shrink-0">
                         Record Payment
                     </button>
@@ -290,82 +354,68 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                     </span>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 cursor-pointer hover:border-amber-300 dark:hover:border-amber-700 transition-colors"
-                 @click="router.get(route('manage.financials.index'))">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 transition-colors"
+                 :class="summary.pending_count > 0 ? 'cursor-pointer hover:border-amber-300 dark:hover:border-amber-700' : ''"
+                 @click="summary.pending_count > 0 && scrollToPending()">
                 <p class="text-xs font-medium text-amber-500 uppercase tracking-wider mb-2">Pending Payments</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.pending_count }}</p>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">awaiting action</p>
             </div>
         </div>
 
-        <!-- ── Trend chart + Transaction ledger ── -->
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-6">
+        <!-- ── Charts ── -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
 
-            <!-- ── Trend chart ── -->
-            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col">
-
-                <!-- Chart header -->
-                <div class="flex items-start justify-between mb-4">
+            <!-- Income vs Expenses -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="flex items-start justify-between mb-2">
                     <div>
-                        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">12-Month Trend</h2>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Income vs Expenses</p>
+                        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Income vs Expenses</h2>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Last 12 months</p>
                     </div>
                     <div class="flex gap-3">
                         <div class="flex items-center gap-1.5">
-                            <div class="w-2.5 h-2.5 rounded-sm bg-emerald-400 flex-shrink-0" />
+                            <div class="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0" />
                             <span class="text-xs text-gray-400">Income</span>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <div class="w-2.5 h-2.5 rounded-sm bg-red-400 flex-shrink-0" />
+                            <div class="w-2.5 h-2.5 rounded-sm bg-red-500 flex-shrink-0" />
                             <span class="text-xs text-gray-400">Expenses</span>
                         </div>
                     </div>
                 </div>
-
-                <!-- Chart body — fills remaining card height -->
-                <div class="flex-1 flex flex-col justify-end">
-
-                    <!-- Bars -->
-                    <div class="flex items-end gap-1" style="height: 140px;">
-                        <div v-for="t in trend" :key="t.month"
-                             class="flex-1 flex flex-col justify-end gap-0.5 group relative">
-
-                            <!-- Hover tooltip -->
-                            <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10
-                                        bg-gray-900 dark:bg-white text-white dark:text-gray-900
-                                        text-[10px] rounded-lg px-2.5 py-2 whitespace-nowrap shadow-lg
-                                        opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                <p class="font-semibold mb-1">{{ t.month }}</p>
-                                <p class="text-emerald-400 dark:text-emerald-600">↑ {{ formatAmount(t.income) }}</p>
-                                <p class="text-red-400 dark:text-red-500">↓ {{ formatAmount(t.expenses) }}</p>
-                                <p :class="t.net >= 0 ? 'text-gray-300 dark:text-gray-500' : 'text-red-300 dark:text-red-400'">
-                                    Net: {{ t.net >= 0 ? '+' : '' }}{{ formatAmount(t.net) }}
-                                </p>
-                            </div>
-
-                            <!-- Income bar -->
-                            <div class="w-full bg-emerald-400 dark:bg-emerald-500 rounded-t-sm transition-all duration-300"
-                                 :style="{ height: trendBarHeight(t.income) }" />
-                            <!-- Expense bar -->
-                            <div class="w-full bg-red-400 dark:bg-red-500 rounded-t-sm transition-all duration-300"
-                                 :style="{ height: trendBarHeight(t.expenses) }" />
-                        </div>
-                    </div>
-
-                    <!-- Baseline -->
-                    <div class="border-t border-gray-200 dark:border-gray-700" />
-
-                    <!-- Month labels -->
-                    <div class="flex gap-1 mt-1.5">
-                        <div v-for="t in trend" :key="t.month" class="flex-1 text-center">
-                            <span class="text-[9px] text-gray-400 leading-none">{{ t.month.split(' ')[0] }}</span>
-                        </div>
-                    </div>
+                <div v-if="financialsVisible" class="-mx-2">
+                    <VueApexCharts type="bar" height="240" :options="incomeExpenseOptions" :series="incomeExpenseSeries" />
+                </div>
+                <div v-else class="h-[240px] flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+                    Figures hidden
                 </div>
             </div>
 
-            <!-- ── Transaction ledger ── -->
-            <div class="lg:col-span-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+            <!-- Net profit trend -->
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="flex items-start justify-between mb-2">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Net Profit</h2>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Income − Expenses, monthly</p>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0" />
+                        <span class="text-xs text-gray-400">Net</span>
+                    </div>
+                </div>
+                <div v-if="financialsVisible" class="-mx-2">
+                    <VueApexCharts type="area" height="240" :options="netOptions" :series="netSeries" />
+                </div>
+                <div v-else class="h-[240px] flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+                    Figures hidden
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Transaction ledger ── -->
+        <div class="mb-6">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
                     <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                         Transaction Ledger

@@ -277,7 +277,7 @@ class BookingController extends Controller
                 ->merge(\App\Models\User::role('super-admin')->where('is_active', true)->get())
                 ->unique('id')
                 ->reject(fn ($u) => $u->id === auth()->id());
-            Notification::send($recipients, new NewBookingNotification($booking));
+            NotificationService::send($recipients, new NewBookingNotification($booking));
 
             return redirect()->route('manage.bookings.show', $booking->id)
                 ->with('success', 'Booking created successfully!')
@@ -539,7 +539,7 @@ class BookingController extends Controller
         AuditLog::log('booking.checked_in', $booking, ['status' => 'confirmed'], ['status' => 'checked_in', 'checked_in_by' => auth()->id()]);
 
         $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
-        Notification::send($recipients, new GuestCheckedInNotification($booking));
+        NotificationService::send($recipients, new GuestCheckedInNotification($booking));
 
         // Notify the guest
         try {
@@ -701,7 +701,7 @@ class BookingController extends Controller
         ]);
 
         $recipients = NotificationService::getUsersByRoles(['manager'], $booking->building_id);
-        Notification::send($recipients, new LateCheckoutRequestedNotification($booking));
+        NotificationService::send($recipients, new LateCheckoutRequestedNotification($booking));
 
         return back()->with('success', 'Late checkout requested. Awaiting manager approval.');
     }
@@ -857,7 +857,7 @@ class BookingController extends Controller
         );
 
         $recipients = NotificationService::getUsersByRoles(['manager', 'super-admin'], $booking->building_id);
-        Notification::send($recipients, new CautionRefundRequestedNotification($booking));
+        NotificationService::send($recipients, new CautionRefundRequestedNotification($booking));
 
         return back()->with('success', 'Caution refund request submitted. Manager will review it shortly.');
     }
@@ -941,7 +941,7 @@ class BookingController extends Controller
 
         // Notify all receptionists in the building + admins
         $recipients = NotificationService::getUsersByRoles(['receptionist', 'super-admin'], $booking->building_id);
-        Notification::send($recipients, new CautionRefundProcessedNotification($booking));
+        NotificationService::send($recipients, new CautionRefundProcessedNotification($booking));
 
         return back()->with('success', $successMessage);
     }

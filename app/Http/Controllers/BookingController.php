@@ -91,7 +91,7 @@ class BookingController extends Controller
         }
 
         $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
-        Notification::send($recipients, new BookingCancelledNotification($booking));
+        NotificationService::send($recipients, new BookingCancelledNotification($booking));
 
         return redirect()->route('bookings.index')
             ->with('success', 'Booking cancelled. Any refund due will be arranged by our team.');

@@ -27,9 +27,11 @@
         "@fullcalendar/interaction": "^6.1.20",
         "@fullcalendar/vue3": "^6.1.20",
         "@vuepic/vue-datepicker": "^12.1.0",
+        "apexcharts": "^5.15.2",
         "flatpickr": "^4.6.13",
         "lucide-vue-next": "^0.564.0",
         "vue-flatpickr-component": "^12.0.0",
-        "vue-toastification": "^2.0.0-rc.5"
+        "vue-toastification": "^2.0.0-rc.5",
+        "vue3-apexcharts": "^1.11.1"
     }
 }

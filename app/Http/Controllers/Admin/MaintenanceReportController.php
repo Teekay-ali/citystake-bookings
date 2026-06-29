@@ -194,7 +194,7 @@ class MaintenanceReportController extends Controller
             AuditLog::log('maintenance.approved', $maintenance, ['status' => 'pending'], ['status' => 'manager_approved']);
 
             $recipients = NotificationService::getUsersByRoles(['accountant'], $maintenance->building_id);
-            Notification::send($recipients, new MaintenanceStatusNotification(
+            NotificationService::send($recipients, new MaintenanceStatusNotification(
                 $maintenance,
                 'Maintenance Awaiting Accountant Approval',
                 "Maintenance report \"{$maintenance->title}\" approved by manager - needs your cost approval."
@@ -212,7 +212,7 @@ class MaintenanceReportController extends Controller
             AuditLog::log('maintenance.approved', $maintenance, ['status' => 'manager_approved'], ['status' => 'accountant_approved', 'actual_cost' => $validated2['actual_cost']]);
 
             $recipients = NotificationService::getUsersByRoles(['ceo'], $maintenance->building_id);
-            Notification::send($recipients, new MaintenanceStatusNotification(
+            NotificationService::send($recipients, new MaintenanceStatusNotification(
                 $maintenance,
                 'Maintenance Awaiting CEO Approval',
                 "Maintenance report \"{$maintenance->title}\" needs your final approval."
@@ -228,7 +228,7 @@ class MaintenanceReportController extends Controller
             AuditLog::log('maintenance.approved', $maintenance, ['status' => 'accountant_approved'], ['status' => 'ceo_approved']);
 
             $recipients = NotificationService::getUsersByRoles(['accountant'], $maintenance->building_id);
-            Notification::send($recipients, new MaintenanceStatusNotification(
+            NotificationService::send($recipients, new MaintenanceStatusNotification(
                 $maintenance,
                 'Maintenance Ready for Payment',
                 "CEO approved \"{$maintenance->title}\". Please process payment."
@@ -242,7 +242,7 @@ class MaintenanceReportController extends Controller
             ]);
 
             $recipients = NotificationService::getUsersByRoles(['manager'], $maintenance->building_id);
-            Notification::send($recipients, new MaintenanceStatusNotification(
+            NotificationService::send($recipients, new MaintenanceStatusNotification(
                 $maintenance,
                 'Maintenance Completed',
                 "\"{$maintenance->title}\" has been paid and marked complete."

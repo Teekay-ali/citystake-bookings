@@ -374,7 +374,7 @@ class ProcurementController extends Controller
         $recipients = $recipients->unique('id')->reject(fn ($u) => $u->id === auth()->id());
 
         if ($recipients->isNotEmpty()) {
-            Notification::send($recipients, new ProcurementStatusNotification($procurement, $title, $message));
+            NotificationService::send($recipients, new ProcurementStatusNotification($procurement, $title, $message));
         }
     }
 }

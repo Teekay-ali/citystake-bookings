@@ -33,7 +33,7 @@ class SendCheckoutReminders extends Command
                 $booking->building_id
             );
 
-            Notification::send($recipients, new \App\Notifications\OverdueCheckoutNotification($booking));
+            NotificationService::send($recipients, new \App\Notifications\OverdueCheckoutNotification($booking));
         }
 
         $this->info("Overdue checkout reminders sent for {$overdue->count()} booking(s).");
