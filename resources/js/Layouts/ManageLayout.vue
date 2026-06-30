@@ -385,7 +385,7 @@ function canSeeItem(item) {
 </script>
 
 <template>
-    <div class="min-h-[100dvh] bg-gray-200/70 dark:bg-black flex flex-col">
+    <div class="h-[100dvh] bg-gray-200/70 dark:bg-black flex flex-col">
 
         <!-- ── Offline banner ─────────────────────────────── -->
         <Transition
@@ -704,7 +704,7 @@ function canSeeItem(item) {
             </header>
 
             <!-- Page slot -->
-            <main class="flex-1 overflow-auto bg-white dark:bg-gray-950">
+            <main scroll-region class="flex-1 overflow-auto bg-white dark:bg-gray-950">
                 <slot />
             </main>
         </div>
