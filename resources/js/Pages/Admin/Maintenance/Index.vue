@@ -4,7 +4,7 @@ import { Head, Link, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import {
     Plus, Wrench, ChevronRight,
-    FileText, User, Banknote, CircleDot, CalendarDays,
+    FileText, User, Banknote, CircleDot, CalendarDays, Clock,
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -50,6 +50,10 @@ const isTerminal = (s) => s === 'completed' || s === 'rejected'
 
 function formatDate(d) {
     return new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatTime(d) {
+    return d ? new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—'
 }
 
 function formatAmount(n) {
@@ -170,6 +174,9 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                         <th class="px-4 py-2.5 font-medium">
                             <span class="inline-flex items-center gap-1.5"><CalendarDays class="w-3.5 h-3.5" /> Date</span>
                         </th>
+                        <th class="px-4 py-2.5 font-medium">
+                            <span class="inline-flex items-center gap-1.5"><Clock class="w-3.5 h-3.5" /> Time</span>
+                        </th>
                         <th class="px-4 py-2.5"></th>
                     </tr>
                     </thead>
@@ -199,6 +206,9 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                         </td>
                         <td class="px-4 py-2.5 text-gray-400 dark:text-gray-500 text-xs whitespace-nowrap" :title="formatDate(report.created_at)">
                             {{ formatRelative(report.created_at) }}
+                        </td>
+                        <td class="px-4 py-2.5 text-gray-400 dark:text-gray-500 text-xs whitespace-nowrap tabular-nums">
+                            {{ formatTime(report.created_at) }}
                         </td>
                         <td class="px-4 py-2.5 text-right">
                             <ChevronRight class="inline w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-all" />

@@ -28,6 +28,8 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric',
 }) : '—'
 
+const formatTime = (d) => d ? new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—'
+
 const formatRelative = (d) => {
     if (!d) return '—'
     const diff = Math.floor((Date.now() - new Date(d)) / 1000)
@@ -178,6 +180,9 @@ function clearFilters() {
                         <th class="px-4 py-2.5 font-medium">
                             <span class="inline-flex items-center gap-1.5"><CalendarDays class="w-3.5 h-3.5" /> Date</span>
                         </th>
+                        <th class="px-4 py-2.5 font-medium">
+                            <span class="inline-flex items-center gap-1.5"><Clock class="w-3.5 h-3.5" /> Time</span>
+                        </th>
                         <th class="px-4 py-2.5"></th>
                     </tr>
                     </thead>
@@ -202,6 +207,7 @@ function clearFilters() {
                         </span>
                         </td>
                         <td class="px-4 py-2.5 text-gray-400 dark:text-gray-500 text-xs whitespace-nowrap" :title="formatDate(approval.created_at)">{{ formatRelative(approval.created_at) }}</td>
+                        <td class="px-4 py-2.5 text-gray-400 dark:text-gray-500 text-xs whitespace-nowrap tabular-nums">{{ formatTime(approval.created_at) }}</td>
                         <td class="px-4 py-2.5 text-right">
                             <Link
                                 :href="route('manage.payment-approvals.show', approval.id)"
