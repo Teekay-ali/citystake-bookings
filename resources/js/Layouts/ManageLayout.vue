@@ -380,7 +380,7 @@ function canSeeItem(item) {
 </script>
 
 <template>
-    <div class="min-h-[100dvh] bg-white dark:bg-gray-950 flex flex-col">
+    <div class="min-h-[100dvh] bg-gray-200/70 dark:bg-black flex flex-col">
 
         <!-- ── Offline banner ─────────────────────────────── -->
         <Transition
@@ -432,7 +432,7 @@ function canSeeItem(item) {
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 collapsed ? 'lg:w-16' : 'lg:w-64',
                 !isOnline ? 'top-10' : 'top-0',
-                'fixed left-0 bottom-0 w-64 bg-gray-100 dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:border-r border-gray-200/70 dark:border-gray-800/60'
+                'fixed left-0 bottom-0 w-64 bg-gray-100 dark:bg-gray-900 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:left-3 lg:top-3 lg:bottom-3 lg:rounded-2xl lg:border lg:border-gray-200/70 dark:border-gray-800/60 lg:shadow-sm'
             ]">
 
             <!-- Logo row -->
@@ -532,12 +532,11 @@ function canSeeItem(item) {
         </aside>
 
         <!-- ── Main content ── -->
-        <div :class="collapsed ? 'lg:ml-16' : 'lg:ml-64'"
-             class="flex-1 flex flex-col min-w-0 transition-all duration-300">
+        <div :class="collapsed ? 'lg:ml-[5.5rem]' : 'lg:ml-[17.5rem]'"
+             class="flex-1 flex flex-col min-w-0 transition-all duration-300 bg-white dark:bg-gray-950 overflow-hidden lg:my-3 lg:mr-3 lg:rounded-2xl lg:border lg:border-gray-200/70 dark:border-gray-800/60 lg:shadow-sm">
 
             <!-- ── Topbar ── -->
-            <header :class="!isOnline ? 'top-10' : 'top-0'"
-                    class="h-16 bg-white dark:bg-gray-950 flex items-center gap-3 px-4 shrink-0 sticky z-30 border-b border-gray-100 dark:border-gray-900 transition-all">
+            <header class="h-16 bg-white dark:bg-gray-950 flex items-center gap-3 px-4 shrink-0 border-b border-gray-100 dark:border-gray-900">
                 <!-- Mobile hamburger -->
                 <button @click="sidebarOpen = true"
                         class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all lg:hidden">
