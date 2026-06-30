@@ -17,4 +17,8 @@ export default defineConfig({
             },
         }),
     ],
+    build: {
+        // Modern browsers only → drop legacy transforms/polyfills
+        target: 'es2022',
+    },
 });

@@ -101,6 +101,8 @@ const prominentBooking = computed(() => {
             <img
                 src="/images/hero-apartment.jpg"
                 alt=""
+                width="1600"
+                height="900"
                 fetchpriority="high"
                 class="absolute inset-0 w-full h-full object-cover object-center opacity-60 dark:opacity-40 animate-kenburns"
                 aria-hidden="true"

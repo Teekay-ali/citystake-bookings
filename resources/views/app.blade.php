@@ -19,6 +19,11 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        {{-- Preload the home hero so the LCP image is discovered during HTML parse --}}
+        @if (($page['component'] ?? '') === 'Home')
+            <link rel="preload" as="image" href="/images/hero-apartment.jpg" fetchpriority="high">
+        @endif
+
         <!-- Scripts -->
         @routes
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
