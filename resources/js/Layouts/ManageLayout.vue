@@ -111,6 +111,11 @@ function isGroupOpen(label) {
     return openGroups.value === null || openGroups.value.includes(label)
 }
 
+// True when the current route lives in this group (for header highlight)
+function isGroupActive(group) {
+    return group.items.some(item => canSeeItem(item) && isActive(item.match))
+}
+
 // Always keep the group containing the current route expanded
 function ensureActiveGroupOpen() {
     if (openGroups.value === null) return
@@ -483,11 +488,15 @@ function canSeeItem(item) {
                                 @click="toggleGroup(group.label)"
                                 :aria-expanded="isGroupOpen(group.label)"
                                 class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg mb-1 group/hdr hover:bg-white/70 dark:hover:bg-gray-800/50 transition-colors">
-                            <component :is="group.icon" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors" />
-                            <span class="flex-1 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors">
+                            <component :is="group.icon"
+                                       :class="isGroupActive(group) ? 'text-amber-500' : 'text-gray-400 dark:text-gray-500 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300'"
+                                       class="w-3.5 h-3.5 shrink-0 transition-colors" />
+                            <span :class="isGroupActive(group) ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300'"
+                                  class="flex-1 text-left text-[11px] font-semibold uppercase tracking-wider transition-colors">
                                 {{ group.label }}
                             </span>
-                            <ChevronDown v-if="isGroupOpen(group.label)" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors" />
+                            <span v-if="isGroupActive(group) && !isGroupOpen(group.label)" class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <ChevronDown v-else-if="isGroupOpen(group.label)" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors" />
                             <ChevronRight v-else class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors" />
                         </button>
                         <!-- Divider in icon-rail mode -->
