@@ -9,7 +9,10 @@ import {
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, Sun, Moon,
     ChevronLeft, ChevronRight, ShieldAlert, ChevronDown,
-    Search, Plus, Banknote, BadgeCheck, WifiOff
+    Search, Plus, Banknote, BadgeCheck, WifiOff,
+    Inbox, CalendarCheck, MessageSquare, Clock, UserRound,
+    ShieldCheck, UserCog, HelpCircle, MessagesSquare, Megaphone, ScrollText,
+    Home, Boxes, Settings
 } from 'lucide-vue-next'
 import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
@@ -87,24 +90,38 @@ onMounted(() => {
 
     desktopMq = window.matchMedia('(min-width: 1024px)')
     desktopMq.addEventListener('change', onDesktopChange)
+
+    ensureActiveGroupOpen()
 })
 
-const openMenus = ref(
-    typeof window !== 'undefined'
-        ? JSON.parse(localStorage.getItem('sidebar-open-menus') ?? '["Bookings","Team"]')
-        : ['Bookings', 'Team']
-)
+// Collapsible nav groups — everything open by default (null), persisted once
+// the user collapses something. Active group is always kept expanded.
+const storedGroups = typeof window !== 'undefined' ? localStorage.getItem('sidebar-groups-v2') : null
+const openGroups = ref(storedGroups ? JSON.parse(storedGroups) : null)
 
-function toggleMenu(label) {
-    const idx = openMenus.value.indexOf(label)
-    if (idx > -1) openMenus.value.splice(idx, 1)
-    else openMenus.value.push(label)
-    localStorage.setItem('sidebar-open-menus', JSON.stringify(openMenus.value))
+function toggleGroup(label) {
+    if (openGroups.value === null) openGroups.value = navGroups.value.map(g => g.label)
+    const idx = openGroups.value.indexOf(label)
+    if (idx > -1) openGroups.value.splice(idx, 1)
+    else openGroups.value.push(label)
+    localStorage.setItem('sidebar-groups-v2', JSON.stringify(openGroups.value))
 }
 
-function isMenuOpen(label) {
-    return openMenus.value.includes(label)
+function isGroupOpen(label) {
+    return openGroups.value === null || openGroups.value.includes(label)
 }
+
+// Always keep the group containing the current route expanded
+function ensureActiveGroupOpen() {
+    if (openGroups.value === null) return
+    for (const group of navGroups.value) {
+        if (group.items.some(item => canSeeItem(item) && isActive(item.match))
+            && !openGroups.value.includes(group.label)) {
+            openGroups.value.push(group.label)
+        }
+    }
+}
+watch(() => page.url, ensureActiveGroupOpen)
 
 function toggleCollapsed() {
     collapsed.value = !collapsed.value
@@ -266,78 +283,69 @@ const dashboardRoute = computed(() => {
         : 'manage.home'
 })
 
-// ── Nav groups ────────────────────────────────────────────────
+// ── Nav groups (flat — each group is a collapsible header) ────
 const navGroups = computed(() => [
     {
-        label: 'Overview',
+        label: 'Overview', icon: Home,
         items: [
             { label: 'Dashboard', icon: LayoutDashboard, route: dashboardRoute.value, match: 'manage.dashboard|manage.home' },
+            { label: 'Analytics', icon: BarChart3, route: 'manage.analytics.index', match: 'manage.analytics.*', permission: 'view-analytics' },
         ]
     },
     {
-        label: 'Bookings',
+        label: 'Bookings', icon: ClipboardList,
         items: [
-            {
-                label: 'Bookings', icon: ClipboardList,
-                match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in|manage.enquiries.*|manage.availability.*|manage.bookings.calendar|manage.messages.*|manage.bookings.late-checkout.index',
-                permission: 'view-bookings',
-                children: [
-                    { label: 'All Bookings',     route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
-                    { label: 'Booking Requests', route: 'manage.enquiries.index',              match: 'manage.enquiries.*',                  permission: 'view-bookings', badge: newEnquiries.value },
-                    { label: 'Availability',   route: 'manage.availability.index',           match: 'manage.availability.*',               permission: 'manage-availability' },
-                    { label: 'Calendar',       route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',            permission: 'manage-availability' },
-                    { label: 'Messages',       route: 'manage.messages.index',               match: 'manage.messages.*',                   permission: 'manage-bookings', badge: unreadMessages.value },
-                    { label: 'Late Checkouts', route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'approve-late-checkout', badge: pendingCount.value },
-                ]
-            },
+            { label: 'All Bookings',     icon: ClipboardList,  route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
+            { label: 'Booking Requests', icon: Inbox,          route: 'manage.enquiries.index',              match: 'manage.enquiries.*',                  permission: 'view-bookings', badge: newEnquiries.value },
+            { label: 'Calendar',         icon: CalendarDays,   route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',            permission: 'manage-availability' },
+            { label: 'Availability',     icon: CalendarCheck,  route: 'manage.availability.index',           match: 'manage.availability.*',               permission: 'manage-availability' },
+            { label: 'Guest Messages',   icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                   permission: 'manage-bookings', badge: unreadMessages.value },
+            { label: 'Late Checkouts',   icon: Clock,          route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'approve-late-checkout', badge: pendingCount.value },
         ]
     },
     {
-        label: 'Properties',
+        label: 'Properties', icon: Building2,
         items: [
             { label: 'Properties',    icon: Building2, route: 'manage.properties.index',    match: 'manage.properties.*',    permission: 'view-properties' },
             { label: 'Blocked Dates', icon: Ban,       route: 'manage.blocked-dates.index', match: 'manage.blocked-dates.*', permission: 'manage-blocked-dates' },
         ]
     },
     {
-        label: 'Operations',
+        label: 'Operations', icon: Boxes,
         items: [
             { label: 'Complaints',  icon: AlertTriangle, route: 'manage.complaints.index',  match: 'manage.complaints.*',  permission: 'view-complaints' },
-            { label: 'Procurement', icon: ShoppingCart,  route: 'manage.procurement.index', match: 'manage.procurement.*', permission: 'view-procurement', badge: pendingProcurement.value },
             { label: 'Maintenance', icon: Wrench,        route: 'manage.maintenance.index', match: 'manage.maintenance.*', permission: 'view-maintenance', badge: pendingMaintenance.value },
+            { label: 'Procurement', icon: ShoppingCart,  route: 'manage.procurement.index', match: 'manage.procurement.*', permission: 'view-procurement', badge: pendingProcurement.value },
             { label: 'Stock',       icon: Package,       route: 'manage.stock.index',       match: 'manage.stock.*',       permission: 'view-stock' },
             { label: 'Tasks',       icon: CheckSquare,   route: 'manage.tasks.index',       match: 'manage.tasks.*',       permission: 'view-tasks', badge: pendingTasks.value },
             { label: 'Vendors',     icon: BookOpen,      route: 'manage.vendors.index',     match: 'manage.vendors.*',     permission: 'view-vendors' },
         ]
     },
     {
-        label: 'Finance & Analytics',
+        label: 'Finance', icon: DollarSign,
         items: [
-            { label: 'Analytics',    icon: BarChart3,  route: 'manage.analytics.index',         match: 'manage.analytics.*', permission: 'view-analytics' },
-            { label: 'Approvals',    icon: BadgeCheck,  route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*', permission: 'manage-payment-approvals', badge: pendingPaymentApprovals.value },
-            { label: 'Caution Fees', icon: Banknote, route: 'manage.financials.deposits', match: 'manage.financials.deposits', permission: 'view-financials', badge: pendingCautionRefunds.value },
-            { label: 'Emergency Fund', icon: ShieldAlert, route: 'manage.emergency-fund.index', match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund', badge: pendingEmergencyFund.value },
-            { label: 'Financials',   icon: DollarSign, route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
+            { label: 'Financials',       icon: DollarSign,  route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
+            { label: 'Payment Approvals', icon: BadgeCheck, route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*', permission: 'manage-payment-approvals', badge: pendingPaymentApprovals.value },
+            { label: 'Caution Fees',     icon: Banknote,    route: 'manage.financials.deposits',     match: 'manage.financials.deposits', permission: 'view-financials', badge: pendingCautionRefunds.value },
+            { label: 'Emergency Fund',   icon: ShieldAlert, route: 'manage.emergency-fund.index',    match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund', badge: pendingEmergencyFund.value },
         ]
     },
     {
-        label: 'Team',
+        label: 'Team', icon: Users,
         items: [
-            {
-                label: 'Team', icon: Users,
-                match: 'manage.staff.*|manage.guests.*|manage.admin-accounts.*|manage.roles.*|manage.staff-queries.*|manage.audit-logs.*|manage.changelogs.*|manage.staff-messages.*',
-                permission: 'manage-staff|manage-guests|manage-roles|manage-staff-queries|view-audit-logs|manage-changelogs|view-bookings',
-                children: [
-                    { label: 'Staff',          route: 'manage.staff.index',          match: 'manage.staff.*',          permission: 'manage-staff' },
-                    { label: 'Guests',         route: 'manage.guests.index',         match: 'manage.guests.*',         permission: 'manage-guests' },
-                    { label: 'Messages',       route: 'manage.staff-messages.index', match: 'manage.staff-messages.*' },
-                    { label: 'Admin Accounts', route: 'manage.admin-accounts.index', match: 'manage.admin-accounts.*', permission: 'manage-roles' },
-                    { label: 'Roles',          route: 'manage.roles.index',          match: 'manage.roles.*',          permission: 'manage-roles' },
-                    { label: 'Staff Queries',  route: 'manage.staff-queries.index',  match: 'manage.staff-queries.*',  permission: 'manage-staff-queries' },
-                    { label: 'Audit Logs',     route: 'manage.audit-logs.index',     match: 'manage.audit-logs.*',     ownerOnly: true },
-                    { label: 'Updates',        route: 'manage.changelogs.index',     match: 'manage.changelogs.*',     permission: 'manage-changelogs' },
-                ]
-            },
+            { label: 'Staff',         icon: Users,         route: 'manage.staff.index',          match: 'manage.staff.*',          permission: 'manage-staff' },
+            { label: 'Guests',        icon: UserRound,     route: 'manage.guests.index',         match: 'manage.guests.*',         permission: 'manage-guests' },
+            { label: 'Roles',         icon: ShieldCheck,   route: 'manage.roles.index',          match: 'manage.roles.*',          permission: 'manage-roles' },
+            { label: 'Admin Accounts', icon: UserCog,      route: 'manage.admin-accounts.index', match: 'manage.admin-accounts.*', permission: 'manage-roles' },
+            { label: 'Staff Queries', icon: HelpCircle,    route: 'manage.staff-queries.index',  match: 'manage.staff-queries.*',  permission: 'manage-staff-queries' },
+            { label: 'Team Chat',     icon: MessagesSquare, route: 'manage.staff-messages.index', match: 'manage.staff-messages.*' },
+        ]
+    },
+    {
+        label: 'System', icon: Settings,
+        items: [
+            { label: 'Updates',    icon: Megaphone,   route: 'manage.changelogs.index', match: 'manage.changelogs.*', permission: 'manage-changelogs' },
+            { label: 'Audit Logs', icon: ScrollText,  route: 'manage.audit-logs.index', match: 'manage.audit-logs.*', ownerOnly: true },
         ]
     },
 ])
@@ -424,7 +432,7 @@ function canSeeItem(item) {
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 collapsed ? 'lg:w-16' : 'lg:w-64',
                 !isOnline ? 'top-10' : 'top-0',
-                'fixed left-0 bottom-0 w-64 bg-white dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:border-r border-gray-100 dark:border-gray-800/60'
+                'fixed left-0 bottom-0 w-64 bg-gray-100 dark:bg-gray-950 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:border-r border-gray-200/70 dark:border-gray-800/60'
             ]">
 
             <!-- Logo row -->
@@ -467,133 +475,53 @@ function canSeeItem(item) {
                  class="flex-1 overflow-y-auto overscroll-contain py-2 px-2"
                  style="scrollbar-width: none; -ms-overflow-style: none;">
                 <template v-for="group in navGroups" :key="group.label">
-                    <div v-if="group.items.some(item => canSeeItem(item) && !item.soon)" class="mb-2">
+                    <div v-if="group.items.some(item => canSeeItem(item))" class="mb-3 first:mt-1">
 
-                        <p v-if="!navCollapsed"
-                           class="text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-widest px-3 mb-1 mt-2">
-                            {{ group.label }}
-                        </p>
-                        <div v-else class="border-t border-gray-100 dark:border-gray-800 mx-2 mb-2" />
+                        <!-- Collapsible group header (expanded mode) -->
+                        <button v-if="!navCollapsed"
+                                type="button"
+                                @click="toggleGroup(group.label)"
+                                :aria-expanded="isGroupOpen(group.label)"
+                                class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg mb-1 group/hdr hover:bg-white/70 dark:hover:bg-gray-800/50 transition-colors">
+                            <component :is="group.icon" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors" />
+                            <span class="flex-1 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors">
+                                {{ group.label }}
+                            </span>
+                            <ChevronDown v-if="isGroupOpen(group.label)" class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors" />
+                            <ChevronRight v-else class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300 transition-colors" />
+                        </button>
+                        <!-- Divider in icon-rail mode -->
+                        <div v-else class="border-t border-gray-100 dark:border-gray-800 mx-2 my-2" />
 
-                        <div class="space-y-0.5">
+                        <!-- Items: shown when group open, or always in the icon rail -->
+                        <div v-show="navCollapsed || isGroupOpen(group.label)" class="space-y-0.5">
                             <template v-for="item in group.items" :key="item.label">
-                                <template v-if="canSeeItem(item)">
-
-                                    <!-- Item with children (submenu) -->
-                                    <template v-if="item.children && !navCollapsed">
-                                        <button
-                                            type="button"
-                                            @click="toggleMenu(item.label)"
-                                            :class="[
-                                    isActive(item.match)
-                                        ? 'text-gray-900 dark:text-white font-medium'
-                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
-                                    'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-800'
-                                ]"
-                                        >
-                                <span :class="isActive(item.match)
-                                    ? 'w-5 h-5 bg-amber-500/10 dark:bg-amber-500/20 rounded-md flex items-center justify-center shrink-0'
-                                    : 'w-5 h-5 flex items-center justify-center shrink-0'">
-                                    <component :is="item.icon"
-                                               :class="isActive(item.match) ? 'w-3 h-3 text-amber-600 dark:text-amber-400' : 'w-3.5 h-3.5'" />
-                                </span>
-                                            <span class="flex-1 text-left">{{ item.label }}</span>
-                                            <ChevronDown v-if="isMenuOpen(item.label)" class="w-3 h-3 text-gray-400" />
-                                            <ChevronRight v-else class="w-3 h-3 text-gray-400" />
-                                        </button>
-
-                                        <!-- Children with left border line -->
-                                        <div v-if="isMenuOpen(item.label)"
-                                             :class="isActive(item.match) ? 'border-amber-400 dark:border-amber-700' : 'border-gray-200 dark:border-gray-800'"
-                                             class="ml-6 mt-1 mb-1 border-l pl-3 space-y-0.5">
-                                            <template v-for="child in item.children" :key="child.label">
-                                                <Link v-if="canSeeItem(child)"
-                                                      :href="route(child.route)"
-                                                      @click="sidebarOpen = false"
-                                                      :class="[
-                                              isActive(child.match)
-                                                  ? 'text-gray-900 dark:text-white font-medium bg-gray-50 dark:bg-gray-800'
-                                                  : 'text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800',
-                                          ]"
-                                                      class="flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-all">
-                                                    <span>{{ child.label }}</span>
-                                                    <span v-if="child.badge && child.badge > 0"
-                                                          class="bg-amber-500 text-white text-[10px] font-medium min-w-4 h-4 px-1 rounded-full flex items-center justify-center flex-shrink-0">
-                                            {{ child.badge > 9 ? '9+' : child.badge }}
-                                        </span>
-                                                </Link>
-                                            </template>
-                                        </div>
-                                    </template>
-
-                                    <!-- Collapsed submenu — show icon only with tooltip -->
-                                    <template v-else-if="item.children && navCollapsed">
-                                        <Link
-                                            :href="route(item.children.find(c => canSeeItem(c))?.route ?? item.children[0].route)"
-                                            @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
-                                            @mouseleave="onMouseLeave"
-                                            :class="isActive(item.match)
-                                                ? 'bg-gray-50 dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium'
-                                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'"
-                                                                                class="flex justify-center py-2 rounded-lg transition-all"
-                                                                            >
-                                            <span :class="isActive(item.match)
-                                                ? 'w-5 h-5 bg-amber-500/10 dark:bg-amber-500/20 rounded-md flex items-center justify-center shrink-0'
-                                                : 'w-5 h-5 flex items-center justify-center shrink-0'">
-                                                <component :is="item.icon"
-                                                           :class="isActive(item.match) ? 'w-3 h-3 text-amber-600 dark:text-amber-400' : 'w-3.5 h-3.5'" />
-                                            </span>
-                                        </Link>
-                                    </template>
-
-                                    <!-- Regular item (no children) -->
-                                    <template v-else>
-                                        <!-- Soon -->
-                                        <div v-if="item.soon"
-                                             :class="navCollapsed ? 'justify-center px-0' : 'px-3'"
-                                             class="flex items-center gap-2 py-2 rounded-lg text-sm text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                                             @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
-                                             @mouseleave="onMouseLeave">
-                                <span class="w-5 h-5 flex items-center justify-center shrink-0">
-                                    <component :is="item.icon" class="w-3.5 h-3.5" />
-                                </span>
-                                            <span v-if="!navCollapsed" class="flex-1">{{ item.label }}</span>
-                                            <span v-if="!navCollapsed"
-                                                  class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 px-1.5 py-0.5 rounded-full">
-                                    Soon
-                                </span>
-                                        </div>
-
-                                        <!-- Nav link -->
-                                        <Link v-else
-                                              :href="route(item.route)"
-                                              @click="sidebarOpen = false"
-                                              @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
-                                              @mouseleave="onMouseLeave"
-                                              :class="[
-                                      isActive(item.match)
-                                          ? 'bg-gray-50 dark:bg-gray-800/60 text-gray-900 dark:text-white font-medium'
-                                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-                                      navCollapsed ? 'justify-center px-0' : 'px-3'
-                                  ]"
-                                              class="relative flex items-center gap-2 py-2 rounded-lg text-sm transition-all">
-                                <span :class="isActive(item.match)
-                                    ? 'w-5 h-5 bg-amber-500/10 dark:bg-amber-500/20 rounded-md flex items-center justify-center shrink-0'
-                                    : 'w-5 h-5 flex items-center justify-center shrink-0'">
-                                    <component :is="item.icon"
-                                               :class="isActive(item.match) ? 'w-3 h-3 text-amber-600 dark:text-amber-400' : 'w-3.5 h-3.5'" />
-                                </span>
-                                            <span v-if="!navCollapsed" class="flex-1">{{ item.label }}</span>
-                                            <span v-if="!navCollapsed && item.badge && item.badge > 0"
-                                                  class="bg-amber-500 text-white text-[10px] font-medium min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
-                                    {{ item.badge > 9 ? '9+' : item.badge }}
-                                </span>
-                                            <span v-if="navCollapsed && item.badge && item.badge > 0"
-                                                  class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
-                                        </Link>
-                                    </template>
-
-                                </template>
+                                <Link v-if="canSeeItem(item)"
+                                      :href="route(item.route)"
+                                      @click="sidebarOpen = false"
+                                      @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
+                                      @mouseleave="onMouseLeave"
+                                      :class="[
+                                          isActive(item.match)
+                                              ? 'bg-white dark:bg-gray-800/60 shadow-sm ring-1 ring-gray-900/5 dark:ring-0 text-gray-900 dark:text-white font-medium'
+                                              : 'text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
+                                          navCollapsed ? 'justify-center px-0' : 'px-3'
+                                      ]"
+                                      class="relative flex items-center gap-2 py-2 rounded-lg text-sm transition-all">
+                                    <span :class="isActive(item.match)
+                                        ? 'w-5 h-5 bg-amber-500/10 dark:bg-amber-500/20 rounded-md flex items-center justify-center shrink-0'
+                                        : 'w-5 h-5 flex items-center justify-center shrink-0'">
+                                        <component :is="item.icon"
+                                                   :class="isActive(item.match) ? 'w-3 h-3 text-amber-600 dark:text-amber-400' : 'w-3.5 h-3.5'" />
+                                    </span>
+                                    <span v-if="!navCollapsed" class="flex-1">{{ item.label }}</span>
+                                    <span v-if="!navCollapsed && item.badge && item.badge > 0"
+                                          class="bg-amber-500 text-white text-[10px] font-medium min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                                        {{ item.badge > 9 ? '9+' : item.badge }}
+                                    </span>
+                                    <span v-if="navCollapsed && item.badge && item.badge > 0"
+                                          class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                                </Link>
                             </template>
                         </div>
                     </div>
@@ -768,7 +696,7 @@ function canSeeItem(item) {
             </header>
 
             <!-- Page slot -->
-            <main class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-950">
+            <main class="flex-1 overflow-auto bg-white dark:bg-gray-950">
                 <slot />
             </main>
         </div>

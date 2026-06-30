@@ -118,16 +118,16 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
             </div>
             <div class="flex items-center gap-2">
                 <button @click="toggle"
-                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                     <EyeOff v-if="financialsVisible" class="w-3.5 h-3.5" /><Eye v-else class="w-3.5 h-3.5" />
                     {{ financialsVisible ? 'Hide figures' : 'Show figures' }}
                 </button>
                 <Link :href="route('manage.bookings.calendar')"
-                      class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                      class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                     <Calendar class="w-3.5 h-3.5" /> Calendar
                 </Link>
                 <Link :href="route('manage.bookings.create')"
-                      class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                      class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                     <Plus class="w-3.5 h-3.5" /> New Booking
                 </Link>
             </div>
@@ -151,7 +151,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
             </div>
 
             <!-- Occupancy -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Occupancy</p>
                     <BedDouble class="w-4 h-4 text-gray-300 dark:text-gray-600" />
@@ -164,7 +164,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
             </div>
 
             <!-- Active bookings -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Active stays</p>
                     <CalendarCheck class="w-4 h-4 text-gray-300 dark:text-gray-600" />
@@ -175,7 +175,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
 
             <!-- Awaiting payment (actionable) -->
             <Link :href="route('manage.bookings.index', { payment_status: 'pending' })"
-                  class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
+                  class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-xs font-medium text-amber-500 uppercase tracking-wider">Awaiting payment</p>
                     <Wallet class="w-4 h-4 text-gray-300 dark:text-gray-600" />
@@ -189,7 +189,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
             <!-- Revenue trend -->
-            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-start justify-between mb-2">
                     <div>
                         <p class="text-sm font-semibold text-gray-900 dark:text-white">Revenue trend</p>
@@ -206,7 +206,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
             </div>
 
             <!-- Booking status donut -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Booking status</p>
                 <div v-if="statusTotal > 0">
                     <VueApexCharts type="donut" height="180" :options="statusOptions" :series="statusSeries" />
@@ -226,7 +226,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
             <!-- Needs attention -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-center justify-between mb-4">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Needs attention</p>
                     <Link :href="route('manage.bookings.index')" class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1">
@@ -259,7 +259,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
             </div>
 
             <!-- Top properties -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-center justify-between mb-4">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Top properties</p>
                     <Link :href="route('manage.properties.index')" class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1">
@@ -281,7 +281,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
             </div>
 
             <!-- Recent bookings -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-center justify-between mb-4">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Recent bookings</p>
                     <Link :href="route('manage.bookings.index')" class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1">

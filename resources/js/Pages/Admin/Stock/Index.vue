@@ -120,7 +120,7 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Inventory management and usage tracking</p>
             </div>
             <button @click="openCreate"
-                  class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                  class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 Add Item
             </button>
@@ -128,22 +128,22 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
 
         <!-- ── Stat strip ── -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Total items</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white mt-0.5">{{ stats.total }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs text-gray-500 dark:text-gray-400">In stock</p>
                 <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ stats.in_stock }}</p>
             </div>
             <button @click="setStatus('low')"
-                    class="text-left bg-white dark:bg-gray-900 border rounded-xl p-4 transition-all"
+                    class="text-left bg-white dark:bg-gray-900 border rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4 transition-all"
                     :class="status === 'low' ? 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-400/40' : 'border-gray-200 dark:border-gray-800 hover:border-amber-300 dark:hover:border-amber-700'">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Low</p>
                 <p class="text-2xl font-semibold text-amber-600 dark:text-amber-400 mt-0.5">{{ stats.low }}</p>
             </button>
             <button @click="setStatus('out')"
-                    class="text-left bg-white dark:bg-gray-900 border rounded-xl p-4 transition-all"
+                    class="text-left bg-white dark:bg-gray-900 border rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4 transition-all"
                     :class="status === 'out' ? 'border-red-400 dark:border-red-600 ring-1 ring-red-400/40' : 'border-gray-200 dark:border-gray-800 hover:border-red-300 dark:hover:border-red-700'">
                 <p class="text-xs text-gray-500 dark:text-gray-400">Out of stock</p>
                 <p class="text-2xl font-semibold text-red-600 dark:text-red-400 mt-0.5">{{ stats.out }}</p>
@@ -215,7 +215,7 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
         </div>
 
         <!-- ── List view ── -->
-        <div v-else-if="view === 'list'" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+        <div v-else-if="view === 'list'" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
             <div class="hidden sm:grid grid-cols-[1fr_100px_160px] gap-4 px-5 py-2.5 border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
                 <span>Item</span>
                 <span class="text-right">Quantity</span>
@@ -251,7 +251,7 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link v-for="item in items.data" :key="item.id"
                   :href="route('manage.stock.show', item.id)"
-                  class="relative group bg-white dark:bg-gray-900 border rounded-xl p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
+                  class="relative group bg-white dark:bg-gray-900 border rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
                   :class="item.quantity <= 0
                     ? 'border-red-200 dark:border-red-800'
                     : item.quantity <= item.low_stock_threshold

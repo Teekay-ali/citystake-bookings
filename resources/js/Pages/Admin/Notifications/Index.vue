@@ -125,7 +125,7 @@ onBeforeUnmount(() => observer?.disconnect())
                     </p>
                 </div>
                 <button v-if="localUnread > 0" @click="markAllRead"
-                        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                     <CheckCheck class="w-3.5 h-3.5" /> Mark all read
                 </button>
             </div>
@@ -143,7 +143,7 @@ onBeforeUnmount(() => observer?.disconnect())
 
             <!-- Empty -->
             <div v-if="notifications.length === 0"
-                 class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl py-16 text-center">
+                 class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none py-16 text-center">
                 <Bell class="w-9 h-9 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
                 <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ filter === 'unread' ? 'No unread notifications' : 'No notifications yet' }}
@@ -156,7 +156,7 @@ onBeforeUnmount(() => observer?.disconnect())
                     <p class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-1">
                         {{ group.label }}
                     </p>
-                    <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                         <button v-for="n in group.items" :key="n.id" @click="open(n)"
                                 class="w-full text-left px-4 py-3.5 flex items-start gap-3 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors"
                                 :class="{ 'bg-blue-50/40 dark:bg-blue-900/10': !n.read_at }">

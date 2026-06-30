@@ -180,21 +180,21 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                     <p class="text-3xl font-semibold text-white dark:text-gray-900 tracking-tight mb-1">{{ occupancy.overall.rate }}%</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">{{ occupancy.overall.booked_nights }} / {{ occupancy.overall.available_nights }} nights</p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Avg Stay</p>
                     <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">
                         {{ occupancy.avg_length_of_stay }} <span class="text-sm font-normal text-gray-400">nights</span>
                     </p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">Average length of stay</p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Lead Time</p>
                     <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">
                         {{ occupancy.avg_lead_time }} <span class="text-sm font-normal text-gray-400">days</span>
                     </p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">Avg booking advance</p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Cancellation Rate</p>
                     <p class="text-2xl font-semibold tracking-tight mb-1"
                        :class="occupancy.cancellation_rate > 15 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'">
@@ -206,7 +206,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
 
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-3">
                 <!-- 6-month trend — horizontal bars, these are fine as-is -->
-                <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">6-Month Trend</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">Occupancy rate by month</p>
                     <div class="space-y-3">
@@ -239,7 +239,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 </div>
 
                 <!-- By property table -->
-                <div class="lg:col-span-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="lg:col-span-3 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white mb-5">By Property</p>
                     <table class="w-full">
                         <thead>
@@ -292,17 +292,17 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                         {{ revenue.yoy_growth === null ? 'No prior year data' : Math.abs(revenue.yoy_growth) + '% vs last year' }}
                     </p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Total Bookings</p>
                     <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">{{ fmtNum(revenue.total_bookings) }}</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">Paid bookings</p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">ADR</p>
                     <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">{{ fmt(revenue.adr) }}</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">Average daily rate</p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">YoY Growth</p>
                     <p class="text-2xl font-semibold tracking-tight mb-1"
                        :class="revenue.yoy_growth === null ? 'text-gray-400 dark:text-gray-500' : revenue.yoy_growth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
@@ -315,7 +315,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
 
                 <!-- 12-month revenue bars -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 flex flex-col">
                     <div class="mb-4">
                         <p class="text-sm font-semibold text-gray-900 dark:text-white">12-Month Revenue</p>
                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Total booking revenue per month</p>
@@ -348,7 +348,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 </div>
 
                 <!-- YoY comparison -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 flex flex-col">
                     <div class="flex items-start justify-between mb-4">
                         <div>
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">Year-on-Year</p>
@@ -396,7 +396,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <!-- By building -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Revenue by Property</p>
                     <table class="w-full">
                         <thead>
@@ -422,7 +422,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 </div>
 
                 <!-- By unit type -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Revenue by Unit Type</p>
                     <table class="w-full">
                         <thead>
@@ -467,17 +467,17 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                     </p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">{{ financial.year_net < 0 ? 'Net loss' : 'Net profit' }} {{ selectedYear }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Total Income</p>
                     <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 tracking-tight mb-1">{{ fmt(financial.year_income) }}</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">{{ selectedYear }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Total Expenses</p>
                     <p class="text-2xl font-semibold text-red-600 dark:text-red-400 tracking-tight mb-1">{{ fmt(financial.year_expenses) }}</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">{{ selectedYear }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Profit Margin</p>
                     <p class="text-2xl font-semibold tracking-tight mb-1"
                        :class="financial.profit_margin >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'">
@@ -490,7 +490,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
 
                 <!-- Income vs Expense trend -->
-                <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col">
+                <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 flex flex-col">
                     <div class="flex items-start justify-between mb-4">
                         <div>
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">Income vs Expenses</p>
@@ -539,7 +539,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 </div>
 
                 <!-- Expense breakdown -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Expense Breakdown</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">{{ selectedYear }}</p>
                     <div v-if="financial.expense_by_category?.length" class="space-y-3">
@@ -559,7 +559,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             </div>
 
             <!-- Profit margin trend -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 flex flex-col">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 flex flex-col">
                 <div class="mb-4">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Profit Margin Trend</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Monthly profit margin % — last 12 months</p>

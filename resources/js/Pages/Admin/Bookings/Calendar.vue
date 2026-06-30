@@ -142,14 +142,14 @@ const canCheckIn = computed(() => {
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Visual overview of all bookings</p>
             </div>
             <Link :href="route('manage.bookings.index')"
-                  class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                  class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                 View List
             </Link>
         </div>
 
         <!-- ── Stat cards ── -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-xs font-medium text-emerald-500 uppercase tracking-wider">Confirmed</p>
                     <CheckCircle2 class="w-3.5 h-3.5 text-emerald-500" />
@@ -158,7 +158,7 @@ const canCheckIn = computed(() => {
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">active bookings</p>
             </div>
 
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-xs font-medium text-amber-500 uppercase tracking-wider">Pending</p>
                     <AlertCircle class="w-3.5 h-3.5 text-amber-500" />
@@ -167,7 +167,7 @@ const canCheckIn = computed(() => {
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">awaiting payment</p>
             </div>
 
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">This Month</p>
                     <CalendarDays class="w-3.5 h-3.5 text-gray-400" />
@@ -192,7 +192,7 @@ const canCheckIn = computed(() => {
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
 
             <!-- Today's arrivals -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <div class="flex items-center gap-2 mb-3">
                     <LogIn class="w-4 h-4 text-emerald-500" />
                     <span class="text-sm font-medium text-gray-900 dark:text-white">Today's Arrivals</span>
@@ -218,7 +218,7 @@ const canCheckIn = computed(() => {
             </div>
 
             <!-- Today's departures -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <div class="flex items-center gap-2 mb-3">
                     <LogOut class="w-4 h-4 text-gray-400" />
                     <span class="text-sm font-medium text-gray-900 dark:text-white">Today's Departures</span>
@@ -244,7 +244,7 @@ const canCheckIn = computed(() => {
             </div>
 
             <!-- Filter + legend -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Filter by property</p>
                 <select v-model="buildingFilter"
                         class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white mb-4 transition-all">
@@ -269,7 +269,7 @@ const canCheckIn = computed(() => {
         </div>
 
         <!-- ── Calendar ── -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 calendar-container">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 calendar-container">
             <FullCalendar :options="calendarOptions" />
         </div>
 

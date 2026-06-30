@@ -81,7 +81,7 @@ const inputClass = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gra
             <div class="lg:col-span-2 space-y-4">
 
                 <!-- Details -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Details</h2>
                     <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ complaint.description }}</p>
 
@@ -105,7 +105,7 @@ const inputClass = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gra
 
                 <!-- Photos -->
                 <div v-if="complaint.photo_urls?.length"
-                     class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                     class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Photos</h2>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         <a v-for="(url, i) in complaint.photo_urls" :key="i" :href="url" target="_blank">
@@ -131,7 +131,7 @@ const inputClass = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gra
 
                 <!-- Update status form -->
                 <div v-if="!isResolved"
-                     class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                     class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <h3 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Update Status</h3>
 
                     <form @submit.prevent="submitResolve" class="space-y-3">
@@ -157,7 +157,7 @@ const inputClass = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gra
                 </div>
 
                 <!-- Building info -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Building</p>
                     <p class="text-sm font-medium text-gray-900 dark:text-white">{{ complaint.building?.name }}</p>
                 </div>

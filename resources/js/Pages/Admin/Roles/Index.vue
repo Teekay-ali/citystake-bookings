@@ -180,7 +180,7 @@ function coveragePercent(role) {
             </div>
 
             <!-- ── Create custom role ── -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 mb-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 mb-4">
                 <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
                     Create Custom Role
                 </h2>
@@ -203,7 +203,7 @@ function coveragePercent(role) {
             <!-- ── Roles list ── -->
             <div class="space-y-2">
                 <div v-for="role in roles" :key="role.id"
-                     class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden transition-all"
+                     class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden transition-all"
                      :class="expandedRole === role.id ? 'border-gray-300 dark:border-gray-700' : ''">
 
                     <!-- Role header -->

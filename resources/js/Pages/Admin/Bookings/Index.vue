@@ -103,14 +103,14 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                 <button
                     v-if="$page.props.auth.user.permissions?.includes('manage-bookings')"
                     @click="exportBookings"
-                    class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                    class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                     <Download class="w-3.5 h-3.5" />
                     Export
                 </button>
                 <Link
                     v-if="$page.props.auth.user.permissions?.includes('create-bookings')"
                     :href="route('manage.bookings.create')"
-                    class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                    class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                     <Plus class="w-3.5 h-3.5" />
                     New Booking
                 </Link>
@@ -163,7 +163,7 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
         </div>
 
         <!-- ── Table ── -->
-        <div class="border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden bg-white dark:bg-gray-950">
+        <div class="border border-gray-200/80 dark:border-gray-800 rounded-2xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm shadow-gray-200/50 dark:shadow-none">
 
             <!-- Desktop table -->
             <div class="hidden md:block overflow-x-auto">

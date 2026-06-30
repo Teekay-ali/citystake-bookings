@@ -95,7 +95,7 @@ const selectClass = "px-3 py-2 border border-gray-200 dark:border-gray-800 round
         </div>
 
         <!-- List -->
-        <div v-else class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+        <div v-else class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
             <Link v-for="e in enquiries.data" :key="e.id"
                   :href="route('manage.enquiries.show', e.id)"
                   class="flex items-center gap-4 px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition-colors">

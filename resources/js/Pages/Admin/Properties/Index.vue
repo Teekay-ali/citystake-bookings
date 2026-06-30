@@ -117,7 +117,7 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
             </div>
             <Link
                 :href="route('manage.properties.create')"
-                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 Add Property
             </Link>
@@ -125,19 +125,19 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
 
         <!-- ── Stats ── -->
         <div v-if="buildings.length > 0" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs font-medium text-blue-500 uppercase tracking-wider mb-2">Properties</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ totalProperties }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs font-medium text-green-500 uppercase tracking-wider mb-2">Unit Types</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ totalUnitTypes }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs font-medium text-violet-500 uppercase tracking-wider mb-2">Total Units</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ totalUnits }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs font-medium text-amber-500 uppercase tracking-wider mb-2">Locations</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ totalLocations }}</p>
             </div>

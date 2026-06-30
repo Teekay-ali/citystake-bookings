@@ -112,7 +112,7 @@ function toggleActive() {
                         { label: 'Last Stay',       value: formatDate(stats.last_stay) },
                     ]"
                     :key="stat.label"
-                    class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4"
+                    class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4"
                 >
                     <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">{{ stat.label }}</p>
                     <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ stat.value }}</p>

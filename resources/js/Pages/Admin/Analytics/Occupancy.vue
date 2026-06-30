@@ -114,7 +114,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             </div>
 
             <!-- Booked nights -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Booked Nights</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">
                     {{ overallOccupancy.booked_nights }}
@@ -123,7 +123,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             </div>
 
             <!-- Available nights -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Available Nights</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">
                     {{ overallOccupancy.available_nights }}
@@ -132,7 +132,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             </div>
 
             <!-- RevPAN -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Rev / Available Night</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight mb-1">
                     {{ formatPrice(revenuePerNight.revenue_per_available_night) }}
@@ -145,7 +145,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-3">
 
             <!-- Monthly trend chart — 2/5 width -->
-            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-sm font-semibold text-gray-900 dark:text-white mb-5">6-Month Trend</p>
 
                 <div class="space-y-3">
@@ -183,7 +183,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             </div>
 
             <!-- Property performance table — 3/5 width -->
-            <div class="lg:col-span-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+            <div class="lg:col-span-3 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Property Performance</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Ranked by occupancy rate</p>

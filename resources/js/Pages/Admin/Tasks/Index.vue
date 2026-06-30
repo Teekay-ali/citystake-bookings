@@ -126,7 +126,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Assign and track work across your team</p>
             </div>
             <button v-if="canManage" @click="openCreate"
-                  class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                  class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 New Task
             </button>
@@ -141,7 +141,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                 :class="isActive(item)
                     ? 'ring-2 ring-gray-900 dark:ring-white border-transparent'
                     : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'"
-                class="bg-white dark:bg-gray-900 border rounded-xl p-4 text-left transition-all">
+                class="bg-white dark:bg-gray-900 border rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4 text-left transition-all">
                 <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">{{ item.label }}</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ counts[item.countKey] ?? 0 }}</p>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
@@ -182,7 +182,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                 v-for="task in tasks.data"
                 :key="task.id"
                 :href="route('manage.tasks.show', task.id)"
-                class="flex items-start gap-3 bg-white dark:bg-gray-900 border rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
+                class="flex items-start gap-3 bg-white dark:bg-gray-900 border rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
                 :class="isOverdue(task)
                     ? 'border-red-200 dark:border-red-800'
                     : 'border-gray-200 dark:border-gray-800'">

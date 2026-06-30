@@ -55,7 +55,7 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
                 <p class="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider mb-2">Refunded</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ formatPrice(summary.total_refunded) }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Total Collected</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">
                     {{ formatPrice(Number(summary.total_outstanding) + Number(summary.total_refunded)) }}

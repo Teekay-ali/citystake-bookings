@@ -87,7 +87,7 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
             </div>
 
             <!-- Create form -->
-            <div v-if="showForm" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 mb-6">
+            <div v-if="showForm" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 mb-6">
                 <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">New Changelog Entry</h2>
 
                 <div class="space-y-4">
@@ -142,7 +142,7 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
 
             <!-- List -->
             <div v-if="changelogs.length"
-                 class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+                 class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
                 <div v-for="entry in changelogs" :key="entry.id"
                      @click="openDetail(entry)"
                      class="group flex items-center gap-3 px-4 py-3 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors cursor-pointer">

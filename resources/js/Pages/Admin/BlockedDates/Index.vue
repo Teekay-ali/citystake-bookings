@@ -79,7 +79,7 @@ const selectClass = "w-full pl-3 pr-8 py-2 bg-white dark:bg-gray-950 border bord
             </div>
             <Link
                 :href="route('manage.blocked-dates.create')"
-                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 Block Dates
             </Link>

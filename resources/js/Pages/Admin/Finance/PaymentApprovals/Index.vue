@@ -86,7 +86,7 @@ function clearFilters() {
             <Link
                 v-if="$page.props.auth.user.roles?.includes('accountant') || $page.props.auth.user.is_admin"
                 :href="route('manage.payment-approvals.create')"
-                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all"
+                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all"
             >
                 <Plus class="w-3.5 h-3.5" />
                 New Request
@@ -106,7 +106,7 @@ function clearFilters() {
                 :class="statusFilter === item.key
             ? 'ring-2 ring-gray-900 dark:ring-white border-transparent'
             : 'border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'"
-                class="group bg-white dark:bg-gray-900 border rounded-xl px-4 py-3 text-left transition-all flex items-center justify-between gap-3"
+                class="group bg-white dark:bg-gray-900 border rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none px-4 py-3 text-left transition-all flex items-center justify-between gap-3"
             >
                 <span class="text-xs font-medium uppercase tracking-wider" :class="item.labelCls">{{ item.label }}</span>
                 <span class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ summary[item.key] ?? 0 }}</span>
@@ -135,7 +135,7 @@ function clearFilters() {
         </div>
 
         <!-- Table / Cards -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
 
             <div v-if="approvals.data.length === 0" class="text-center py-16">
                 <Banknote class="w-10 h-10 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
@@ -145,7 +145,7 @@ function clearFilters() {
                 <Link
                     v-if="!statusFilter && !buildingFilter && ($page.props.auth.user.roles?.includes('accountant') || $page.props.auth.user.is_admin)"
                     :href="route('manage.payment-approvals.create')"
-                    class="inline-flex items-center gap-2 mt-4 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all"
+                    class="inline-flex items-center gap-2 mt-4 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all"
                 >
                     <Plus class="w-3.5 h-3.5" /> New Request
                 </Link>

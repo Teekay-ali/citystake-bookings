@@ -225,21 +225,21 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
             </div>
             <div class="flex items-center gap-2">
                 <button @click="toggle"
-                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                     <EyeOff v-if="financialsVisible" class="w-3.5 h-3.5" />
                     <Eye v-else class="w-3.5 h-3.5" />
                     {{ financialsVisible ? 'Hide figures' : 'Show figures' }}
                 </button>
                 <button @click="exportReport('csv')"
-                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                     <Download class="w-3.5 h-3.5" /> CSV
                 </button>
                 <button @click="exportReport('pdf')"
-                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                     <FileText class="w-3.5 h-3.5" /> PDF
                 </button>
                 <button @click="showManual = true"
-                        class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                     <Plus class="w-3.5 h-3.5" />
                     Log Transaction
                 </button>
@@ -281,7 +281,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
         </div>
 
         <!-- ── Period filters ── -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3.5 mb-6 flex flex-wrap gap-2 items-center">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-3.5 mb-6 flex flex-wrap gap-2 items-center">
             <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                 <button v-for="p in ['daily','monthly','quarterly','yearly']" :key="p"
                         @click="period = p"
@@ -328,19 +328,19 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
 
         <!-- ── Summary cards ── -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-xs font-medium text-emerald-500 uppercase tracking-wider mb-2">Total Income</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">
                     {{ financialsVisible ? formatAmount(summary.total_income) : '₦ ••••••' }}
                 </p>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-xs font-medium text-red-500 uppercase tracking-wider mb-2">Total Expenses</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">
                     {{ financialsVisible ? formatAmount(summary.total_expenses) : '₦ ••••••' }}
                 </p>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Net Profit</p>
                 <p class="text-2xl font-semibold"
                    :class="summary.net_profit >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'">
@@ -354,7 +354,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                     </span>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 transition-colors"
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 transition-colors"
                  :class="summary.pending_count > 0 ? 'cursor-pointer hover:border-amber-300 dark:hover:border-amber-700' : ''"
                  @click="summary.pending_count > 0 && scrollToPending()">
                 <p class="text-xs font-medium text-amber-500 uppercase tracking-wider mb-2">Pending Payments</p>
@@ -367,7 +367,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
 
             <!-- Income vs Expenses -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-start justify-between mb-2">
                     <div>
                         <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Income vs Expenses</h2>
@@ -393,7 +393,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
             </div>
 
             <!-- Net profit trend -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-start justify-between mb-2">
                     <div>
                         <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Net Profit</h2>
@@ -415,7 +415,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
 
         <!-- ── Transaction ledger ── -->
         <div class="mb-6">
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 flex-wrap">
                     <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                         Transaction Ledger

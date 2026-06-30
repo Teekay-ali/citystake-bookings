@@ -81,7 +81,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Track and approve maintenance work</p>
             </div>
             <Link :href="route('manage.maintenance.create')"
-                  class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                  class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 New Request
             </Link>
@@ -96,7 +96,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 :class="status === item.key
                     ? 'ring-2 ring-gray-900 dark:ring-white border-transparent'
                     : 'border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'"
-                class="bg-white dark:bg-gray-900 border rounded-xl px-4 py-3 text-left transition-all flex items-center justify-between gap-3">
+                class="bg-white dark:bg-gray-900 border rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none px-4 py-3 text-left transition-all flex items-center justify-between gap-3">
                 <span class="text-xs font-medium uppercase tracking-wider truncate" :class="item.labelCls">{{ item.label }}</span>
                 <span class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ counts[item.key] ?? 0 }}</span>
             </button>
@@ -128,7 +128,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
         </div>
 
         <!-- ── Table / Cards ── -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
 
             <!-- Empty state -->
             <div v-if="reports.data.length === 0" class="text-center py-16">
@@ -139,7 +139,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 <Link
                     v-if="!status && !buildingId && !issueType"
                     :href="route('manage.maintenance.create')"
-                    class="inline-flex items-center gap-2 mt-4 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                    class="inline-flex items-center gap-2 mt-4 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                     <Plus class="w-3.5 h-3.5" /> New Request
                 </Link>
                 <button

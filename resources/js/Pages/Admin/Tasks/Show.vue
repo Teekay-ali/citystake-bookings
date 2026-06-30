@@ -108,14 +108,14 @@ function formatDate(d) {
 
                 <!-- Description -->
                 <div v-if="task.description"
-                     class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                     class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Description</h2>
                     <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{{ task.description }}</p>
                 </div>
 
                 <!-- Subtasks -->
                 <div v-if="task.subtasks?.length"
-                     class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                     class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <div class="flex items-center justify-between mb-3">
                         <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Subtasks</h2>
                         <span class="text-xs text-gray-400 dark:text-gray-500">
@@ -163,7 +163,7 @@ function formatDate(d) {
             <div class="space-y-3">
 
                 <!-- Status control -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <h3 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Status</h3>
                     <div v-if="canManage || isAssigned" class="space-y-1.5">
                         <button
@@ -183,7 +183,7 @@ function formatDate(d) {
                 </div>
 
                 <!-- Details -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 space-y-3">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 space-y-3">
                     <div>
                         <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Assigned To</p>
                         <p class="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-1.5">

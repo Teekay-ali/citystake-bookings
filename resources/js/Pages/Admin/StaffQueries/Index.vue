@@ -83,7 +83,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">HR records - confidential</p>
             </div>
             <button @click="openCreate"
-                  class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg transition-all">
+                  class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 New Query
             </button>
@@ -98,14 +98,14 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                 :class="status === item.key
                     ? 'ring-2 ring-gray-900 dark:ring-white border-transparent'
                     : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'"
-                class="bg-white dark:bg-gray-900 border rounded-xl p-4 text-left transition-all">
+                class="bg-white dark:bg-gray-900 border rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4 text-left transition-all">
                 <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">{{ item.label }}</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ counts[item.key] ?? 0 }}</p>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     {{ status === item.key ? 'Click to clear' : 'Click to filter' }}
                 </p>
             </button>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
                 <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">Total</p>
                 <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ queries.total }}</p>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">All queries</p>
@@ -144,7 +144,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                 v-for="q in queries.data"
                 :key="q.id"
                 :href="route('manage.staff-queries.show', q.id)"
-                class="flex items-start justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-all">
+                class="flex items-start justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-all">
 
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1.5 flex-wrap">

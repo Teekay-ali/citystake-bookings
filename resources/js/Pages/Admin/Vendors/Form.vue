@@ -66,7 +66,7 @@ const sectionHeadingClass = "text-xs font-medium text-gray-400 dark:text-gray-50
             <form @submit.prevent="submit" class="space-y-4">
 
                 <!-- ── Basic Information ── -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 space-y-4">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 space-y-4">
                     <h2 :class="sectionHeadingClass">Basic Information</h2>
 
                     <div class="grid grid-cols-2 gap-3">
@@ -114,7 +114,7 @@ const sectionHeadingClass = "text-xs font-medium text-gray-400 dark:text-gray-50
                 </div>
 
                 <!-- ── Bank Details ── -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 space-y-4">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 space-y-4">
                     <h2 :class="sectionHeadingClass">Bank Details</h2>
 
                     <div>
@@ -134,7 +134,7 @@ const sectionHeadingClass = "text-xs font-medium text-gray-400 dark:text-gray-50
                 </div>
 
                 <!-- ── Notes & Status ── -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 space-y-4">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 space-y-4">
                     <h2 :class="sectionHeadingClass">Notes & Status</h2>
 
                     <div>
