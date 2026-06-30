@@ -385,7 +385,7 @@ function canSeeItem(item) {
 </script>
 
 <template>
-    <div class="h-[100dvh] bg-gray-200/70 dark:bg-black flex flex-col">
+    <div class="fixed inset-0 overflow-hidden bg-gray-200/70 dark:bg-black flex flex-col">
 
         <!-- ── Offline banner ─────────────────────────────── -->
         <Transition
@@ -542,7 +542,7 @@ function canSeeItem(item) {
 
         <!-- ── Main content ── -->
         <div :class="collapsed ? 'lg:ml-[5.5rem]' : 'lg:ml-[17.5rem]'"
-             class="flex-1 flex flex-col min-w-0 transition-all duration-300 bg-white dark:bg-gray-950 overflow-hidden lg:my-3 lg:mr-3 lg:rounded-2xl lg:border lg:border-gray-200/70 dark:border-gray-800/60 lg:shadow-sm">
+             class="flex-1 min-h-0 flex flex-col min-w-0 transition-all duration-300 bg-white dark:bg-gray-950 overflow-hidden lg:my-3 lg:mr-3 lg:rounded-2xl lg:border lg:border-gray-200/70 dark:border-gray-800/60 lg:shadow-sm">
 
             <!-- ── Topbar ── -->
             <header class="h-16 bg-white dark:bg-gray-950 flex items-center gap-3 px-4 shrink-0 border-b border-gray-100 dark:border-gray-900">
@@ -704,7 +704,7 @@ function canSeeItem(item) {
             </header>
 
             <!-- Page slot -->
-            <main scroll-region class="flex-1 overflow-auto bg-white dark:bg-gray-950">
+            <main scroll-region class="flex-1 min-h-0 overflow-auto bg-white dark:bg-gray-950">
                 <slot />
             </main>
         </div>
