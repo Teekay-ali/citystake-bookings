@@ -1,116 +1,108 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
-import UpdateEmailPreferencesForm from './Partials/UpdateEmailPreferencesForm.vue';
-import DeleteUserForm from './Partials/DeleteUserForm.vue';
-import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
-import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head } from '@inertiajs/vue3';
-import { User, Lock, AlertTriangle, Mail } from 'lucide-vue-next';
+import { ref, computed } from 'vue'
+import AppLayout from '@/Layouts/AppLayout.vue'
+import { Head, usePage } from '@inertiajs/vue3'
+import { User, Shield, Bell, Trash2 } from 'lucide-vue-next'
+import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue'
+import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue'
+import UpdateEmailPreferencesForm from './Partials/UpdateEmailPreferencesForm.vue'
+import DeleteUserForm from './Partials/DeleteUserForm.vue'
 
 defineProps({
     mustVerifyEmail: Boolean,
     status: String,
-});
+})
+
+const user = usePage().props.auth.user
+
+const initials = computed(() =>
+    (user.name ?? '').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+)
+
+const roleLabel = computed(() => {
+    const r = user.roles?.[0]
+    if (!r) return user.is_staff || user.is_admin ? 'Staff' : 'Guest'
+    return r.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+})
+
+const sections = [
+    { id: 'profile',  label: 'Profile',       icon: User,  sub: 'Name, email & phone' },
+    { id: 'security', label: 'Security',      icon: Shield, sub: 'Password' },
+    { id: 'email',    label: 'Notifications', icon: Bell,  sub: 'Email preferences' },
+    { id: 'danger',   label: 'Danger zone',   icon: Trash2, sub: 'Delete account' },
+]
+const active = ref('profile')
+const current = computed(() => sections.find(s => s.id === active.value))
 </script>
 
 <template>
     <AppLayout :hide-footer="true">
         <Head title="Profile Settings" />
 
-        <div class="bg-white dark:bg-gray-950 min-h-screen py-16">
-            <div class="max-w-5xl mx-auto px-6 lg:px-8">
-                <!-- Header -->
-                <div class="mb-12">
-                    <h1 class="text-4xl font-light tracking-tight text-gray-900 dark:text-white mb-3">
-                        Profile Settings
-                    </h1>
-                    <p class="text-lg text-gray-600 dark:text-gray-400">
-                        Manage your account information and preferences
-                    </p>
+        <div class="bg-gray-50 dark:bg-gray-950 min-h-screen py-8 lg:py-12">
+            <div class="max-w-5xl mx-auto px-4 lg:px-8">
+
+                <!-- ── Identity header ── -->
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 sm:p-6 mb-5 flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-gray-900 dark:bg-white flex items-center justify-center shrink-0">
+                        <span class="text-lg font-semibold text-white dark:text-gray-900">{{ initials }}</span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h1 class="text-lg font-semibold text-gray-900 dark:text-white truncate">{{ user.name }}</h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ user.email }}</p>
+                    </div>
+                    <span class="hidden sm:inline-flex text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0">
+                        {{ roleLabel }}
+                    </span>
                 </div>
 
-                <!-- Cards Container -->
-                <div class="space-y-8">
-                    <!-- Profile Information -->
-                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
-                        <div class="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-                                    <User class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
-                                    Profile Information
-                                </h2>
-                            </div>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Update your account's profile information and email address
-                            </p>
-                        </div>
-                        <div class="p-6 md:p-8">
-                            <UpdateProfileInformationForm
-                                :must-verify-email="mustVerifyEmail"
-                                :status="status"
-                            />
-                        </div>
-                    </div>
+                <div class="lg:grid lg:grid-cols-[15rem_1fr] lg:gap-5 lg:items-start">
 
-                    <!-- Update Password -->
-                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
-                        <div class="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
-                                    <Lock class="w-5 h-5 text-green-600 dark:text-green-400" />
-                                </div>
-                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
-                                    Update Password
-                                </h2>
-                            </div>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Ensure your account is using a strong password to stay secure
-                            </p>
-                        </div>
-                        <div class="p-6 md:p-8">
-                            <UpdatePasswordForm />
-                        </div>
-                    </div>
+                    <!-- ── Section nav ── -->
+                    <nav class="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 mb-4 lg:mb-0 lg:sticky lg:top-6">
+                        <button v-for="s in sections" :key="s.id" @click="active = s.id"
+                                :class="active === s.id
+                                    ? (s.id === 'danger'
+                                        ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                                        : 'bg-white dark:bg-gray-800/60 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-900/5 dark:ring-0')
+                                    : 'text-gray-500 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-800/40 hover:text-gray-900 dark:hover:text-white'"
+                                class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all shrink-0 lg:w-full text-left">
+                            <component :is="s.icon" class="w-4 h-4 shrink-0"
+                                       :class="s.id === 'danger' && active === s.id ? 'text-red-500' : ''" />
+                            <span class="flex-1 min-w-0">
+                                <span class="block">{{ s.label }}</span>
+                                <span class="hidden lg:block text-xs font-normal text-gray-400 dark:text-gray-500 truncate">{{ s.sub }}</span>
+                            </span>
+                        </button>
+                    </nav>
 
-                    <!-- Email Preferences -->
-                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
-                        <div class="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
-                                    <Mail class="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                                </div>
-                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
-                                    Email Preferences
-                                </h2>
-                            </div>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Manage your email notification preferences
-                            </p>
-                        </div>
-                        <div class="p-6 md:p-8">
-                            <UpdateEmailPreferencesForm />
-                        </div>
-                    </div>
+                    <!-- ── Active section card ── -->
+                    <div class="bg-white dark:bg-gray-900 border rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden"
+                         :class="active === 'danger' ? 'border-red-200/80 dark:border-red-900/50' : 'border-gray-200/80 dark:border-gray-800'">
 
-                    <!-- Delete Account -->
-                    <div class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/50 rounded-2xl overflow-hidden">
-                        <div class="p-6 md:p-8 border-b border-red-200 dark:border-red-900/50">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                    <AlertTriangle class="w-5 h-5 text-red-600 dark:text-red-400" />
+                        <!-- Card header -->
+                        <div class="px-5 sm:px-6 py-4 border-b"
+                             :class="active === 'danger' ? 'border-red-100 dark:border-red-900/40' : 'border-gray-100 dark:border-gray-800'">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                                     :class="active === 'danger' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-100 dark:bg-gray-800'">
+                                    <component :is="current.icon" class="w-4 h-4"
+                                               :class="active === 'danger' ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'" />
                                 </div>
-                                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
-                                    Delete Account
-                                </h2>
+                                <div>
+                                    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">{{ current.label }}</h2>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">{{ current.sub }}</p>
+                                </div>
                             </div>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Permanently delete your account and all associated data
-                            </p>
                         </div>
-                        <div class="p-6 md:p-8">
-                            <DeleteUserForm />
+
+                        <!-- Card body -->
+                        <div class="p-5 sm:p-6">
+                            <UpdateProfileInformationForm v-if="active === 'profile'"
+                                :must-verify-email="mustVerifyEmail" :status="status" />
+                            <UpdatePasswordForm v-else-if="active === 'security'" />
+                            <UpdateEmailPreferencesForm v-else-if="active === 'email'" />
+                            <DeleteUserForm v-else-if="active === 'danger'" />
                         </div>
                     </div>
                 </div>
