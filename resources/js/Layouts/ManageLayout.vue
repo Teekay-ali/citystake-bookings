@@ -387,6 +387,7 @@ function canSeeItem(item) {
 <template>
     <div class="fixed inset-0 overflow-hidden bg-gray-200/70 dark:bg-black flex flex-col">
 
+
         <!-- ── Offline banner ─────────────────────────────── -->
         <Transition
             enter-active-class="transition-all duration-300 ease-out"
@@ -437,7 +438,8 @@ function canSeeItem(item) {
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 collapsed ? 'lg:w-16' : 'lg:w-64',
                 !isOnline ? 'top-10' : 'top-0',
-                'fixed left-0 bottom-0 w-64 bg-gray-100 dark:bg-gray-900 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:left-3 lg:top-3 lg:bottom-3 lg:rounded-2xl lg:border lg:border-gray-200/70 dark:border-gray-800/60 lg:shadow-sm'
+                'fixed left-0 bottom-0 w-64 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:left-3 lg:top-3 lg:bottom-3 lg:rounded-2xl lg:border lg:border-white/40 dark:lg:border-white/10 lg:shadow-lg lg:shadow-gray-300/30 dark:lg:shadow-black/40',
+                'bg-gray-100 dark:bg-gray-900 lg:bg-gradient-to-b lg:from-white/70 lg:via-gray-100/60 lg:to-gray-200/70 dark:lg:from-gray-800/70 dark:lg:via-gray-900/60 dark:lg:to-gray-950/70 lg:backdrop-blur-xl'
             ]">
 
             <!-- Logo row -->
