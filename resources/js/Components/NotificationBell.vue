@@ -4,7 +4,7 @@ import { usePage, router, Link } from '@inertiajs/vue3'
 import {
     Bell, Home, XCircle, Clock, ShoppingCart,
     Wrench, AlertTriangle, CheckSquare, Banknote,
-    ShieldAlert, DollarSign, MessageSquare, Users
+    ShieldAlert, DollarSign, MessageSquare, Users, LogOut
 } from 'lucide-vue-next'
 import axios from 'axios'
 
@@ -18,12 +18,14 @@ let pollInterval = null
 const icons = {
     booking:           Home,
     booking_cancelled: XCircle,
+    checkout:          LogOut,
     late_checkout:     Clock,
     procurement:       ShoppingCart,
     maintenance:       Wrench,
     complaint:         AlertTriangle,
     task:              CheckSquare,
     payment_approval:  Banknote,
+    caution_fee:       Banknote,
     emergency_fund:    ShieldAlert,
     finance:           DollarSign,
     message:           MessageSquare,

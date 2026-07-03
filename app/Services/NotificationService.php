@@ -35,9 +35,10 @@ class NotificationService
         return User::role($roles)
             ->when($buildingId, function ($query) use ($buildingId) {
                 $query->where(function ($q) use ($buildingId) {
-                    // Global access users always included
                     $q->whereHas('buildings', fn($b) => $b->where('buildings.id', $buildingId))
-                        ->orWhereDoesntHave('buildings'); // global access users have no building restrictions
+                        ->orWhereDoesntHave('buildings') // users with no building restriction
+                        // Global-access roles are always included, even with buildings attached
+                        ->orWhereHas('roles', fn($r) => $r->whereIn('name', ['super-admin', 'ceo']));
                 });
             })
             ->where('is_active', true)

@@ -23,7 +23,7 @@ class OverdueCheckoutNotification extends Notification
             'type'              => 'overdue_checkout',
             'title'             => 'Overdue Checkout',
             'message'           => "Guest {$this->booking->guest_name} (Unit {$this->booking->unit?->unit_number}) was due to check out on {$this->booking->check_out->format('M j')} but has not been checked out.",
-            'url'               => route('manage.bookings.show', $this->booking->id),
+            'url'               => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'              => 'checkout',
             'booking_id'        => $this->booking->id,
             'booking_reference' => $this->booking->booking_reference,

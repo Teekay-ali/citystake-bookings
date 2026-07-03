@@ -6,7 +6,7 @@ use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-class NewBookingNotification extends Notification
+class CheckInDueNotification extends Notification
 {
     use Queueable;
 
@@ -19,9 +19,15 @@ class NewBookingNotification extends Notification
 
     public function toDatabase(object $notifiable): array
     {
+        $overdue = $this->booking->check_in->isBefore(now()->startOfDay());
+        $unit    = $this->booking->unit?->unit_number;
+
         return [
-            'title'   => 'New Booking',
-            'message' => "{$this->booking->guest_name} booked {$this->booking->unitType->name} at {$this->booking->building->name}",
+            'title'   => $overdue ? 'Check-in overdue' : 'Guest awaiting check-in',
+            'message' => "{$this->booking->guest_name}"
+                . ($unit ? " (Unit {$unit})" : '')
+                . ' has not been checked in'
+                . ($overdue ? ' — arrival was ' . $this->booking->check_in->format('j M') . '.' : ' yet.'),
             'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'booking',
         ];

@@ -22,7 +22,7 @@ class LateCheckoutRequestedNotification extends Notification
         return [
             'title'   => 'Late Checkout Requested',
             'message' => "Guest {$this->booking->guest_name} (Unit {$this->booking->unit->unit_number}) has requested a late checkout",
-            'url'     => route('manage.bookings.show', $this->booking->id),
+            'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'late_checkout',
         ];
     }

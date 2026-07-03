@@ -33,7 +33,7 @@ class CautionRefundRequestedNotification extends Notification
             ->line("Guest: {$this->booking->guest_name}")
             ->line("Action Requested: {$actionLabel}")
             ->line("Reason: " . ($this->booking->caution_refund_reason ?? 'None provided'))
-            ->action('Review Booking', url(route('manage.bookings.show', $this->booking->id)))
+            ->action('Review Booking', url(route('manage.bookings.show', $this->booking->booking_reference)))
             ->line('Please review and process this request.');
     }
 
@@ -42,12 +42,13 @@ class CautionRefundRequestedNotification extends Notification
         return [
             'type'               => 'caution_refund_requested',
             'title'              => 'Caution Refund Request',
+            'icon'               => 'caution_fee',
             'booking_id'         => $this->booking->id,
             'booking_reference'  => $this->booking->booking_reference,
             'guest_name'         => $this->booking->guest_name,
             'action'             => $this->booking->caution_refund_action,
             'message'            => "Caution fee refund request for {$this->booking->booking_reference} - {$this->booking->guest_name}",
-            'url'                => route('manage.bookings.show', $this->booking->id),
+            'url'                => route('manage.bookings.show', $this->booking->booking_reference),
         ];
     }
 }

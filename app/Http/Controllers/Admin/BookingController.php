@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Models\AuditLog;
 use App\Models\CautionFeeCharge;
 use App\Models\Unit;
+use App\Notifications\BookingModifiedNotification;
+use App\Notifications\CautionChargeNotification;
 use App\Notifications\CautionRefundProcessedNotification;
 use App\Notifications\CautionRefundRequestedNotification;
+use App\Notifications\GuestCheckedOutNotification;
 use App\Notifications\GuestCheckedInNotification;
 use App\Notifications\LateCheckoutDecisionNotification;
 use App\Notifications\NewBookingNotification;
@@ -472,6 +475,26 @@ class BookingController extends Controller
 
         AuditLog::log('booking.modified', $booking, $old, $new);
 
+        // Build a human-readable change list and notify managers.
+        $fmtDate  = fn($d) => \Carbon\Carbon::parse($d)->format('j M');
+        $newUnitNumber = $unitChanged ? optional(Unit::find($unitId))->unit_number : $old['unit_number'];
+        $changes = [];
+        if ($datesChanged) {
+            $changes[] = "Dates {$fmtDate($old['check_in'])}→{$fmtDate($old['check_out'])} to {$fmtDate($checkIn)}→{$fmtDate($checkOut)}";
+        }
+        if ($unitChanged) {
+            $changes[] = 'Unit ' . ($old['unit_number'] ?? '—') . ' → ' . ($newUnitNumber ?? '—');
+        }
+        if ($new['guests']      !== $old['guests'])      $changes[] = "Guests {$old['guests']} → {$new['guests']}";
+        if ($new['guest_name']  !== $old['guest_name'])  $changes[] = "Guest name updated";
+        if ($new['guest_email'] !== $old['guest_email']) $changes[] = "Email updated";
+        if ($new['guest_phone'] !== $old['guest_phone']) $changes[] = "Phone updated";
+
+        if (! empty($changes)) {
+            $recipients = NotificationService::getUsersByRoles(['manager', 'super-admin'], $booking->building_id);
+            NotificationService::send($recipients, new BookingModifiedNotification($booking, $changes, $user->name));
+        }
+
         return back()->with('success', 'Booking updated successfully.');
     }
 
@@ -555,7 +578,7 @@ class BookingController extends Controller
 
         AuditLog::log('booking.checked_in', $booking, ['status' => 'confirmed'], ['status' => 'checked_in', 'checked_in_by' => auth()->id()]);
 
-        $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist'], $booking->building_id);
+        $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist', 'super-admin'], $booking->building_id);
         NotificationService::send($recipients, new GuestCheckedInNotification($booking));
 
         // Notify the guest
@@ -606,6 +629,10 @@ class BookingController extends Controller
                 'error'             => $e->getMessage(),
             ]);
         }
+
+        // Notify building managers that the stay has closed and the unit is free.
+        $recipients = NotificationService::getUsersByRoles(['manager', 'super-admin'], $booking->building_id);
+        NotificationService::send($recipients, new GuestCheckedOutNotification($booking));
 
         return back()->with('success', 'Guest checked out successfully. Booking marked as completed.');
     }
@@ -1032,6 +1059,9 @@ class BookingController extends Controller
             'by'       => $user->id,
         ]);
 
+        $recipients = NotificationService::getUsersByRoles(['manager', 'super-admin'], $booking->building_id);
+        NotificationService::send($recipients, new CautionChargeNotification($booking, $charge, 'added'));
+
         return back()->with('success',
             '₦' . number_format((float) $validated['amount'], 0) . ' charged to the caution fee. ₦'
             . number_format($booking->fresh()->caution_available, 0) . ' remaining.');
@@ -1072,6 +1102,9 @@ class BookingController extends Controller
             'reason'    => $validated['reason'],
             'by'        => $user->id,
         ]);
+
+        $recipients = NotificationService::getUsersByRoles(['manager', 'super-admin'], $booking->building_id);
+        NotificationService::send($recipients, new CautionChargeNotification($booking, $charge, 'voided'));
 
         return back()->with('success', 'Charge voided and reversed.');
     }

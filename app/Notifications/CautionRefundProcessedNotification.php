@@ -28,11 +28,13 @@ class CautionRefundProcessedNotification extends Notification
 
         return [
             'type'              => 'caution_refund_processed',
+            'title'             => 'Caution fee processed',
+            'icon'              => 'caution_fee',
             'booking_id'        => $this->booking->id,
             'booking_reference' => $this->booking->booking_reference,
             'guest_name'        => $this->booking->guest_name,
             'message'           => "Caution fee for {$this->booking->guest_name} ({$this->booking->booking_reference}) has been {$action} by manager.",
-            'url'               => route('manage.bookings.show', $this->booking->id),
+            'url'               => route('manage.bookings.show', $this->booking->booking_reference),
         ];
     }
 }

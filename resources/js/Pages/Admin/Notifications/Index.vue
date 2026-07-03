@@ -5,7 +5,7 @@ import ManageLayout from '@/Layouts/ManageLayout.vue'
 import {
     Bell, Home, XCircle, Clock, ShoppingCart, Wrench, AlertTriangle,
     CheckSquare, Banknote, ShieldAlert, DollarSign, MessageSquare, Users,
-    CheckCheck,
+    CheckCheck, LogOut,
 } from 'lucide-vue-next'
 import axios from 'axios'
 
@@ -21,9 +21,9 @@ const props = defineProps({
 const localUnread = ref(props.unreadCount)
 
 const icons = {
-    booking: Home, booking_cancelled: XCircle, late_checkout: Clock,
+    booking: Home, booking_cancelled: XCircle, checkout: LogOut, late_checkout: Clock,
     procurement: ShoppingCart, maintenance: Wrench, complaint: AlertTriangle,
-    task: CheckSquare, payment_approval: Banknote, emergency_fund: ShieldAlert,
+    task: CheckSquare, payment_approval: Banknote, caution_fee: Banknote, emergency_fund: ShieldAlert,
     finance: DollarSign, message: MessageSquare, staff: Users,
 }
 

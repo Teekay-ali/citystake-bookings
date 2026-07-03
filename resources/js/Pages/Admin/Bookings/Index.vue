@@ -6,7 +6,7 @@ import {
     Search, Plus, Download, Eye, PauseCircle,
     CheckCircle, XCircle, Clock, AlertCircle,
     ChevronRight, ChevronLeft,
-    Hash, User, Building2, CalendarDays, Banknote, CircleDot,
+    Hash, User, Building2, CalendarDays, Banknote, CircleDot, Flag,
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -69,6 +69,16 @@ const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric'
 })
 
+// Confirmed, paid arrival not yet checked in — 'today', 'overdue', or null.
+function checkInDue(b) {
+    if (b.status !== 'confirmed' || b.payment_status !== 'paid' || b.checked_in_at) return null
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const ci = new Date(b.check_in); ci.setHours(0, 0, 0, 0)
+    if (ci < today) return 'overdue'
+    if (ci.getTime() === today.getTime()) return 'today'
+    return null
+}
+
 const statusMap = {
     cancelled:       { icon: XCircle,     text: 'Cancelled',       cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400' },
     payment_pending: { icon: AlertCircle, text: 'Payment Pending',  cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
@@ -79,7 +89,18 @@ const statusMap = {
     paused:          { icon: PauseCircle, text: 'Paused',           cls: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400' },
 }
 
-const getStatus = (booking) => statusMap[booking.display_status] ?? statusMap['confirmed']
+// A completed stay is fully wrapped up once the caution fee is settled (refunded/deducted) or never applied.
+const cautionSettled = (b) => b.caution_fee_refunded || Number(b.caution_fee ?? 0) <= 0
+
+const getStatus = (booking) => {
+    if (booking.display_status === 'completed' && cautionSettled(booking)) {
+        return { icon: Flag, text: 'Stay completed', cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' }
+    }
+    if (booking.display_status === 'completed') {
+        return { icon: AlertCircle, text: 'Caution pending', cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' }
+    }
+    return statusMap[booking.display_status] ?? statusMap['confirmed']
+}
 
 const hasActiveFilters = () => status.value || building.value || paymentStatus.value || search.value
 
@@ -195,8 +216,12 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                     <tr
                         v-for="booking in bookings.data"
                         :key="booking.id"
-                        :class="['cancelled', 'completed'].includes(booking.display_status) && 'text-gray-400 dark:text-gray-600'"
-                        class="group hover:bg-gray-50/60 dark:hover:bg-gray-900/40 transition-colors">
+                        @click="router.visit(route('manage.bookings.show', booking.booking_reference))"
+                        :class="[
+                            ['cancelled', 'completed'].includes(booking.display_status) && 'text-gray-400 dark:text-gray-600',
+                            checkInDue(booking) && 'bg-amber-50/40 dark:bg-amber-500/[0.06] shadow-[inset_3px_0_0_0] shadow-amber-400 dark:shadow-amber-500',
+                        ]"
+                        class="group cursor-pointer hover:bg-gray-50/60 dark:hover:bg-gray-900/40 transition-colors">
                         <td class="px-4 py-2.5">
                             <p class="font-mono font-medium text-gray-900 dark:text-white">{{ booking.booking_reference }}</p>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ formatDate(booking.created_at) }}</p>
@@ -210,7 +235,16 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ booking.building.name }}</p>
                         </td>
                         <td class="px-4 py-2.5 whitespace-nowrap">
-                            <p class="text-gray-900 dark:text-white">{{ formatDate(booking.check_in) }}</p>
+                            <div class="flex items-center gap-1.5">
+                                <p class="text-gray-900 dark:text-white">{{ formatDate(booking.check_in) }}</p>
+                                <span v-if="checkInDue(booking)"
+                                      :class="checkInDue(booking) === 'overdue'
+                                          ? 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400'
+                                          : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'"
+                                      class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide">
+                                    {{ checkInDue(booking) === 'overdue' ? 'Overdue' : 'Due today' }}
+                                </span>
+                            </div>
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ booking.nights }} night{{ booking.nights > 1 ? 's' : '' }}</p>
                         </td>
                         <td class="px-4 py-2.5 text-right whitespace-nowrap">
@@ -264,6 +298,13 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                         <p class="text-sm font-medium text-gray-900 dark:text-white">{{ booking.guest_name }}</p>
                         <p class="text-xs text-gray-400 dark:text-gray-500">{{ booking.building?.name }} · {{ booking.unit_type?.name }}</p>
                         <p class="text-xs text-gray-400 dark:text-gray-500">{{ formatDate(booking.check_in) }} → {{ formatDate(booking.check_out) }}</p>
+                        <span v-if="checkInDue(booking)"
+                              :class="checkInDue(booking) === 'overdue'
+                                  ? 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400'
+                                  : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'"
+                              class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide mt-1">
+                            {{ checkInDue(booking) === 'overdue' ? 'Overdue check-in' : 'Due today' }}
+                        </span>
                     </div>
                     <div class="flex flex-col items-end gap-1.5 shrink-0">
                         <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatPrice(booking.total_amount) }}</p>

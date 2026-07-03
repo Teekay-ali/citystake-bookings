@@ -33,6 +33,7 @@ const pendingCautionRefunds   = computed(() => page.props.pendingCautionRefunds 
 const pendingTasks            = computed(() => page.props.pendingTasks ?? 0)
 const unreadMessages = computed(() => page.props.unreadMessages ?? 0)
 const newEnquiries   = computed(() => page.props.newEnquiries ?? 0)
+const dueCheckIns    = computed(() => page.props.dueCheckIns ?? 0)
 
 const sidebarOpen = ref(false)
 const collapsed = ref(
@@ -300,7 +301,7 @@ const navGroups = computed(() => [
     {
         label: 'Bookings', icon: ClipboardList,
         items: [
-            { label: 'All Bookings',     icon: ClipboardList,  route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings' },
+            { label: 'All Bookings',     icon: ClipboardList,  route: 'manage.bookings.index',               match: 'manage.bookings.index|manage.bookings.create|manage.bookings.show|manage.bookings.check-in', permission: 'view-bookings', badge: dueCheckIns.value },
             { label: 'Booking Requests', icon: Inbox,          route: 'manage.enquiries.index',              match: 'manage.enquiries.*',                  permission: 'view-bookings', badge: newEnquiries.value },
             { label: 'Calendar',         icon: CalendarDays,   route: 'manage.bookings.calendar',            match: 'manage.bookings.calendar',            permission: 'manage-availability' },
             { label: 'Availability',     icon: CalendarCheck,  route: 'manage.availability.index',           match: 'manage.availability.*',               permission: 'manage-availability' },

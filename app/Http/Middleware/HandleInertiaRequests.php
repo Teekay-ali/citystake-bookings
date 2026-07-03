@@ -71,6 +71,16 @@ class HandleInertiaRequests extends Middleware
                 ? $applyBuildings(Booking::where('late_checkout_status', 'pending'))->count()
                 : 0,
 
+            // Confirmed, paid arrivals due today (or overdue) that haven't been checked in yet.
+            'dueCheckIns' => fn () => ($user && $isManageRoute && $user->can('view-bookings'))
+                ? $applyBuildings(
+                    Booking::where('status', 'confirmed')
+                           ->where('payment_status', 'paid')
+                           ->whereNull('checked_in_at')
+                           ->whereDate('check_in', '<=', now()->toDateString())
+                )->count()
+                : 0,
+
             'unreadNotifications' => fn () => ($user && $isManageRoute)
                 ? $user->unreadNotifications()->count()
                 : 0,

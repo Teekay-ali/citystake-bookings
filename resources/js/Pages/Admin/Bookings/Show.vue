@@ -10,7 +10,7 @@ import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
     Clock, CheckCircle, ChevronRight,
-    Building2, Calendar, Shield, Receipt, AlertTriangle,
+    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -301,8 +301,31 @@ const guestInitials = computed(() =>
     (props.booking.guest_name ?? '').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
 )
 
+// A completed stay is fully wrapped up once the caution fee is settled (refunded/deducted) or never applied.
+const cautionSettled = computed(() =>
+    props.booking.caution_fee_refunded || Number(props.booking.caution_fee ?? 0) <= 0
+)
+
+const stayCompleted = computed(() =>
+    (props.booking.display_status ?? props.booking.status) === 'completed' && cautionSettled.value
+)
+
+const cautionOutcome = computed(() => {
+    const b = props.booking
+    if (Number(b.caution_fee ?? 0) <= 0) return 'No caution fee held'
+    const deduction = Number(b.caution_fee_deduction ?? 0)
+    if (deduction <= 0) return `Caution fully refunded · ${fmt(b.caution_fee)}`
+    if (deduction >= Number(b.caution_fee)) return `Caution fully forfeited · ${fmt(deduction)}`
+    return `Caution: ${fmt(deduction)} deducted, ${fmt(Number(b.caution_fee) - deduction)} refunded`
+})
+
 const statusConfig = computed(() => {
     const s = props.booking.display_status ?? props.booking.status
+    if (s === 'completed') {
+        return cautionSettled.value
+            ? { label: 'Stay completed',  dot: 'bg-emerald-500', cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' }
+            : { label: 'Caution pending', dot: 'bg-amber-500',   cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' }
+    }
     const map = {
         confirmed:        { label: 'Confirmed',        dot: 'bg-emerald-500', cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
         checked_in:       { label: 'Checked In',       dot: 'bg-blue-500',    cls: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' },
@@ -408,6 +431,18 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                             <span>{{ booking.building?.name }}</span>
                             <span v-if="booking.unit?.unit_number" class="text-gray-400">·</span>
                             <span v-if="booking.unit?.unit_number">Unit {{ booking.unit.unit_number }}<template v-if="booking.unit?.floor">, Floor {{ booking.unit.floor }}</template></span>
+                        </div>
+
+                        <!-- Stay completed / settled badge -->
+                        <div v-if="stayCompleted"
+                             class="flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+                            <Flag class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Stay completed</p>
+                                <p class="text-[11px] text-emerald-600/80 dark:text-emerald-400/70 truncate">
+                                    Checked out<template v-if="booking.checked_out_at"> · {{ fmtDate(booking.checked_out_at) }}</template> · {{ cautionOutcome }}
+                                </p>
+                            </div>
                         </div>
 
                         <!-- Key facts -->

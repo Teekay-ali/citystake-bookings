@@ -6,7 +6,7 @@ use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-class NewBookingNotification extends Notification
+class GuestCheckedOutNotification extends Notification
 {
     use Queueable;
 
@@ -19,9 +19,16 @@ class NewBookingNotification extends Notification
 
     public function toDatabase(object $notifiable): array
     {
+        $unit = $this->booking->unit?->unit_number;
+
         return [
-            'title'   => 'New Booking',
-            'message' => "{$this->booking->guest_name} booked {$this->booking->unitType->name} at {$this->booking->building->name}",
+            'title'   => 'Guest checked out',
+            'message' => "{$this->booking->guest_name}"
+                . ($unit ? " (Unit {$unit})" : '')
+                . ' has checked out'
+                . ($this->booking->caution_fee > 0 && ! $this->booking->caution_fee_refunded
+                    ? ' — caution fee still needs settling.'
+                    : '.'),
             'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'booking',
         ];

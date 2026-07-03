@@ -19,7 +19,7 @@ class GuestCheckedInNotification extends Notification
         return [
             'title'   => 'Guest Checked In',
             'message' => "{$this->booking->guest_name} has checked in to Unit {$this->booking->unit->unit_number} ({$this->booking->booking_reference}).",
-            'url'     => route('manage.bookings.show', $this->booking->id),
+            'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'booking',
         ];
     }

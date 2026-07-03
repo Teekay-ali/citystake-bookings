@@ -22,7 +22,7 @@ class BookingCancelledNotification extends Notification
         return [
             'title'   => 'Booking Cancelled',
             'message' => "{$this->booking->guest_name} cancelled booking {$this->booking->booking_reference}",
-            'url'     => route('manage.bookings.show', $this->booking->id),
+            'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'booking_cancelled',
         ];
     }

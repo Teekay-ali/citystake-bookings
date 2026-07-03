@@ -19,7 +19,7 @@ class LateCheckoutDecisionNotification extends Notification
         return [
             'title'   => "Late Checkout {$label}",
             'message' => "Late checkout for {$this->booking->guest_name} ({$this->booking->booking_reference}) has been {$this->decision}.",
-            'url'     => route('manage.bookings.show', $this->booking->id),
+            'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'late_checkout',
         ];
     }
