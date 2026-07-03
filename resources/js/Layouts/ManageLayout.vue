@@ -446,8 +446,14 @@ function canSeeItem(item) {
             <div class="h-16 flex items-center justify-between px-4 shrink-0">
                 <Link :href="route('home')"
                       :class="navCollapsed ? 'mx-auto' : ''"
-                      class="flex items-center gap-2 min-w-0">
-                    <img src="/citystake-120.png" alt="CityStake Bookings" class="h-8 w-auto dark:invert" />
+                      class="flex items-center gap-2.5 min-w-0">
+                    <span class="grid place-items-center h-10 w-10 rounded-xl shrink-0
+                                 bg-white/50 dark:bg-white/10 backdrop-blur-md
+                                 border border-white/60 dark:border-white/10
+                                 shadow-sm shadow-gray-300/40 dark:shadow-black/30
+                                 ring-1 ring-inset ring-white/40 dark:ring-white/5">
+                        <img src="/citystake-120.png" alt="CityStake Bookings" class="h-6 w-auto dark:invert" />
+                    </span>
                     <span v-if="!navCollapsed" class="text-xl font-light tracking-tight text-gray-900 dark:text-white">CityStake</span>
                 </Link>
 

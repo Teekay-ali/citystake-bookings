@@ -154,6 +154,27 @@ class Booking extends Model
         return $this->morphMany(\App\Models\Document::class, 'documentable')->orderBy('sort_order');
     }
 
+    public function cautionCharges(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CautionFeeCharge::class)->latest();
+    }
+
+    // Total non-voided charges drawn against the caution fee during the stay.
+    public function getCautionUsedAttribute(): float
+    {
+        $charges = $this->relationLoaded('cautionCharges')
+            ? $this->cautionCharges->whereNull('voided_at')
+            : $this->cautionCharges()->active()->get();
+
+        return (float) $charges->sum('amount');
+    }
+
+    // Remaining caution fee available to draw against.
+    public function getCautionAvailableAttribute(): float
+    {
+        return max(0, (float) $this->caution_fee - $this->caution_used);
+    }
+
     // Helper methods
     public static function generateReference(): string
     {

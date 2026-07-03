@@ -45,6 +45,7 @@ class FinancialTransaction extends Model
             'booking'        => 'Booking Payment',
             'late_checkout'  => 'Late Checkout Fee',
             'caution_fee_deduction'=> 'Caution Fee Deduction',
+            'restaurant'     => 'Restaurant / Food',
             'maintenance'    => 'Maintenance',
             'procurement'    => 'Procurement',
             'manual_income'  => 'Manual Income',

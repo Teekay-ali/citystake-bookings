@@ -18,6 +18,7 @@ const props = defineProps({
     transactions:       Object,
     summary:            Object,
     trend:              Array,
+    incomeBreakdown:    { type: Array, default: () => [] },
     buildings:          Array,
     categoryLabels:     Object,
     filters:            Object,
@@ -410,6 +411,42 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                 <div v-else class="h-[240px] flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
                     Figures hidden
                 </div>
+            </div>
+        </div>
+
+        <!-- ── Income breakdown ── -->
+        <div v-if="incomeBreakdown.length" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Income breakdown</h2>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">By category for this period · tap a row to filter the ledger</p>
+                </div>
+                <span class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
+                    {{ financialsVisible ? formatAmount(summary.total_income) : '₦ ••••••' }}
+                </span>
+            </div>
+            <div class="space-y-2.5">
+                <button v-for="row in incomeBreakdown" :key="row.category"
+                        @click="typeFilter = 'income'; catFilter = row.category"
+                        class="w-full text-left group">
+                    <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                            {{ row.label }}
+                            <span class="text-gray-400 dark:text-gray-500 font-normal">· {{ row.share }}%</span>
+                        </span>
+                        <span class="tabular-nums text-gray-900 dark:text-white">
+                            {{ financialsVisible ? formatAmount(row.amount) : '₦ ••••' }}
+                        </span>
+                    </div>
+                    <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                        <div class="h-full rounded-full transition-all"
+                             :class="row.category === 'restaurant' ? 'bg-emerald-500'
+                                 : row.category === 'caution_fee_deduction' ? 'bg-amber-500'
+                                 : row.category === 'booking' ? 'bg-gray-900 dark:bg-white'
+                                 : 'bg-gray-400 dark:bg-gray-600'"
+                             :style="{ width: Math.max(2, row.share) + '%' }"></div>
+                    </div>
+                </button>
             </div>
         </div>
 

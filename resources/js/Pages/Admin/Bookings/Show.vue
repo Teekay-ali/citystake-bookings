@@ -2,6 +2,7 @@
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import DocumentManager from '@/Components/DocumentManager.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
+import CautionChargesModal from './Partials/CautionChargesModal.vue'
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
 import { useAppToast } from '@/Composables/useAppToast'
@@ -167,6 +168,7 @@ function requestLateCheckout() {
 
 // ── Caution fee ────────────────────────────────────────────────
 const isRefunding            = ref(false)
+const showCautionModal       = ref(false)
 const showCautionForm        = ref(false)
 const cautionAction          = ref('full_refund')
 const cautionDeductionAmount = ref(null)
@@ -332,8 +334,8 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
 
         <div class="p-4 lg:p-6">
 
-            <!-- ── Header row ── -->
-            <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+            <!-- ── Header row (sticky) ── -->
+            <div class="sticky top-0 z-20 -mx-4 lg:-mx-6 -mt-4 lg:-mt-6 px-4 lg:px-6 py-3 mb-5 flex items-center justify-between gap-3 flex-wrap bg-white/90 dark:bg-gray-950/90 backdrop-blur border-b border-gray-100 dark:border-gray-800">
                 <div class="flex items-center gap-3 min-w-0">
                     <Link :href="route('manage.bookings.index')"
                           class="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all shrink-0">
@@ -598,7 +600,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                 </div>
 
                 <!-- ════ Actions rail ════ -->
-                <div class="space-y-3 mt-4 lg:mt-0 lg:sticky lg:top-4">
+                <div class="space-y-3 mt-4 lg:mt-0 lg:sticky lg:top-20">
 
                     <!-- Check-in panel -->
                     <div v-if="booking.status === 'confirmed' && booking.payment_status === 'paid' && can('confirm-checkin')" :class="card" class="p-4">
@@ -744,6 +746,23 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                     <div v-if="booking.caution_fee > 0 && !booking.caution_fee_refunded" :class="card" class="p-4">
                         <p class="text-xs font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5"><Shield class="w-3.5 h-3.5 text-amber-500" /> Caution Fee · {{ fmt(booking.caution_fee) }}</p>
 
+                        <!-- In-stay balance + manage charges -->
+                        <div v-if="can('manage-bookings') || can('confirm-checkin')" class="mb-3">
+                            <div class="flex items-center justify-between text-[11px] mb-1">
+                                <span class="text-gray-500 dark:text-gray-400">Available</span>
+                                <span class="font-semibold text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.caution_available ?? booking.caution_fee) }}</span>
+                            </div>
+                            <div class="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                                <div class="h-full rounded-full"
+                                     :class="(booking.caution_used ?? 0) >= booking.caution_fee ? 'bg-red-500' : (booking.caution_used ?? 0) / booking.caution_fee > 0.75 ? 'bg-amber-500' : 'bg-emerald-500'"
+                                     :style="{ width: Math.min(100, ((booking.caution_used ?? 0) / booking.caution_fee) * 100) + '%' }"></div>
+                            </div>
+                            <button @click="showCautionModal = true"
+                                    class="mt-2 w-full py-2 text-xs font-medium border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-all">
+                                Manage charges<span v-if="(booking.caution_charges?.filter(c => !c.voided_at).length)"> · {{ booking.caution_charges.filter(c => !c.voided_at).length }}</span>
+                            </button>
+                        </div>
+
                         <!-- PENDING REQUEST: receptionist waiting -->
                         <div v-if="booking.caution_refund_requested && !can('manage-bookings')" class="px-3 py-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                             <p class="text-xs font-medium text-blue-700 dark:text-blue-400">Refund request submitted</p>
@@ -775,9 +794,9 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                                 </div>
                                 <div v-if="cautionAction === 'partial_deduction'">
                                     <label class="block text-xs text-gray-500 mb-1">Deduction Amount (₦)</label>
-                                    <input v-model.number="cautionDeductionAmount" type="number" min="1" :max="booking.caution_fee - 1"
+                                    <input v-model.number="cautionDeductionAmount" type="number" min="1" :max="(booking.caution_available ?? booking.caution_fee) - 1"
                                            class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
-                                    <p v-if="cautionDeductionAmount" class="mt-1 text-[11px] text-gray-400">Refund: {{ fmt(booking.caution_fee - cautionDeductionAmount) }}</p>
+                                    <p v-if="cautionDeductionAmount" class="mt-1 text-[11px] text-gray-400">Refund: {{ fmt((booking.caution_available ?? booking.caution_fee) - cautionDeductionAmount) }}</p>
                                 </div>
                                 <div v-if="cautionAction !== 'full_refund'">
                                     <label class="block text-xs text-gray-500 mb-1">Reason <span class="text-red-500">*</span></label>
@@ -803,9 +822,9 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                                 </div>
                                 <div v-if="cautionAction === 'partial_deduction'">
                                     <label class="block text-xs text-gray-500 mb-1">Deduction Amount (₦)</label>
-                                    <input v-model.number="cautionDeductionAmount" type="number" min="1" :max="booking.caution_fee - 1"
+                                    <input v-model.number="cautionDeductionAmount" type="number" min="1" :max="(booking.caution_available ?? booking.caution_fee) - 1"
                                            class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
-                                    <p v-if="cautionDeductionAmount" class="mt-1 text-[11px] text-gray-400">Refund: {{ fmt(booking.caution_fee - cautionDeductionAmount) }}</p>
+                                    <p v-if="cautionDeductionAmount" class="mt-1 text-[11px] text-gray-400">Refund: {{ fmt((booking.caution_available ?? booking.caution_fee) - cautionDeductionAmount) }}</p>
                                 </div>
                                 <div v-if="cautionAction !== 'full_refund'">
                                     <label class="block text-xs text-gray-500 mb-1">Reason <span class="text-red-500">*</span></label>
@@ -895,5 +914,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
             message="Are you sure you want to cancel this booking? This will free up the unit and notify the guest. This action cannot be undone."
             confirm-text="Yes, Cancel Booking" cancel-text="Keep Booking" variant="danger"
             @confirm="cancelBooking" @close="showCancelModal = false" />
+
+        <CautionChargesModal :show="showCautionModal" :booking="booking" @close="showCautionModal = false" />
     </ManageLayout>
 </template>

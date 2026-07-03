@@ -85,6 +85,25 @@ class FinancialController extends Controller
             ->whereBetween('transaction_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->sum('amount');
 
+        // Income by category for the period (surfaces restaurant + caution-fee charges)
+        $incomeByCategory = FinancialTransaction::whereIn('building_id', $scopedIds)
+            ->where('type', 'income')
+            ->whereBetween('transaction_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->selectRaw('category, SUM(amount) as total')
+            ->groupBy('category')
+            ->pluck('total', 'category');
+
+        $labels = FinancialTransaction::categoryLabels();
+        $incomeBreakdown = collect($incomeByCategory)
+            ->map(fn($total, $cat) => [
+                'category' => $cat,
+                'label'    => $labels[$cat] ?? ucfirst(str_replace('_', ' ', $cat)),
+                'amount'   => (float) $total,
+                'share'    => $income > 0 ? round(($total / $income) * 100, 1) : 0,
+            ])
+            ->sortByDesc('amount')
+            ->values();
+
         // 12-month trend
         $trend = $this->getMonthlyTrend($scopedIds);
 
@@ -100,6 +119,7 @@ class FinancialController extends Controller
                 'pending_count'  => $pendingMaintenance->count() + $pendingProcurement->count(),
             ],
             'trend'            => $trend,
+            'incomeBreakdown'  => $incomeBreakdown,
             'buildings'        => $buildings,
             'categoryLabels'   => FinancialTransaction::categoryLabels(),
             'filters'          => [

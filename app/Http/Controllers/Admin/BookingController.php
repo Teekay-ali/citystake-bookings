@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AuditLog;
+use App\Models\CautionFeeCharge;
 use App\Models\Unit;
 use App\Notifications\CautionRefundProcessedNotification;
 use App\Notifications\CautionRefundRequestedNotification;
@@ -322,12 +323,28 @@ class BookingController extends Controller
             'messages.sender',
             'adjustments.appliedBy',
             'documents.uploadedBy',
+            'cautionCharges.recordedBy',
+            'cautionCharges.voidedBy',
         ]);
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => array_merge($booking->toArray(), [
                 'checked_in_by_name'  => $booking->checkedInBy?->name,
                 'checked_out_by_name' => $booking->checkedOutBy?->name,
+                'caution_used'        => $booking->caution_used,
+                'caution_available'   => $booking->caution_available,
+                'caution_charges'     => $booking->cautionCharges->map(fn($c) => [
+                    'id'             => $c->id,
+                    'category'       => $c->category,
+                    'category_label' => \App\Models\CautionFeeCharge::CATEGORIES[$c->category] ?? $c->category,
+                    'description'    => $c->description,
+                    'amount'         => $c->amount,
+                    'recorded_by'    => $c->recordedBy?->name,
+                    'created_at'     => $c->created_at,
+                    'voided_at'      => $c->voided_at,
+                    'voided_by'      => $c->voidedBy?->name,
+                    'void_reason'    => $c->void_reason,
+                ]),
                 'unreadMessageCount'  => $booking->messages()
                     ->where('sender_type', 'guest')
                     ->whereNull('read_at')
@@ -834,11 +851,12 @@ class BookingController extends Controller
             'deduction_amount' => 'required_if:action,partial_deduction|nullable|numeric|min:1',
         ]);
 
+        // Deductions here apply to the remaining balance (in-stay charges are already settled).
         if (
             $validated['action'] === 'partial_deduction' &&
-            (float) $validated['deduction_amount'] >= (float) $booking->caution_fee
+            (float) $validated['deduction_amount'] >= (float) $booking->caution_available
         ) {
-            return back()->with('error', 'Deduction cannot equal or exceed the full caution fee. Use Full Forfeit instead.');
+            return back()->with('error', 'Deduction cannot equal or exceed the remaining caution balance. Use Full Forfeit instead.');
         }
 
         $booking->update([
@@ -884,37 +902,45 @@ class BookingController extends Controller
         $deductionAmount = $booking->caution_refund_deduction_amount ?? $request->input('deduction_amount');
         $reason          = $booking->caution_refund_reason ?? $request->input('reason');
 
-        $deduction = 0;
+        // Amounts already drawn during the stay are settled/recorded via the charges ledger.
+        // The values below apply to the remaining balance only.
+        $alreadyUsed = $booking->caution_used;
+        $available   = $booking->caution_available;
+        $deduction   = 0; // extra amount deducted now (recorded as income now)
 
         switch ($action) {
             case 'full_refund':
                 $deduction      = 0;
-                $successMessage = 'Caution fee marked as fully refunded.';
+                $successMessage = $available > 0
+                    ? '₦' . number_format($available, 0) . ' refunded to the guest.'
+                    : 'Caution fee settled — nothing left to refund.';
                 break;
 
             case 'partial_deduction':
                 $deduction = (float) $deductionAmount;
-                if ($deduction <= 0 || $deduction >= (float) $booking->caution_fee) {
+                if ($deduction <= 0 || $deduction >= $available) {
                     return back()->with('error', 'Invalid deduction amount.');
                 }
                 $successMessage = '₦' . number_format($deduction, 0) . ' deducted. ₦' .
-                    number_format($booking->caution_fee - $deduction, 0) . ' refunded.';
+                    number_format($available - $deduction, 0) . ' refunded.';
                 break;
 
             case 'full_forfeit':
-                $deduction      = (float) $booking->caution_fee;
-                $successMessage = 'Caution fee fully forfeited and recorded as income.';
+                $deduction      = $available;
+                $successMessage = 'Remaining caution balance fully forfeited and recorded as income.';
                 break;
 
             default:
                 return back()->with('error', 'Invalid action.');
         }
 
+        $totalKept = $alreadyUsed + $deduction;
+
         $booking->update([
             'caution_fee_refunded'         => true,
             'caution_fee_refunded_at'      => now(),
             'caution_fee_refunded_by'      => auth()->id(),
-            'caution_fee_deduction'        => $deduction > 0 ? $deduction : null,
+            'caution_fee_deduction'        => $totalKept > 0 ? $totalKept : null,
             'caution_fee_deduction_reason' => $reason,
         ]);
 
@@ -944,6 +970,110 @@ class BookingController extends Controller
         NotificationService::send($recipients, new CautionRefundProcessedNotification($booking));
 
         return back()->with('success', $successMessage);
+    }
+
+    // ── In-stay charges against the caution fee (food, damages, etc.) ──
+
+    public function storeCautionCharge(Request $request, Booking $booking)
+    {
+        $user = auth()->user();
+        abort_unless($user->can('manage-bookings'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
+
+        if ($booking->caution_fee <= 0) {
+            return back()->with('error', 'This booking has no caution fee to charge against.');
+        }
+        if ($booking->caution_fee_refunded) {
+            return back()->with('error', 'The caution fee has already been settled; no further charges can be added.');
+        }
+
+        $validated = $request->validate([
+            'category'    => 'required|in:food,damage,other',
+            'description' => 'required|string|max:255',
+            'amount'      => 'required|numeric|min:0.01',
+        ]);
+
+        $available = $booking->caution_available;
+        if ((float) $validated['amount'] > $available) {
+            return back()->with('error',
+                'Charge exceeds the remaining caution fee (₦' . number_format($available, 0) . ' available).');
+        }
+
+        $charge = null;
+        \DB::transaction(function () use (&$charge, $booking, $validated, $user) {
+            $txn = FinancialTransaction::create([
+                'building_id'      => $booking->building_id,
+                'recorded_by'      => $user->id,
+                'type'             => 'income',
+                'category'         => CautionFeeCharge::INCOME_CATEGORY[$validated['category']],
+                'reference_type'   => Booking::class,
+                'reference_id'     => $booking->id,
+                'description'      => CautionFeeCharge::CATEGORIES[$validated['category']]
+                    . " — {$booking->guest_name} ({$booking->booking_reference}): {$validated['description']}",
+                'amount'           => $validated['amount'],
+                'payment_method'   => 'caution_fee',
+                'transaction_date' => now()->toDateString(),
+            ]);
+
+            $charge = $booking->cautionCharges()->create([
+                'category'                 => $validated['category'],
+                'description'              => $validated['description'],
+                'amount'                   => $validated['amount'],
+                'recorded_by'              => $user->id,
+                'financial_transaction_id' => $txn->id,
+            ]);
+        });
+
+        AuditLog::log('booking.caution_charge_added', $booking, [], [
+            'category' => $charge->category,
+            'amount'   => $charge->amount,
+            'by'       => $user->id,
+        ]);
+
+        return back()->with('success',
+            '₦' . number_format((float) $validated['amount'], 0) . ' charged to the caution fee. ₦'
+            . number_format($booking->fresh()->caution_available, 0) . ' remaining.');
+    }
+
+    public function voidCautionCharge(Request $request, Booking $booking, CautionFeeCharge $charge)
+    {
+        $user = auth()->user();
+        abort_unless($user->can('manage-bookings'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
+        abort_unless($charge->booking_id === $booking->id, 404);
+
+        if ($charge->isVoided()) {
+            return back()->with('error', 'This charge has already been voided.');
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:255',
+        ]);
+
+        \DB::transaction(function () use ($charge, $validated, $user) {
+            // Reverse the recognised income.
+            $charge->financialTransaction?->delete();
+
+            $charge->update([
+                'voided_at'                => now(),
+                'voided_by'                => $user->id,
+                'void_reason'              => $validated['reason'],
+                'financial_transaction_id' => null,
+            ]);
+        });
+
+        AuditLog::log('booking.caution_charge_voided', $booking, [], [
+            'charge_id' => $charge->id,
+            'amount'    => $charge->amount,
+            'reason'    => $validated['reason'],
+            'by'        => $user->id,
+        ]);
+
+        return back()->with('success', 'Charge voided and reversed.');
     }
 
 }
