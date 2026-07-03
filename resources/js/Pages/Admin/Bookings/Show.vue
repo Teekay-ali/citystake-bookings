@@ -34,7 +34,7 @@ const checkInForm = useForm({
     checkin_notes:          '',
 })
 function submitCheckIn() {
-    checkInForm.post(route('manage.bookings.check-in', props.booking.id), { preserveScroll: true })
+    checkInForm.post(route('manage.bookings.check-in', props.booking.booking_reference), { preserveScroll: true })
 }
 
 // ── Check-out ──────────────────────────────────────────────────
@@ -42,7 +42,7 @@ const showCheckOutModal = ref(false)
 const isCheckingOut     = ref(false)
 function confirmCheckOut() {
     isCheckingOut.value = true
-    router.post(route('manage.bookings.check-out', props.booking.id), {}, {
+    router.post(route('manage.bookings.check-out', props.booking.booking_reference), {}, {
         onFinish: () => { isCheckingOut.value = false; showCheckOutModal.value = false },
     })
 }
@@ -52,7 +52,7 @@ const showCancelModal = ref(false)
 const isCancelling    = ref(false)
 function cancelBooking() {
     isCancelling.value = true
-    router.post(route('manage.bookings.cancel', props.booking.id), {}, {
+    router.post(route('manage.bookings.cancel', props.booking.booking_reference), {}, {
         onSuccess: () => { showCancelModal.value = false },
         onError:   () => toast.error('Failed to cancel booking.'),
         onFinish:  () => { isCancelling.value = false },
@@ -71,14 +71,14 @@ const adjForm = useForm({
 })
 
 function submitAdjustment() {
-    adjForm.post(route('manage.bookings.adjustments.store', props.booking.id), {
+    adjForm.post(route('manage.bookings.adjustments.store', props.booking.booking_reference), {
         preserveScroll: true,
         onSuccess: () => { showAdjForm.value = false; adjForm.reset() },
     })
 }
 function deleteAdjustment(adj) {
     if (!confirm('Remove this adjustment? This will also delete the financial transaction record.')) return
-    router.delete(route('manage.bookings.adjustments.destroy', [props.booking.id, adj.id]), { preserveScroll: true })
+    router.delete(route('manage.bookings.adjustments.destroy', [props.booking.booking_reference, adj.id]), { preserveScroll: true })
 }
 
 // ── Pause & Resume ─────────────────────────────────────────────
@@ -94,7 +94,7 @@ const isResuming      = ref(false)
 
 function submitPause() {
     isPausing.value = true
-    router.post(route('manage.bookings.pause', props.booking.id), {
+    router.post(route('manage.bookings.pause', props.booking.booking_reference), {
         paused_departure: pauseDeparture.value,
     }, {
         onSuccess: () => { showPauseForm.value = false },
@@ -123,7 +123,7 @@ async function loadResumeUnits() {
 
 function submitResume() {
     isResuming.value = true
-    router.post(route('manage.bookings.resume', props.booking.id), {
+    router.post(route('manage.bookings.resume', props.booking.booking_reference), {
         resume_check_in: resumeCheckIn.value,
         unit_id:         resumeUnitId.value || null,
     }, {
@@ -139,7 +139,7 @@ const isLateCheckoutProcessing = ref(false)
 function approveLateCheckout(action) {
     if (isLateCheckoutProcessing.value) return
     isLateCheckoutProcessing.value = true
-    router.post(route('manage.bookings.late-checkout.approve', props.booking.id), {
+    router.post(route('manage.bookings.late-checkout.approve', props.booking.booking_reference), {
         action,
         hours: action === 'approved' ? lateCheckoutHours.value : null,
     }, {
@@ -151,7 +151,7 @@ function approveLateCheckout(action) {
 function settleLateCheckout() {
     if (isLateCheckoutProcessing.value) return
     isLateCheckoutProcessing.value = true
-    router.post(route('manage.bookings.late-checkout.settle', props.booking.id), {}, {
+    router.post(route('manage.bookings.late-checkout.settle', props.booking.booking_reference), {}, {
         preserveScroll: true,
         onFinish: () => { isLateCheckoutProcessing.value = false },
     })
@@ -160,7 +160,7 @@ function settleLateCheckout() {
 function requestLateCheckout() {
     if (isLateCheckoutProcessing.value) return
     isLateCheckoutProcessing.value = true
-    router.post(route('manage.bookings.late-checkout.request', props.booking.id), {}, {
+    router.post(route('manage.bookings.late-checkout.request', props.booking.booking_reference), {}, {
         preserveScroll: true,
         onFinish: () => { isLateCheckoutProcessing.value = false },
     })
@@ -177,7 +177,7 @@ const cautionDeductionReason = ref('')
 // Receptionist submits request
 function submitCautionRequest() {
     isRefunding.value = true
-    router.post(route('manage.bookings.caution-fee.request', props.booking.id), {
+    router.post(route('manage.bookings.caution-fee.request', props.booking.booking_reference), {
         action:           cautionAction.value,
         reason:           cautionDeductionReason.value,
         deduction_amount: cautionDeductionAmount.value,
@@ -190,7 +190,7 @@ function submitCautionRequest() {
 // Manager approves pending request (no extra data needed — uses stored values)
 function approveCautionRequest() {
     isRefunding.value = true
-    router.post(route('manage.bookings.caution-fee.refund', props.booking.id), {}, {
+    router.post(route('manage.bookings.caution-fee.refund', props.booking.booking_reference), {}, {
         onFinish: () => { isRefunding.value = false },
     })
 }
@@ -198,7 +198,7 @@ function approveCautionRequest() {
 // Manager processes directly (no prior request)
 function submitCautionDirect() {
     isRefunding.value = true
-    router.post(route('manage.bookings.caution-fee.refund', props.booking.id), {
+    router.post(route('manage.bookings.caution-fee.refund', props.booking.booking_reference), {
         action:           cautionAction.value,
         reason:           cautionDeductionReason.value,
         deduction_amount: cautionDeductionAmount.value,
@@ -277,7 +277,7 @@ watch(() => modifyForm.nights, (n) => {
 })
 
 function submitModify() {
-    modifyForm.post(route('manage.bookings.modify', props.booking.id), {
+    modifyForm.post(route('manage.bookings.modify', props.booking.booking_reference), {
         preserveScroll: true,
         onSuccess: () => { showModifyForm.value = false },
     })
@@ -353,7 +353,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <a :href="route('manage.bookings.invoice', booking.id)" target="_blank"
+                    <a :href="route('manage.bookings.invoice', booking.booking_reference)" target="_blank"
                        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                         <Download class="w-3.5 h-3.5" /> Invoice
                     </a>

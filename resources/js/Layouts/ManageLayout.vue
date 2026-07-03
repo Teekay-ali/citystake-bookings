@@ -306,6 +306,7 @@ const navGroups = computed(() => [
             { label: 'Availability',     icon: CalendarCheck,  route: 'manage.availability.index',           match: 'manage.availability.*',               permission: 'manage-availability' },
             { label: 'Guest Messages',   icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                   permission: 'manage-bookings', badge: unreadMessages.value },
             { label: 'Late Checkouts',   icon: Clock,          route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'approve-late-checkout', badge: pendingCount.value },
+            { label: 'Caution Fees',     icon: Banknote,       route: 'manage.financials.deposits',          match: 'manage.financials.deposits',          permission: 'view-financials', badge: pendingCautionRefunds.value },
         ]
     },
     {
@@ -331,7 +332,6 @@ const navGroups = computed(() => [
         items: [
             { label: 'Financials',       icon: DollarSign,  route: 'manage.financials.index',        match: 'manage.financials.index|manage.financials.manual|manage.financials.pay|manage.financials.export', permission: 'view-financials' },
             { label: 'Payment Approvals', icon: BadgeCheck, route: 'manage.payment-approvals.index', match: 'manage.payment-approvals.*', permission: 'manage-payment-approvals', badge: pendingPaymentApprovals.value },
-            { label: 'Caution Fees',     icon: Banknote,    route: 'manage.financials.deposits',     match: 'manage.financials.deposits', permission: 'view-financials', badge: pendingCautionRefunds.value },
             { label: 'Emergency Fund',   icon: ShieldAlert, route: 'manage.emergency-fund.index',    match: 'manage.emergency-fund.*', permission: 'manage-emergency-fund', badge: pendingEmergencyFund.value },
         ]
     },

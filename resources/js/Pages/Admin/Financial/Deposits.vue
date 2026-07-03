@@ -138,7 +138,7 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
                             </span>
                         </td>
                         <td class="px-5 py-3.5 text-right">
-                            <Link :href="route('manage.bookings.show', booking.id)"
+                            <Link :href="route('manage.bookings.show', booking.booking_reference)"
                                   class="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                 View <ArrowRight class="w-3 h-3" />
                             </Link>
@@ -152,7 +152,7 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
             <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
                 <div v-if="!deposits.data.length" class="p-8 text-center text-sm text-gray-400">No deposits found.</div>
                 <Link v-for="booking in deposits.data" :key="booking.id"
-                      :href="route('manage.bookings.show', booking.id)"
+                      :href="route('manage.bookings.show', booking.booking_reference)"
                       class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                     <div class="min-w-0">
                         <p class="text-xs font-mono font-medium text-gray-900 dark:text-white">{{ booking.booking_reference }}</p>

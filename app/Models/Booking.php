@@ -175,6 +175,22 @@ class Booking extends Model
         return max(0, (float) $this->caution_fee - $this->caution_used);
     }
 
+    // Expose the booking via its non-sequential reference in URLs (not the PK id).
+    public function getRouteKeyName(): string
+    {
+        return 'booking_reference';
+    }
+
+    // Resolve by reference; fall back to a numeric id so legacy links never break.
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $query = $this->where('booking_reference', $value);
+        if (is_numeric($value)) {
+            $query->orWhere('id', $value);
+        }
+        return $query->firstOrFail();
+    }
+
     // Helper methods
     public static function generateReference(): string
     {

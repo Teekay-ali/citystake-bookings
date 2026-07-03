@@ -173,7 +173,7 @@ function guestName(conv) {
                             {{ activeConversation.unit_type?.name }}
                         </p>
                     </div>
-                    <Link :href="route('manage.bookings.show', activeConversation.id)"
+                    <Link :href="route('manage.bookings.show', activeConversation.booking_reference)"
                           class="text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0 transition-colors">
                         View booking →
                     </Link>

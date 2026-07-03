@@ -133,7 +133,7 @@ function formatAmount(n) {
                                 <input v-model.number="approveHours" type="number" min="1" max="24" placeholder="hrs"
                                        class="w-16 px-2 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-xs bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none" />
                                 <Link
-                                    :href="route('manage.bookings.late-checkout.approve', booking.id)"
+                                    :href="route('manage.bookings.late-checkout.approve', booking.booking_reference)"
                                     method="post"
                                     as="button"
                                     :data="{ action: 'approved', hours: approveHours }"
@@ -149,7 +149,7 @@ function formatAmount(n) {
                                 Approve
                             </button>
                             <Link
-                                :href="route('manage.bookings.late-checkout.approve', booking.id)"
+                                :href="route('manage.bookings.late-checkout.approve', booking.booking_reference)"
                                 method="post"
                                 as="button"
                                 :data="{ action: 'rejected' }"
@@ -161,7 +161,7 @@ function formatAmount(n) {
 
                         <Link
                             v-else-if="booking.late_checkout_status === 'approved'"
-                            :href="route('manage.bookings.late-checkout.settle', booking.id)"
+                            :href="route('manage.bookings.late-checkout.settle', booking.booking_reference)"
                             method="post"
                             as="button"
                             class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-all">
@@ -169,7 +169,7 @@ function formatAmount(n) {
                         </Link>
 
                         <Link
-                            :href="route('manage.bookings.show', booking.id)"
+                            :href="route('manage.bookings.show', booking.booking_reference)"
                             class="p-2 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-all">
                             <ChevronRight class="w-3.5 h-3.5" />
                         </Link>

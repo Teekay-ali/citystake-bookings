@@ -245,7 +245,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
 
                 <p class="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Upcoming check-ins</p>
                 <div v-if="upcomingCheckIns?.length > 0" class="space-y-1">
-                    <Link v-for="booking in upcomingCheckIns.slice(0, 5)" :key="booking.id" :href="route('manage.bookings.show', booking.id)"
+                    <Link v-for="booking in upcomingCheckIns.slice(0, 5)" :key="booking.id" :href="route('manage.bookings.show', booking.booking_reference)"
                           class="flex items-center gap-2.5 py-2 border-b border-gray-100 dark:border-gray-800 last:border-0 hover:opacity-70 transition-opacity">
                         <div class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 text-[10px] font-semibold text-gray-600 dark:text-gray-400">{{ initials(booking.guest_name) }}</div>
                         <div class="flex-1 min-w-0">
@@ -301,7 +301,7 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
                 </div>
 
                 <div v-if="recentBookings?.length">
-                    <Link v-for="booking in recentBookings.slice(0, 4)" :key="booking.id" :href="route('manage.bookings.show', booking.id)"
+                    <Link v-for="booking in recentBookings.slice(0, 4)" :key="booking.id" :href="route('manage.bookings.show', booking.booking_reference)"
                           class="flex items-center gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0 hover:opacity-70 transition-opacity">
                         <div class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 text-[10px] font-semibold text-gray-600 dark:text-gray-400">{{ initials(booking.guest_name) }}</div>
                         <div class="flex-1 min-w-0">

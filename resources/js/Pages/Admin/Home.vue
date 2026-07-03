@@ -161,7 +161,7 @@ function formatDate(d) {
                                         Unit {{ booking.unit?.unit_number }}
                                     </p>
                                 </div>
-                                <Link :href="route('manage.bookings.show', booking.id)"
+                                <Link :href="route('manage.bookings.show', booking.booking_reference)"
                                       class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 shrink-0">
                                     View →
                                 </Link>
@@ -199,7 +199,7 @@ function formatDate(d) {
                             <Link
                                 v-for="booking in currentlyOccupied"
                                 :key="booking.id"
-                                :href="route('manage.bookings.show', booking.id)"
+                                :href="route('manage.bookings.show', booking.booking_reference)"
                                 class="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
 
                                 <!-- Unit badge -->

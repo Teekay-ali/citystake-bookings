@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import Modal from '@/Components/Modal.vue'
+import NumberField from '@/Components/NumberField.vue'
 import { X, Plus, Utensils, Hammer, Tag, Ban, ShieldCheck } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -13,10 +14,13 @@ const emit = defineEmits(['close'])
 const fmt = (v) => '₦' + Number(v || 0).toLocaleString('en-NG')
 
 const categories = [
-    { key: 'food',   label: 'Food / Restaurant', icon: Utensils },
-    { key: 'damage', label: 'Damaged Item',      icon: Hammer },
-    { key: 'other',  label: 'Other',             icon: Tag },
+    { key: 'food',   label: 'Food / Restaurant', icon: Utensils, placeholder: 'e.g. Dinner at the restaurant' },
+    { key: 'damage', label: 'Damaged Item',      icon: Hammer,   placeholder: 'e.g. Broken TV remote' },
+    { key: 'other',  label: 'Other',             icon: Tag,      placeholder: 'What is this charge for?' },
 ]
+const descPlaceholder = computed(() =>
+    categories.find(c => c.key === form.value.category)?.placeholder ?? 'What is this charge for?'
+)
 const catMeta = {
     food:   { label: 'Food / Restaurant', cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', icon: Utensils },
     damage: { label: 'Damaged Item',      cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400',                 icon: Hammer },
@@ -42,14 +46,21 @@ watch(() => props.show, (open) => {
 
 const overBudget = computed(() => Number(form.value.amount) > available.value)
 
+const isOther = computed(() => form.value.category === 'other')
+
 function submit() {
     error.value = ''
-    if (!form.value.description.trim()) { error.value = 'Enter a description.'; return }
+    // Food / Damage use the category as their description; only "Other" needs a typed note.
+    const description = isOther.value
+        ? form.value.description.trim()
+        : categories.find(c => c.key === form.value.category).label
+    if (isOther.value && !description) { error.value = 'Describe the charge.'; return }
     if (!form.value.amount || form.value.amount <= 0) { error.value = 'Enter a valid amount.'; return }
     if (overBudget.value) { error.value = `Only ${fmt(available.value)} remaining.`; return }
 
     submitting.value = true
-    router.post(route('manage.bookings.caution-charges.store', props.booking.id), { ...form.value }, {
+    router.post(route('manage.bookings.caution-charges.store', props.booking.booking_reference),
+        { category: form.value.category, description, amount: form.value.amount }, {
         preserveScroll: true,
         onSuccess: () => { form.value = { category: 'food', description: '', amount: null } },
         onFinish: () => { submitting.value = false },
@@ -65,7 +76,7 @@ function cancelVoid() { voidingId.value = null; voidReason.value = '' }
 
 function confirmVoid(charge) {
     if (!voidReason.value.trim()) return
-    router.post(route('manage.bookings.caution-charges.void', [props.booking.id, charge.id]),
+    router.post(route('manage.bookings.caution-charges.void', [props.booking.booking_reference, charge.id]),
         { reason: voidReason.value }, {
         preserveScroll: true,
         onSuccess: () => { voidingId.value = null; voidReason.value = '' },
@@ -111,8 +122,18 @@ function confirmVoid(charge) {
                 </div>
             </div>
 
+            <!-- Settled / depleted notices -->
+            <div v-if="booking.caution_fee_refunded"
+                 class="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 px-4 py-3 mb-5 text-xs text-gray-500 dark:text-gray-400">
+                The caution fee has been settled — no further charges can be added.
+            </div>
+            <div v-else-if="available <= 0"
+                 class="rounded-xl border border-amber-200/70 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-900/20 px-4 py-3 mb-5 text-xs text-amber-700 dark:text-amber-400">
+                The full caution fee has been used. Void a charge to free up balance.
+            </div>
+
             <!-- Add charge -->
-            <form v-if="!booking.caution_fee_refunded" @submit.prevent="submit" class="space-y-3 mb-5">
+            <form v-if="!booking.caution_fee_refunded && available > 0" @submit.prevent="submit" class="space-y-3 mb-5">
                 <div class="grid grid-cols-3 gap-2">
                     <button v-for="c in categories" :key="c.key" type="button" @click="form.category = c.key"
                             :class="['flex flex-col items-center gap-1 py-2.5 rounded-lg border text-xs font-medium transition-all',
@@ -124,20 +145,17 @@ function confirmVoid(charge) {
                     </button>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-[1fr_10rem] gap-2">
-                    <input v-model="form.description" type="text" placeholder="What is this charge for?"
+                <div class="grid grid-cols-1 gap-2" :class="isOther ? 'sm:grid-cols-[1fr_10rem]' : ''">
+                    <input v-if="isOther" v-model="form.description" type="text" :placeholder="descPlaceholder"
                            class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all" />
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₦</span>
-                        <input v-model.number="form.amount" type="number" min="1" :max="available" step="0.01" placeholder="0"
-                               :class="['w-full pl-7 pr-3 py-2 border rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 tabular-nums transition-all',
-                                   overBudget ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white']" />
-                    </div>
+                    <NumberField v-model="form.amount" prefix="₦" :min="0" :max="available" :step="1000" :invalid="overBudget" />
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <p class="text-xs" :class="error ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'">
-                        {{ error || `Cannot exceed ${fmt(available)} remaining.` }}
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs" :class="error ? 'text-red-600' : overBudget ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'">
+                        <template v-if="error">{{ error }}</template>
+                        <template v-else-if="form.amount > 0 && !overBudget">Balance after: <span class="font-medium text-gray-600 dark:text-gray-300">{{ fmt(available - form.amount) }}</span></template>
+                        <template v-else>Cannot exceed {{ fmt(available) }} remaining.</template>
                     </p>
                     <button type="submit" :disabled="submitting || available <= 0"
                             class="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all">

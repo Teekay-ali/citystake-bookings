@@ -373,14 +373,14 @@ const canCheckIn = computed(() => {
                     <!-- Modal footer -->
                     <div class="px-5 pb-5 flex gap-2">
                         <Link v-if="canCheckIn"
-                              :href="route('manage.bookings.check-in', selectedEvent.id)"
+                              :href="route('manage.bookings.check-in', selectedEvent.extendedProps.booking_reference)"
                               method="post"
                               as="button"
                               class="flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-all flex items-center justify-center gap-2">
                             <CheckCircle2 class="w-4 h-4" />
                             Check In
                         </Link>
-                        <Link :href="route('manage.bookings.show', selectedEvent.id)"
+                        <Link :href="route('manage.bookings.show', selectedEvent.extendedProps.booking_reference)"
                               class="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center justify-center gap-2">
                             <Eye class="w-4 h-4" />
                             View Details

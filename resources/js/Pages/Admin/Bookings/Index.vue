@@ -228,7 +228,7 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                         </td>
                         <td class="px-4 py-2.5 text-right whitespace-nowrap">
                             <Link
-                                :href="route('manage.bookings.show', booking.id)"
+                                :href="route('manage.bookings.show', booking.booking_reference)"
                                 class="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-900 dark:hover:text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all">
                                 <Eye class="w-3.5 h-3.5" />
                                 View
@@ -257,7 +257,7 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                 <Link
                     v-for="booking in bookings.data"
                     :key="booking.id"
-                    :href="route('manage.bookings.show', booking.id)"
+                    :href="route('manage.bookings.show', booking.booking_reference)"
                     class="flex items-start justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                     <div class="space-y-0.5 min-w-0 flex-1 pr-3">
                         <p class="text-xs font-mono font-medium text-gray-900 dark:text-white truncate">{{ booking.booking_reference }}</p>

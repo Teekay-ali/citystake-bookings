@@ -54,7 +54,7 @@ const fmtAmount = (n) => '₦' + Number(n).toLocaleString('en-NG')
                 Create booking <ArrowRight class="w-4 h-4" />
             </button>
             <Link v-else-if="enquiry.converted_booking_id"
-                  :href="route('manage.bookings.show', enquiry.converted_booking_id)"
+                  :href="route('manage.bookings.show', enquiry.converted_booking?.booking_reference)"
                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                 View booking
             </Link>

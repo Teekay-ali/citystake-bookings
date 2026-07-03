@@ -454,7 +454,7 @@ const monthGroups = computed(() => {
                         </div>
                     </div>
 
-                    <button @click="goToBooking(selectedBooking.id)"
+                    <button @click="goToBooking(selectedBooking.reference)"
                             class="mt-8 w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl hover:opacity-90 transition-all">
                         View Full Booking →
                     </button>

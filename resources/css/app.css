@@ -248,6 +248,18 @@ select:not([multiple]) {
     padding-right: 2.1rem;
 }
 
+/* Hide the native number-input spinners app-wide — the default up/down
+   stepper doesn't match the app aesthetic. */
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 /* Subtle Claude-style depth on form controls so they don't read as flat
    white-on-white. Applied app-wide; removed in dark mode. */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),

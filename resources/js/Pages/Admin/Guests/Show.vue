@@ -151,7 +151,7 @@ function toggleActive() {
                 <tr v-for="booking in bookings" :key="booking.id"
                     class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td class="px-6 py-3">
-                        <Link :href="route('manage.bookings.show', booking.id)"
+                        <Link :href="route('manage.bookings.show', booking.booking_reference)"
                               class="font-mono text-xs text-gray-900 dark:text-white hover:underline">
                             {{ booking.booking_reference }}
                         </Link>
@@ -174,7 +174,7 @@ function toggleActive() {
             <!-- Mobile bookings -->
             <div class="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
                 <Link v-for="booking in bookings" :key="booking.id"
-                      :href="route('manage.bookings.show', booking.id)"
+                      :href="route('manage.bookings.show', booking.booking_reference)"
                       class="flex items-start justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                     <div class="space-y-0.5">
                         <p class="text-xs font-mono font-medium text-gray-900 dark:text-white">{{ booking.booking_reference }}</p>
