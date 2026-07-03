@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { Building2, ChevronRight, ChevronLeft } from 'lucide-vue-next'
+import { Building2, ChevronRight, ChevronLeft, X, Loader2 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -10,25 +10,37 @@ const props = defineProps({
     buildings:    Array,
     allBuildings: Array,
     startDate:    String,
+    today:        String,
     days:         Number,
     filters:      Object,
 })
 
+// ── Date helpers (UTC-based to avoid timezone day-shift) ──────
+const DAY_MS = 86400000
+// Parse a 'YYYY-MM-DD' string to a UTC timestamp
+function ymdToMs(ymd) { return Date.parse(ymd + 'T00:00:00Z') }
+// Format a UTC timestamp back to 'YYYY-MM-DD'
+function msToYmd(ms) { return new Date(ms).toISOString().split('T')[0] }
+// Local calendar day as 'YYYY-MM-DD' (no UTC shift)
+function localYmd(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // ── Date range ────────────────────────────────────────────────
 const dates = computed(() => {
     const result = []
-    const start = new Date(props.startDate + 'T00:00:00')
+    const startTs = ymdToMs(props.startDate)
     for (let i = 0; i < props.days; i++) {
-        const d = new Date(start)
-        d.setDate(d.getDate() + i)
-        result.push(d.toISOString().split('T')[0])
+        result.push(msToYmd(startTs + i * DAY_MS))
     }
     return result
 })
 
-const todayStr = new Date().toISOString().split('T')[0]
+// Server-provided "today" in app timezone (Africa/Lagos), so the highlight
+// is Nigerian today regardless of the viewer's browser timezone.
+const todayStr = computed(() => props.today ?? localYmd(new Date()))
 
-function isToday(date) { return date === todayStr }
+function isToday(date) { return date === todayStr.value }
 function isWeekend(date) {
     const d = new Date(date + 'T00:00:00')
     return d.getDay() === 0 || d.getDay() === 6
@@ -54,14 +66,29 @@ function navigate(days) {
 }
 
 function goToToday() {
-    applyFilters({ start: todayStr })
+    applyFilters({ start: todayStr.value })
 }
 
 // ── Filters ───────────────────────────────────────────────────
 const buildingId = ref(props.filters.building_id ?? '')
+const rangeDays  = ref(props.filters.days ?? 30)
+const loading    = ref(false)
+
+const ranges = [7, 14, 30, 60]
+
+// Keep local controls in sync with the URL (back/forward navigation)
+watch(() => props.filters, (f) => {
+    buildingId.value = f.building_id ?? ''
+    rangeDays.value  = f.days ?? 30
+})
 
 function selectBuilding(id) {
     buildingId.value = id === buildingId.value ? '' : id
+    applyFilters()
+}
+
+function setRange(d) {
+    rangeDays.value = d
     applyFilters()
 }
 
@@ -69,8 +96,14 @@ function applyFilters(extra = {}) {
     router.get(route('manage.availability.index'), {
         building_id: buildingId.value || undefined,
         start:       props.startDate,
+        days:        rangeDays.value,
         ...extra,
-    }, { preserveState: true, replace: true })
+    }, {
+        preserveState: true,
+        replace: true,
+        onStart:  () => { loading.value = true },
+        onFinish: () => { loading.value = false },
+    })
 }
 
 // ── Collapsed buildings ───────────────────────────────────────
@@ -79,55 +112,71 @@ function toggleBuilding(id) {
     collapsed.value[id] = !collapsed.value[id]
 }
 
-// ── Booking lookup ────────────────────────────────────────────
-function getBookingForDate(unit, date) {
-    return unit.bookings?.find(b => b.check_in <= date && b.check_out > date) ?? null
+// ── Precomputed cell grid ─────────────────────────────────────
+// Build each unit's per-date cells ONCE (kind + occupant + a single
+// booking bar clamped to the window). Avoids re-running find()s per
+// cell on every render, and correctly handles blocked dates, bleed
+// bookings, maintenance and unavailable units.
+
+function buildUnitCells(unit) {
+    const ds       = dates.value
+    const startTs  = ymdToMs(props.startDate)
+    const endExcl  = startTs + ds.length * DAY_MS
+    const blocked  = unit.blocked ?? []
+    const bookings = unit.bookings ?? []
+    const offline  = unit.status !== 'available' || !unit.is_available
+
+    const cells = ds.map(date => {
+        let kind = 'available'
+        let booking = null
+        let blockedReason = null
+
+        if (offline) {
+            kind = 'offline'
+        } else {
+            const bl = blocked.find(b => b.from <= date && b.to >= date)
+            if (bl) {
+                kind = 'blocked'
+                blockedReason = bl.reason
+            } else {
+                booking = bookings.find(b => b.check_in <= date && b.check_out > date) ?? null
+                if (booking) kind = booking.status === 'checked_in' ? 'checked_in' : 'occupied'
+            }
+        }
+        return { date, kind, booking, blockedReason, bar: null }
+    })
+
+    // One bar per booking, clamped to the visible window (fixes bleed overflow)
+    bookings.forEach(b => {
+        const ciTs     = ymdToMs(b.check_in)
+        const coTs     = ymdToMs(b.check_out)
+        const visStart = Math.max(ciTs, startTs)
+        const visEnd   = Math.min(coTs, endExcl)
+        if (visEnd <= visStart) return
+        const idx  = Math.round((visStart - startTs) / DAY_MS)
+        const span = Math.round((visEnd - visStart) / DAY_MS)
+        if (cells[idx]) cells[idx].bar = { span, guest: b.guest_name, status: b.status, paid: b.payment_status === 'paid' }
+    })
+
+    return cells
 }
 
-function isCheckIn(unit, date) {
-    return unit.bookings?.some(b => b.check_in === date) ?? false
-}
+const decoratedBuildings = computed(() =>
+    props.buildings.map(b => ({
+        ...b,
+        unit_types: (b.unit_types ?? []).map(ut => ({
+            ...ut,
+            units: (ut.units ?? []).map(u => ({ ...u, cells: buildUnitCells(u) })),
+        })),
+    }))
+)
 
-function isCheckOut(unit, date) {
-    return unit.bookings?.some(b => b.check_out === date) ?? false
-}
-
-// ── Cell rendering ────────────────────────────────────────────
-function cellClass(unit, date) {
-    if (unit.status === 'maintenance') {
-        return 'bg-amber-50 dark:bg-amber-900/20 cursor-not-allowed'
-    }
-    const booking = getBookingForDate(unit, date)
-    if (!booking) return 'bg-white dark:bg-gray-950 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 cursor-pointer group'
-    if (booking.status === 'checked_in') return 'bg-blue-100 dark:bg-blue-900/30 cursor-pointer'
-    return 'bg-rose-100 dark:bg-rose-900/30 cursor-pointer'
-}
-
-// ── Booking bar spans ─────────────────────────────────────────
-// Returns the booking block to render for a given unit + date
-// Only returns a value on the check_in day so we render it once
-function getBookingBlock(unit, date) {
-    const booking = unit.bookings?.find(b => b.check_in === date)
-    if (!booking) return null
-
-    // Calculate span width — how many days visible from check_in
-    const checkIn  = new Date(booking.check_in  + 'T00:00:00')
-    const checkOut = new Date(booking.check_out + 'T00:00:00')
-    const start    = new Date(props.startDate   + 'T00:00:00')
-    const end      = new Date(dates.value[dates.value.length - 1] + 'T00:00:00')
-
-    const visibleStart = checkIn  < start  ? start  : checkIn
-    const visibleEnd   = checkOut > end    ? end    : checkOut
-
-    const span = Math.round((visibleEnd - visibleStart) / (1000 * 60 * 60 * 24))
-
-    return { booking, span }
-}
-
-// Bookings that start before our window but bleed into it
-function getBleedBlock(unit) {
-    const start = props.startDate
-    return unit.bookings?.find(b => b.check_in < start && b.check_out > start) ?? null
+const cellBg = {
+    available: 'bg-white dark:bg-gray-950 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 cursor-pointer group',
+    occupied:  'bg-indigo-50 dark:bg-indigo-900/20 cursor-pointer',
+    checked_in:'bg-blue-100 dark:bg-blue-900/30 cursor-pointer',
+    blocked:   'bg-gray-100 dark:bg-gray-800/60 cursor-not-allowed bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.05)_4px,rgba(0,0,0,0.05)_8px)]',
+    offline:   'bg-amber-50 dark:bg-amber-900/20 cursor-not-allowed',
 }
 
 // ── Selected booking drawer ───────────────────────────────────
@@ -135,18 +184,17 @@ const selectedBooking = ref(null)
 const selectedUnit    = ref(null)
 const selectedDate    = ref(null)
 
-function handleCellClick(unit, date, building, unitType) {
-    const booking = getBookingForDate(unit, date)
-    if (unit.status === 'maintenance') return
+function handleCellClick(unit, cell, building, unitType) {
+    if (cell.kind === 'offline' || cell.kind === 'blocked') return
 
-    if (booking) {
-        selectedBooking.value = booking
+    if (cell.booking) {
+        selectedBooking.value = cell.booking
         selectedUnit.value    = null
         selectedDate.value    = null
     } else {
         selectedBooking.value = null
         selectedUnit.value    = { unit, building, unitType }
-        selectedDate.value    = date
+        selectedDate.value    = cell.date
     }
 }
 
@@ -161,8 +209,6 @@ function goToBooking(id) {
 }
 
 function createBooking(unit, building, unitType, date) {
-    const checkOut = new Date(date)
-    checkOut.setDate(checkOut.getDate() + 1)
     router.visit(route('manage.bookings.create'), {
         method: 'get',
         data: {
@@ -170,7 +216,7 @@ function createBooking(unit, building, unitType, date) {
             building_id:  building.id,
             unit_type_id: unitType.id,
             check_in:     date,
-            check_out:    checkOut.toISOString().split('T')[0],
+            check_out:    msToYmd(ymdToMs(date) + DAY_MS),
             nights:       1,
         },
     })
@@ -210,14 +256,26 @@ const monthGroups = computed(() => {
 
         <!-- ── Header ── -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-                <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Availability</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">30-day booking timeline</p>
+            <div class="flex items-center gap-2">
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Availability</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ rangeDays }}-day booking timeline</p>
+                </div>
+                <Loader2 v-if="loading" class="w-4 h-4 text-gray-400 animate-spin" />
             </div>
 
             <div class="flex items-center gap-2">
+                <!-- Range selector -->
+                <div class="flex items-center rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+                    <button v-for="d in ranges" :key="d" @click="setRange(d)"
+                            :class="rangeDays === d ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900'"
+                            class="px-2.5 h-8 text-xs font-medium transition-colors border-r border-gray-200 dark:border-gray-800 last:border-r-0">
+                        {{ d }}d
+                    </button>
+                </div>
+
                 <!-- Navigate -->
-                <button @click="navigate(-30)"
+                <button @click="navigate(-rangeDays)"
                         class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-500 transition-colors">
                     <ChevronLeft class="w-4 h-4" />
                 </button>
@@ -225,26 +283,26 @@ const monthGroups = computed(() => {
                         class="px-3 h-8 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-300 transition-colors">
                     Today
                 </button>
-                <button @click="navigate(30)"
+                <button @click="navigate(rangeDays)"
                         class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-500 transition-colors">
                     <ChevronRight class="w-4 h-4" />
                 </button>
-
-                <!-- Building filter -->
-                <div class="flex items-center gap-1.5 ml-2 flex-wrap">
-                    <button @click="selectBuilding('')"
-                            :class="!buildingId ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'"
-                            class="px-3 h-8 rounded-lg text-sm font-medium transition-all">
-                        All
-                    </button>
-                    <button v-for="b in allBuildings" :key="b.id"
-                            @click="selectBuilding(String(b.id))"
-                            :class="buildingId === String(b.id) ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'"
-                            class="px-3 h-8 rounded-lg text-sm font-medium transition-all">
-                        {{ b.name }}
-                    </button>
-                </div>
             </div>
+        </div>
+
+        <!-- Building filter -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <button @click="selectBuilding('')"
+                    :class="!buildingId ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'"
+                    class="px-3 h-8 rounded-lg text-sm font-medium transition-all">
+                All buildings
+            </button>
+            <button v-for="b in allBuildings" :key="b.id"
+                    @click="selectBuilding(String(b.id))"
+                    :class="buildingId === String(b.id) ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'"
+                    class="px-3 h-8 rounded-lg text-sm font-medium transition-all">
+                {{ b.name }}
+            </button>
         </div>
 
         <!-- ── Legend ── -->
@@ -253,13 +311,19 @@ const monthGroups = computed(() => {
                 <span class="w-3 h-3 rounded-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-700"></span> Available
             </span>
             <span class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-sm bg-rose-100 dark:bg-rose-900/30"></span> Confirmed
+                <span class="w-3 h-3 rounded-sm bg-indigo-500"></span> Booked
             </span>
             <span class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-sm bg-blue-100 dark:bg-blue-900/30"></span> Checked In
+                <span class="w-3 h-3 rounded-sm bg-blue-500"></span> Checked In
             </span>
             <span class="flex items-center gap-1.5">
-                <span class="w-3 h-3 rounded-sm bg-amber-50 dark:bg-amber-900/20"></span> Maintenance
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-300"></span> Payment pending
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700"></span> Blocked
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-sm bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"></span> Maintenance / Offline
             </span>
         </div>
 
@@ -296,7 +360,7 @@ const monthGroups = computed(() => {
                 </thead>
 
                 <tbody>
-                <template v-for="building in buildings" :key="building.id">
+                <template v-for="building in decoratedBuildings" :key="building.id">
 
                     <!-- Building row -->
                     <tr class="cursor-pointer" @click="toggleBuilding(building.id)">
@@ -333,49 +397,33 @@ const monthGroups = computed(() => {
                                         <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ unit.unit_number }}</span>
                                         <span v-if="unit.status === 'maintenance'"
                                               class="text-[10px] text-amber-600 dark:text-amber-400 font-medium">maint.</span>
+                                        <span v-else-if="!unit.is_available"
+                                              class="text-[10px] text-amber-600 dark:text-amber-400 font-medium">offline</span>
                                     </div>
                                 </td>
 
                                 <!-- Day cells -->
-                                <td v-for="date in dates" :key="date"
-                                    :class="[cellClass(unit, date), 'relative border-r border-gray-100 dark:border-gray-800/50 h-10 p-0']"
-                                    @click="handleCellClick(unit, date, building, unitType)">
+                                <td v-for="cell in unit.cells" :key="cell.date"
+                                    :title="cell.kind === 'blocked' ? (cell.blockedReason || 'Blocked') : ''"
+                                    :class="[cellBg[cell.kind], 'relative border-r border-gray-100 dark:border-gray-800/50 h-10 p-0']"
+                                    @click="handleCellClick(unit, cell, building, unitType)">
 
-                                    <!-- Booking bar — only rendered on check_in day -->
-                                    <template v-if="getBookingBlock(unit, date)">
-                                        <div
-                                            :style="`width: calc(${getBookingBlock(unit, date).span} * 2.5rem - 2px); min-width: calc(${getBookingBlock(unit, date).span} * 2.5rem - 2px);`"
-                                            :class="[
-                                                    'absolute top-1 bottom-1 left-0.5 rounded-md z-10 flex items-center px-2 overflow-hidden',
-                                                    getBookingBlock(unit, date).booking.status === 'checked_in'
-                                                        ? 'bg-blue-500 dark:bg-blue-600'
-                                                        : 'bg-rose-500 dark:bg-rose-600'
-                                                ]">
-                                                <span class="text-[10px] font-medium text-white truncate">
-                                                    {{ getBookingBlock(unit, date).booking.guest_name }}
-                                                </span>
-                                        </div>
-                                    </template>
-
-                                    <!-- Bleed block — booking started before window -->
-                                    <template v-else-if="date === dates[0] && getBleedBlock(unit)">
-                                        <div
-                                            :style="`width: calc(${Math.round((new Date(getBleedBlock(unit).check_out + 'T00:00:00') - new Date(dates[0] + 'T00:00:00')) / 86400000)} * 2.5rem - 2px);`"
-                                            :class="[
-                                                    'absolute top-1 bottom-1 left-0.5 rounded-md z-10 flex items-center px-2 overflow-hidden',
-                                                    getBleedBlock(unit).status === 'checked_in' ? 'bg-blue-500 dark:bg-blue-600' : 'bg-rose-500 dark:bg-rose-600'
-                                                ]">
-                                                <span class="text-[10px] font-medium text-white truncate">
-                                                    {{ getBleedBlock(unit).guest_name }}
-                                                </span>
-                                        </div>
-                                    </template>
+                                    <!-- Booking bar — rendered once at its visible start, clamped to window -->
+                                    <div v-if="cell.bar"
+                                         :style="`width: calc(${cell.bar.span} * 2.5rem - 2px); min-width: calc(${cell.bar.span} * 2.5rem - 2px);`"
+                                         :class="[
+                                             'absolute top-1 bottom-1 left-0.5 rounded-md z-10 flex items-center gap-1 px-2 overflow-hidden',
+                                             cell.bar.status === 'checked_in' ? 'bg-blue-500 dark:bg-blue-600' : 'bg-indigo-500 dark:bg-indigo-600'
+                                         ]">
+                                        <span v-if="!cell.bar.paid" class="w-1.5 h-1.5 rounded-full bg-amber-300 shrink-0" title="Payment pending"></span>
+                                        <span class="text-[10px] font-medium text-white truncate">{{ cell.bar.guest }}</span>
+                                    </div>
 
                                     <!-- Available cell hover hint -->
-                                    <span v-else-if="unit.status !== 'maintenance'"
+                                    <span v-else-if="cell.kind === 'available'"
                                           class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 text-[10px] text-emerald-500 font-medium transition-opacity pointer-events-none">
-                                            +
-                                        </span>
+                                        +
+                                    </span>
                                 </td>
                             </tr>
                         </template>
@@ -383,7 +431,7 @@ const monthGroups = computed(() => {
                 </template>
 
                 <!-- Empty state -->
-                <tr v-if="buildings.length === 0">
+                <tr v-if="decoratedBuildings.length === 0">
                     <td :colspan="days + 1" class="py-20 text-center text-sm text-gray-400">
                         No buildings found.
                     </td>
@@ -407,7 +455,7 @@ const monthGroups = computed(() => {
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-base font-semibold text-gray-900 dark:text-white">Booking Details</h3>
-                        <button @click="closeDrawer" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-400 transition-colors">✕</button>
+                        <button @click="closeDrawer" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-400 transition-colors"><X class="w-4 h-4" /></button>
                     </div>
 
                     <div class="space-y-4">
@@ -419,6 +467,10 @@ const monthGroups = computed(() => {
                             <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Guest</p>
                             <p class="text-sm text-gray-900 dark:text-white">{{ selectedBooking.guest_name }}</p>
                             <p class="text-xs text-gray-400">{{ selectedBooking.guest_phone }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Unit</p>
+                            <p class="text-sm text-gray-900 dark:text-white">{{ selectedBooking.unit_type }} · {{ selectedBooking.unit_number }}</p>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
@@ -467,7 +519,7 @@ const monthGroups = computed(() => {
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-base font-semibold text-gray-900 dark:text-white">New Booking</h3>
-                        <button @click="closeDrawer" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-400 transition-colors">✕</button>
+                        <button @click="closeDrawer" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-400 transition-colors"><X class="w-4 h-4" /></button>
                     </div>
 
                     <div class="space-y-3 mb-6">

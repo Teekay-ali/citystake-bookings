@@ -17,12 +17,13 @@ class AvailabilityController extends Controller
 
         $user      = auth()->user();
         $startDate = $request->start ? Carbon::parse($request->start) : Carbon::today();
-        $days      = 30;
+        $days      = in_array((int) $request->days, [7, 14, 30, 60], true) ? (int) $request->days : 30;
         $endDate   = $startDate->copy()->addDays($days - 1);
 
+        // Show all live inventory (retired units are decommissioned and stay hidden).
         $buildingsQuery = Building::with([
             'unitTypes' => fn($q) => $q->where('is_active', true)->orderBy('name')->with([
-                'units' => fn($q) => $q->whereIn('status', ['available', 'maintenance'])->orderBy('unit_number'),
+                'units' => fn($q) => $q->where('status', '!=', 'retired')->orderBy('unit_number'),
             ]),
         ])->where('is_active', true);
 
@@ -53,22 +54,38 @@ class AvailabilityController extends Controller
         // Index bookings by unit_id for fast lookup
         $bookingsByUnit = $bookings->groupBy('unit_id');
 
-        // Shape data — units carry their bookings for the window
-        $buildings->each(function ($building) use ($bookingsByUnit) {
-            $building->unitTypes->each(function ($unitType) use ($bookingsByUnit) {
-                $unitType->units->each(function ($unit) use ($bookingsByUnit) {
+        // Blocked date ranges overlapping the window, indexed by unit
+        $blockedByUnit = \App\Models\BlockedDate::whereIn('unit_id', $unitIds)
+            ->where('blocked_from', '<=', $endDate->toDateString())
+            ->where('blocked_to', '>=', $startDate->toDateString())
+            ->get()
+            ->groupBy('unit_id');
+
+        // Shape data — units carry their bookings + blocked ranges for the window
+        $buildings->each(function ($building) use ($bookingsByUnit, $blockedByUnit) {
+            $building->unitTypes->each(function ($unitType) use ($bookingsByUnit, $blockedByUnit) {
+                $unitType->units->each(function ($unit) use ($bookingsByUnit, $blockedByUnit, $unitType) {
                     $unit->bookings = ($bookingsByUnit->get($unit->id) ?? collect())
                         ->map(fn($b) => [
                             'id'             => $b->id,
                             'reference'      => $b->booking_reference,
                             'guest_name'     => $b->guest_name,
                             'guest_phone'    => $b->guest_phone,
+                            'unit_type'      => $unitType->name,
+                            'unit_number'    => $unit->unit_number,
                             'check_in'       => $b->check_in->toDateString(),
                             'check_out'      => $b->check_out->toDateString(),
                             'nights'         => $b->nights,
                             'status'         => $b->status,
                             'payment_status' => $b->payment_status,
                             'total_amount'   => $b->total_amount,
+                        ])->values();
+
+                    $unit->blocked = ($blockedByUnit->get($unit->id) ?? collect())
+                        ->map(fn($bd) => [
+                            'from'   => $bd->blocked_from->toDateString(),
+                            'to'     => $bd->blocked_to->toDateString(),
+                            'reason' => $bd->reason,
                         ])->values();
                 });
             });
@@ -83,10 +100,12 @@ class AvailabilityController extends Controller
             'buildings'    => $buildings,
             'allBuildings' => $allBuildings,
             'startDate'    => $startDate->toDateString(),
+            'today'        => Carbon::today()->toDateString(),
             'days'         => $days,
             'filters'      => [
                 'building_id' => $request->building_id,
                 'start'       => $startDate->toDateString(),
+                'days'        => $days,
             ],
         ]);
     }
