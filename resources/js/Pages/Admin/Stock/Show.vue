@@ -54,69 +54,26 @@ function formatDateTime(d) {
     <ManageLayout>
         <Head :title="item.name" />
 
-        <div class="max-w-5xl px-6 py-8 lg:px-10">
+        <div class="p-4 lg:p-6">
 
-            <!-- Back -->
-            <Link :href="route('manage.stock.index')"
-                  class="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-8">
-                <ArrowLeft class="w-3.5 h-3.5" />
-                Stock
-            </Link>
-
-            <!-- ── Page header ── -->
-            <div class="mb-8 pb-7 border-b border-gray-200 dark:border-gray-800">
-                <div class="flex items-start justify-between gap-6 flex-wrap">
-                    <div class="min-w-0 flex-1">
-                        <!-- Category + building -->
-                        <div class="flex items-center gap-2.5 mb-3 flex-wrap">
-                            <span v-if="item.category"
-                                  class="text-[11px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-full">
-                                {{ item.category }}
-                            </span>
-                            <span class="text-[11px] font-mono tracking-widest text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
-                                {{ item.building?.name }}
-                            </span>
-                            <!-- Low stock warning badge -->
-                            <span v-if="isLow"
-                                  class="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full">
-                                <AlertTriangle class="w-3 h-3" />
-                                Low Stock
-                            </span>
-                        </div>
-
-                        <h1 class="text-[28px] font-bold tracking-tight leading-snug text-gray-900 dark:text-white mb-2.5">
-                            {{ item.name }}
-                        </h1>
-
-                        <p v-if="item.description" class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                            {{ item.description }}
-                        </p>
+            <!-- Header (sticky) -->
+            <div class="sticky top-0 z-20 -mx-4 lg:-mx-6 -mt-4 lg:-mt-6 px-4 lg:px-6 py-3 mb-6 flex items-center gap-3 bg-white/90 dark:bg-gray-950/90 backdrop-blur border-b border-gray-100 dark:border-gray-800">
+                <Link :href="route('manage.stock.index')"
+                      class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0">
+                    <ArrowLeft class="w-4 h-4" />
+                </Link>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ item.name }}</h1>
+                        <span :class="['inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium',
+                            isLow ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400']">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                            {{ isLow ? 'Low Stock' : 'In Stock' }}
+                        </span>
                     </div>
-
-                    <!-- Current stock — right-aligned in header -->
-                    <div class="text-right shrink-0">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">Current Stock</p>
-                        <p class="leading-none" :class="isLow ? 'text-amber-500' : 'text-gray-900 dark:text-white'">
-                            <span class="text-[36px] font-extrabold tracking-tight tabular-nums">{{ item.quantity }}</span>
-                            <span class="text-base font-medium text-gray-400 ml-1.5">{{ item.unit }}</span>
-                        </p>
-                        <p class="text-[11px] text-gray-400 mt-1.5">
-                            Alert at {{ item.low_stock_threshold }} {{ item.unit }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Stock level bar -->
-                <div class="mt-6">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <span class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Stock Level</span>
-                        <span class="text-[11px] font-medium text-gray-400">{{ stockPercent }}%</span>
-                    </div>
-                    <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-500"
-                             :class="isLow ? 'bg-amber-400' : 'bg-gray-900 dark:bg-white'"
-                             :style="{ width: stockPercent + '%' }" />
-                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                        <template v-if="item.category">{{ item.category }} · </template>{{ item.building?.name }} · {{ item.unit }}
+                    </p>
                 </div>
             </div>
 
@@ -124,37 +81,42 @@ function formatDateTime(d) {
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
                 <!-- ── Main column ── -->
-                <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="lg:col-span-2 flex flex-col gap-4 order-2 lg:order-none">
 
-                    <!-- Stats row -->
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 px-4 py-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1.5">On Hand</p>
-                            <p class="text-xl font-extrabold tabular-nums"
-                               :class="isLow ? 'text-amber-500' : 'text-gray-900 dark:text-white'">
-                                {{ item.quantity }}
-                                <span class="text-xs font-medium text-gray-400 ml-0.5">{{ item.unit }}</span>
-                            </p>
+                    <!-- Stock level hero -->
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
+                        <div class="flex items-end justify-between gap-4 mb-4">
+                            <div>
+                                <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Current Stock</p>
+                                <p class="leading-none" :class="isLow ? 'text-amber-500' : 'text-gray-900 dark:text-white'">
+                                    <span class="text-3xl font-semibold tabular-nums">{{ item.quantity }}</span>
+                                    <span class="text-sm font-medium text-gray-400 ml-1.5">{{ item.unit }}</span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Alert At</p>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{ item.low_stock_threshold }} {{ item.unit }}</p>
+                            </div>
                         </div>
-                        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 px-4 py-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1.5">Alert At</p>
-                            <p class="text-xl font-extrabold text-gray-900 dark:text-white tabular-nums">
-                                {{ item.low_stock_threshold }}
-                                <span class="text-xs font-medium text-gray-400 ml-0.5">{{ item.unit }}</span>
-                            </p>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Stock Level</span>
+                            <span class="text-xs font-medium text-gray-400 tabular-nums">{{ stockPercent }}%</span>
                         </div>
-                        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 px-4 py-3.5">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1.5">Log Entries</p>
-                            <p class="text-xl font-extrabold text-gray-900 dark:text-white tabular-nums">
-                                {{ logs.total ?? logs.data.length }}
-                            </p>
+                        <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500"
+                                 :class="isLow ? 'bg-amber-400' : 'bg-gray-900 dark:bg-white'"
+                                 :style="{ width: stockPercent + '%' }" />
                         </div>
+                        <p v-if="item.description" class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                            {{ item.description }}
+                        </p>
                     </div>
 
                     <!-- Usage history -->
-                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                        <div class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
-                            <h2 class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">History</h2>
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
+                        <div class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                            <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">History</h2>
+                            <span class="text-xs text-gray-400 tabular-nums">{{ logs.total ?? logs.data.length }} entries</span>
                         </div>
 
                         <div v-if="logs.data.length === 0"
@@ -196,16 +158,16 @@ function formatDateTime(d) {
                 </div>
 
                 <!-- ── Sidebar ── -->
-                <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-4 order-1 lg:order-none lg:sticky lg:top-20 self-start">
 
                     <!-- Log stock change — inverted panel, same as action panel in procurement -->
-                    <div class="rounded-2xl bg-gray-900 dark:bg-white border border-gray-900 dark:border-gray-100 p-5">
+                    <div class="rounded-2xl bg-gray-900 dark:bg-white border border-gray-900 dark:border-gray-100 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                         <p class="text-sm font-bold text-white dark:text-gray-900 mb-0.5">Log Stock Change</p>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-4">Record usage, restock, or adjustment</p>
 
                         <form @submit.prevent="submitLog" class="space-y-3">
                             <div>
-                                <label class="block text-[10px] font-bold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400 mb-1.5">Type</label>
+                                <label class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Type</label>
                                 <select v-model="logForm.type"
                                         class="w-full px-3 py-2.5 rounded-xl bg-white/5 dark:bg-black/5 border border-white/10 dark:border-black/10 text-sm text-white dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-black/10 transition-all">
                                     <option value="usage" class="bg-gray-900 dark:bg-white">Usage (reduce)</option>
@@ -214,7 +176,7 @@ function formatDateTime(d) {
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] font-bold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400 mb-1.5">
+                                <label class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
                                     Quantity <span class="normal-case font-normal">({{ item.unit }})</span>
                                 </label>
                                 <input v-model="logForm.quantity" type="number" min="1"
@@ -222,7 +184,7 @@ function formatDateTime(d) {
                                 <p v-if="logForm.errors.quantity" class="mt-1 text-[11px] text-red-400">{{ logForm.errors.quantity }}</p>
                             </div>
                             <div>
-                                <label class="block text-[10px] font-bold uppercase tracking-[0.1em] text-gray-500 dark:text-gray-400 mb-1.5">Reason</label>
+                                <label class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Reason</label>
                                 <input v-model="logForm.reason" type="text" placeholder="Optional"
                                        class="w-full px-3 py-2.5 rounded-xl bg-white/5 dark:bg-black/5 border border-white/10 dark:border-black/10 text-sm text-white dark:text-gray-900 placeholder:text-gray-600 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-black/10 transition-all" />
                             </div>
@@ -234,9 +196,9 @@ function formatDateTime(d) {
                     </div>
 
                     <!-- Item details card -->
-                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
                         <div class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Item Details</p>
+                            <p class="text-xs font-medium uppercase tracking-wide text-gray-400">Item Details</p>
                         </div>
                         <div class="px-5 py-3.5 space-y-2.5">
                             <div class="flex items-center justify-between">

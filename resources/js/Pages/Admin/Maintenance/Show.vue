@@ -128,44 +128,45 @@ function deleteReport() {
 <template>
     <Head :title="`Maintenance — ${report.title}`" />
 
-    <div class="p-6 lg:p-8">
+    <div class="p-4 lg:p-6">
 
-        <!-- Header -->
-        <div class="flex items-center gap-4 mb-6">
+        <!-- Header (sticky) -->
+        <div class="sticky top-0 z-20 -mx-4 lg:-mx-6 -mt-4 lg:-mt-6 px-4 lg:px-6 py-3 mb-6 flex items-center gap-3 bg-white/90 dark:bg-gray-950/90 backdrop-blur border-b border-gray-100 dark:border-gray-800">
             <Link
                 :href="route('manage.maintenance.index')"
-                class="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
+                class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0"
             >
-                <ArrowLeft class="w-5 h-5" />
+                <ArrowLeft class="w-4 h-4" />
             </Link>
             <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-3 flex-wrap">
-                    <h1 class="text-2xl font-light text-gray-900 dark:text-white truncate">{{ report.title }}</h1>
-                    <span :class="['inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border', statusClass(report.status)]">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ report.title }}</h1>
+                    <span :class="['inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border', statusClass(report.status)]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
                         {{ statusConfig[report.status]?.label }}
                     </span>
                 </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                    {{ report.building?.name }} · Submitted by {{ report.submitted_by?.name }} · {{ formatDate(report.created_at) }}
+                <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                    {{ report.building?.name }} · {{ report.submitted_by?.name }} · {{ formatDate(report.created_at) }}
                 </p>
             </div>
             <button
                 v-if="report.status === 'pending' && report.submitted_by_id === user?.id"
                 @click="showDeleteModal = true"
-                class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all shrink-0"
             >
-                <Trash2 class="w-5 h-5" />
+                <Trash2 class="w-4 h-4" />
             </button>
         </div>
 
         <!-- Two column layout -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
 
             <!-- ── LEFT COLUMN (2/3) ── -->
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-2 space-y-6 order-2 lg:order-none">
 
                 <!-- Report Details -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-6">
                     <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-5">Report Details</h2>
 
                     <div class="grid grid-cols-2 gap-x-8 gap-y-4">
@@ -209,7 +210,7 @@ function deleteReport() {
                 </div>
 
                 <!-- Cost Breakdown -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-6">
                     <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-5">Cost</h2>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
@@ -228,7 +229,7 @@ function deleteReport() {
                 </div>
 
                 <!-- Photos -->
-                <div v-if="report.photo_urls?.length" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+                <div v-if="report.photo_urls?.length" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-6">
                     <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Photos</h2>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <div
@@ -259,10 +260,10 @@ function deleteReport() {
             </div>
 
             <!-- ── RIGHT COLUMN (1/3) ── -->
-            <div class="space-y-5">
+            <div class="space-y-5 order-1 lg:order-none lg:sticky lg:top-20 self-start">
 
                 <!-- Approval Timeline -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <h2 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-5">Approval Progress</h2>
 
                     <div class="space-y-0">
@@ -305,7 +306,7 @@ function deleteReport() {
                 </div>
 
                 <!-- Quick Info -->
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 space-y-3">
+                <div class="hidden lg:block bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 space-y-3">
                     <h2 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Details</h2>
                     <div class="space-y-2.5 text-sm">
                         <div class="flex items-center gap-2.5">
@@ -329,7 +330,7 @@ function deleteReport() {
 
                 <!-- Action Card -->
                 <div v-if="canApprove"
-                     class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 space-y-4">
+                     class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 space-y-4">
                     <h2 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                         {{ report.can_make_payment ? 'Record Payment' : 'Your Action' }}
                     </h2>

@@ -72,49 +72,27 @@ const timelineSteps = computed(() => [
     <ManageLayout>
         <Head :title="procurement.title" />
 
-        <div class="max-w-5xl px-6 py-8 lg:px-10">
+        <div class="p-4 lg:p-6">
 
-            <!-- Back -->
-            <Link :href="route('manage.procurement.index')"
-                  class="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-8">
-                <ArrowLeft class="w-3.5 h-3.5" />
-                Procurement
-            </Link>
-
-            <!-- ── Page header ── -->
-            <div class="mb-8 pb-7 border-b border-gray-200 dark:border-gray-800">
-                <div class="flex items-start justify-between gap-6 flex-wrap">
-                    <div class="min-w-0 flex-1">
-                        <!-- Reference + status -->
-                        <div class="flex items-center gap-2.5 mb-3 flex-wrap">
-                            <span class="font-mono text-[11px] tracking-widest text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
-                                {{ procurement.reference }}
-                            </span>
-                            <span :class="['text-[11px] font-semibold px-2.5 py-1 rounded-full', statusConfig[procurement.status]?.class]">
-                                {{ statusConfig[procurement.status]?.label }}
-                            </span>
-                        </div>
-                        <!-- Title -->
-                        <h1 class="text-[28px] font-bold tracking-tight leading-snug text-gray-900 dark:text-white mb-2.5">
-                            {{ procurement.title }}
-                        </h1>
-                        <!-- Subtitle -->
-                        <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 flex-wrap">
-                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ procurement.building?.name }}</span>
-                            <span class="text-gray-200 dark:text-gray-700">·</span>
-                            <span>Submitted by <span class="font-medium text-gray-700 dark:text-gray-300">{{ procurement.submitted_by?.name }}</span></span>
-                        </p>
+            <!-- Header (sticky) -->
+            <div class="sticky top-0 z-20 -mx-4 lg:-mx-6 -mt-4 lg:-mt-6 px-4 lg:px-6 py-3 mb-6 flex items-center gap-3 bg-white/90 dark:bg-gray-950/90 backdrop-blur border-b border-gray-100 dark:border-gray-800">
+                <Link :href="route('manage.procurement.index')"
+                      class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0">
+                    <ArrowLeft class="w-4 h-4" />
+                </Link>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ procurement.title }}</h1>
+                        <span :class="['inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium', statusConfig[procurement.status]?.class]">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                            {{ statusConfig[procurement.status]?.label }}
+                        </span>
                     </div>
-                    <!-- Total — right-aligned in the header -->
-                    <div class="text-right shrink-0">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">Total Amount</p>
-                        <p class="text-[32px] font-extrabold tracking-tight text-gray-900 dark:text-white tabular-nums leading-none">
-                            {{ formatAmount(procurement.total_amount) }}
-                        </p>
-                        <p class="text-[11px] text-gray-400 mt-1.5">
-                            {{ procurement.items?.length }} line item{{ procurement.items?.length !== 1 ? 's' : '' }}
-                        </p>
-                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                        <span class="font-mono">{{ procurement.reference }}</span>
+                        · {{ procurement.building?.name }}
+                        · {{ procurement.submitted_by?.name }}
+                    </p>
                 </div>
             </div>
 
@@ -122,22 +100,22 @@ const timelineSteps = computed(() => [
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
                 <!-- ── Main column ── -->
-                <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="lg:col-span-2 flex flex-col gap-4 order-2 lg:order-none">
 
                     <!-- Items table -->
-                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
                         <div class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
-                            <h2 class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">Line Items</h2>
+                            <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Line Items</h2>
                         </div>
 
                         <!-- Desktop table -->
                         <table class="hidden md:table w-full">
                             <thead>
                             <tr class="bg-gray-50 dark:bg-gray-800/60">
-                                <th class="text-left px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-400">Item</th>
-                                <th class="text-right px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-400">Qty</th>
-                                <th class="text-right px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-400">Unit Price</th>
-                                <th class="text-right px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-400">Total</th>
+                                <th class="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">Item</th>
+                                <th class="text-right px-5 py-2.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">Qty</th>
+                                <th class="text-right px-5 py-2.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">Unit Price</th>
+                                <th class="text-right px-5 py-2.5 text-[11px] font-medium uppercase tracking-wide text-gray-400">Total</th>
                             </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -160,8 +138,8 @@ const timelineSteps = computed(() => [
                             </tbody>
                             <tfoot>
                             <tr class="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/40">
-                                <td colspan="3" class="px-5 py-3.5 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">Grand Total</td>
-                                <td class="px-5 py-3.5 text-right text-lg font-extrabold text-gray-900 dark:text-white tabular-nums whitespace-nowrap">
+                                <td colspan="3" class="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Grand Total</td>
+                                <td class="px-5 py-3.5 text-right text-lg font-semibold text-gray-900 dark:text-white tabular-nums whitespace-nowrap">
                                     {{ formatAmount(procurement.total_amount) }}
                                 </td>
                             </tr>
@@ -183,28 +161,28 @@ const timelineSteps = computed(() => [
                             <!-- Grand total -->
                             <div class="px-4 py-3.5 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-between">
                                 <p class="text-xs font-bold uppercase tracking-wide text-gray-400">Grand Total</p>
-                                <p class="text-base font-extrabold text-gray-900 dark:text-white tabular-nums">{{ formatAmount(procurement.total_amount) }}</p>
+                                <p class="text-base font-semibold text-gray-900 dark:text-white tabular-nums">{{ formatAmount(procurement.total_amount) }}</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Justification / Notes -->
                     <div v-if="procurement.justification || procurement.notes"
-                         class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
+                         class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5 space-y-4">
                         <div v-if="procurement.justification">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-2">Justification</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Justification</p>
                             <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{{ procurement.justification }}</p>
                         </div>
                         <div v-if="procurement.notes" :class="procurement.justification ? 'pt-4 border-t border-gray-100 dark:border-gray-800' : ''">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-2">Notes</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Notes</p>
                             <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{{ procurement.notes }}</p>
                         </div>
                     </div>
 
                     <!-- Supplier -->
                     <div v-if="procurement.vendor || procurement.supplier_name"
-                         class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-4">Supplier</p>
+                         class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">Supplier</p>
 
                         <!-- Name + contact row -->
                         <div class="flex items-center gap-3.5 mb-4">
@@ -236,7 +214,7 @@ const timelineSteps = computed(() => [
                         <!-- Bank Details — below supplier row, full width -->
                         <template v-if="procurement.supplier_bank_name || procurement.supplier_account_number">
                             <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
-                                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-3">Bank Details</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Bank Details</p>
                                 <div class="grid grid-cols-3 gap-3">
                                     <div v-if="procurement.supplier_bank_name">
                                         <p class="text-xs text-gray-400 mb-1">Bank</p>
@@ -256,8 +234,8 @@ const timelineSteps = computed(() => [
                     </div>
 
                     <!-- Timeline -->
-                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-5">Approval Timeline</p>
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-5">Approval Timeline</p>
                         <div>
                             <div v-for="(step, i) in timelineSteps" :key="step.label" class="flex gap-3.5">
                                 <!-- Track -->
@@ -302,7 +280,7 @@ const timelineSteps = computed(() => [
                 </div>
 
                 <!-- ── Sidebar ── -->
-                <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-4 order-1 lg:order-none lg:sticky lg:top-20 self-start">
 
                     <!-- Action panel — inverted, matches the sidebar logo/avatar accent -->
                     <div v-if="canAct && !['completed','rejected'].includes(procurement.status)"
@@ -357,10 +335,10 @@ const timelineSteps = computed(() => [
                     </div>
 
                     <!-- Summary card -->
-                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
                         <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1.5">Total Amount</p>
-                            <p class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white tabular-nums">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Total Amount</p>
+                            <p class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white tabular-nums">
                                 {{ formatAmount(procurement.total_amount) }}
                             </p>
                         </div>

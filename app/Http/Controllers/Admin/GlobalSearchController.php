@@ -40,7 +40,7 @@ class GlobalSearchController extends Controller
                 'label'    => $b->booking_reference,
                 'sublabel' => $b->guest_name . ' · ' . $b->building?->name,
                 'status'   => $b->status,
-                'url'      => route('manage.bookings.show', $b->id),
+                'url'      => route('manage.bookings.show', $b->booking_reference),
             ]);
 
         // Units — by unit number

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { Link, usePage } from '@inertiajs/vue3'
+import { Link, usePage, router } from '@inertiajs/vue3'
 import ChangelogModal from '@/Components/ChangelogModal.vue'
 import { useAppToast } from '@/Composables/useAppToast'
 import {
@@ -209,16 +209,33 @@ const searchResults = ref([])
 const searchOpen    = ref(false)
 const searchLoading = ref(false)
 const searchRef     = ref(null)
+const searchInputRef = ref(null)
+const activeIndex   = ref(-1)
 let   searchTimeout = null
 
+const searchTypeMeta = {
+    booking: { label: 'Bookings', icon: CalendarDays, chip: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
+    unit:    { label: 'Units',    icon: Building2,     chip: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+    user:    { label: 'People',   icon: UserRound,     chip: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300' },
+}
+const typeOrder = ['booking', 'unit', 'user']
+
+// Grouped for display (order matches the flat searchResults order → activeIndex maps correctly)
+const groupedResults = computed(() =>
+    typeOrder
+        .map(t => ({ type: t, ...searchTypeMeta[t], items: searchResults.value.filter(r => r.type === t) }))
+        .filter(g => g.items.length)
+)
+const flatIndexOf = (result) => searchResults.value.indexOf(result)
+
 async function runSearch(q) {
-    if (q.length < 2) { searchResults.value = []; searchOpen.value = false; return }
+    activeIndex.value = -1
+    if (q.trim().length < 2) { searchResults.value = []; searchOpen.value = false; return }
     searchLoading.value = true
+    searchOpen.value = true // keep open to show loading / no-results feedback
     try {
         const res  = await fetch(route('manage.search') + '?q=' + encodeURIComponent(q))
-        const data = await res.json()
-        searchResults.value = data
-        searchOpen.value    = data.length > 0
+        searchResults.value = await res.json()
     } catch {
         searchResults.value = []
     } finally {
@@ -232,22 +249,60 @@ watch(searchQuery, (q) => {
 })
 
 function closeSearch() {
-    searchOpen.value  = false
-    searchQuery.value = ''
+    searchOpen.value    = false
+    searchQuery.value   = ''
+    searchResults.value = []
+    activeIndex.value   = -1
 }
 
 function handleSearchClickOutside(e) {
-    if (searchRef.value && !searchRef.value.contains(e.target)) closeSearch()
+    if (searchRef.value && !searchRef.value.contains(e.target)) searchOpen.value = false
+}
+
+// Keyboard navigation over the flat results list
+function moveActive(delta) {
+    const n = searchResults.value.length
+    if (!n) return
+    searchOpen.value = true
+    activeIndex.value = (activeIndex.value + delta + n) % n
+}
+function openActive() {
+    const r = searchResults.value[activeIndex.value] ?? searchResults.value[0]
+    if (!r) return
+    router.visit(r.url)
+    closeSearch()
+    mobileSearchOpen.value = false
+}
+function onSearchKeydown(e) {
+    if (e.key === 'ArrowDown')      { e.preventDefault(); moveActive(1) }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); moveActive(-1) }
+    else if (e.key === 'Enter')     { if (searchResults.value.length) { e.preventDefault(); openActive() } }
+    else if (e.key === 'Escape')    { searchInputRef.value?.blur(); searchOpen.value = false }
+}
+
+// ⌘K / Ctrl-K focuses search (desktop) or opens the mobile overlay
+function onGlobalSearchKey(e) {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        if (isDesktop.value) {
+            searchInputRef.value?.focus()
+            if (searchResults.value.length) searchOpen.value = true
+        } else {
+            openMobileSearch()
+        }
+    }
 }
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     document.addEventListener('click', handleSearchClickOutside)
+    window.addEventListener('keydown', onGlobalSearchKey)
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
     document.removeEventListener('click', handleSearchClickOutside)
+    window.removeEventListener('keydown', onGlobalSearchKey)
     window.removeEventListener('online',  checkConnectivity)
     window.removeEventListener('offline', handleOffline)
     if ('serviceWorker' in navigator) {
@@ -566,13 +621,20 @@ function canSeeItem(item) {
                     <div class="relative">
                         <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         <input
+                            ref="searchInputRef"
                             v-model="searchQuery"
                             type="text"
                             placeholder="Search bookings, guests, units..."
-                            class="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
+                            @keydown="onSearchKeydown"
+                            @focus="searchResults.length && (searchOpen = true)"
+                            class="w-full pl-9 pr-14 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
                         />
                         <div v-if="searchLoading"
                              class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                        <kbd v-else
+                             class="absolute right-2.5 top-1/2 -translate-y-1/2 hidden xl:flex items-center gap-0.5 px-1.5 h-5 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-medium text-gray-400 pointer-events-none">
+                            ⌘K
+                        </kbd>
                     </div>
 
                     <!-- Results dropdown -->
@@ -583,26 +645,44 @@ function canSeeItem(item) {
                         leave-active-class="transition ease-in duration-100"
                         leave-from-class="opacity-100 translate-y-0"
                         leave-to-class="opacity-0 -translate-y-1">
-                        <div v-if="searchOpen"
-                             class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
-                            <Link
-                                v-for="result in searchResults" :key="`${result.type}-${result.id}`"
-                                :href="result.url"
-                                @click="closeSearch"
-                                class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
-                                <div :class="[
-                    'w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0',
-                    result.type === 'booking' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                    result.type === 'unit'    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                    'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                ]">
-                                    {{ result.type.charAt(0).toUpperCase() }}
+                        <div v-if="searchOpen && searchQuery.trim().length >= 2"
+                             class="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-xl shadow-gray-300/40 dark:shadow-black/40 overflow-hidden z-50 max-h-[70vh] overflow-y-auto">
+
+                            <!-- Grouped results -->
+                            <template v-if="searchResults.length">
+                                <div v-for="group in groupedResults" :key="group.type">
+                                    <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{{ group.label }}</p>
+                                    <Link
+                                        v-for="result in group.items" :key="`${result.type}-${result.id}`"
+                                        :href="result.url"
+                                        @click="closeSearch"
+                                        @mouseenter="activeIndex = flatIndexOf(result)"
+                                        :class="['flex items-center gap-3 px-3 py-2.5 transition-colors',
+                                            flatIndexOf(result) === activeIndex ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/60']">
+                                        <div :class="['w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0', group.chip]">
+                                            <component :is="group.icon" class="w-3.5 h-3.5" />
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ result.label }}</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ result.sublabel }}</p>
+                                        </div>
+                                        <span v-if="result.status" class="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 capitalize">
+                                            {{ String(result.status).replace(/_/g, ' ') }}
+                                        </span>
+                                    </Link>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ result.title }}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ result.subtitle }}</p>
-                                </div>
-                            </Link>
+                            </template>
+
+                            <!-- Loading -->
+                            <div v-else-if="searchLoading" class="px-4 py-6 text-center text-sm text-gray-400">
+                                Searching…
+                            </div>
+
+                            <!-- No results -->
+                            <div v-else class="px-4 py-8 text-center">
+                                <Search class="w-6 h-6 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+                                <p class="text-sm text-gray-500 dark:text-gray-400">No results for "{{ searchQuery }}"</p>
+                            </div>
                         </div>
                     </Transition>
                 </div>
@@ -740,6 +820,7 @@ function canSeeItem(item) {
                                 v-model="searchQuery"
                                 type="text"
                                 placeholder="Search bookings, guests, units..."
+                                @keydown="onSearchKeydown"
                                 class="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
                             />
                             <div v-if="searchLoading"
@@ -754,25 +835,26 @@ function canSeeItem(item) {
 
                     <!-- Results -->
                     <div class="flex-1 overflow-y-auto">
-                        <div v-if="searchResults.length > 0" class="divide-y divide-gray-100 dark:divide-gray-900">
-                            <Link
-                                v-for="result in searchResults" :key="`${result.type}-${result.id}`"
-                                :href="result.url"
-                                @click="closeMobileSearch"
-                                class="flex items-center gap-3 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                                <div :class="[
-                            'w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0',
-                            result.type === 'booking' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                            result.type === 'unit'    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
-                            'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                        ]">
-                                    {{ result.type.charAt(0).toUpperCase() }}
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ result.title }}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ result.subtitle }}</p>
-                                </div>
-                            </Link>
+                        <div v-if="searchResults.length > 0">
+                            <div v-for="group in groupedResults" :key="group.type">
+                                <p class="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{{ group.label }}</p>
+                                <Link
+                                    v-for="result in group.items" :key="`${result.type}-${result.id}`"
+                                    :href="result.url"
+                                    @click="closeMobileSearch"
+                                    class="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                                    <div :class="['w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', group.chip]">
+                                        <component :is="group.icon" class="w-4 h-4" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ result.label }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ result.sublabel }}</p>
+                                    </div>
+                                    <span v-if="result.status" class="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 capitalize">
+                                        {{ String(result.status).replace(/_/g, ' ') }}
+                                    </span>
+                                </Link>
+                            </div>
                         </div>
 
                         <!-- Empty state -->
