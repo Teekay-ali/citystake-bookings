@@ -644,36 +644,19 @@ class BookingController extends Controller
             return back()->with('error', 'This booking cannot be checked in at this time.');
         }
 
+        // Payment is always settled before check-in (at creation, or week 1 for a
+        // weekly plan), so check-in is arrival confirmation only — it records NO
+        // income (doing so double-counted the booking payment).
         $validated = $request->validate([
-            'amount_received'        => 'required|numeric|min:0',
-            'checkin_payment_method' => 'required|in:pos,bank_transfer,cash',
-            'checkin_notes'          => 'nullable|string|max:500',
+            'checkin_notes' => 'nullable|string|max:500',
         ]);
 
         $booking->update([
-            'status'                 => 'checked_in',
-            'checked_in_at'          => now(),
-            'checked_in_by'          => auth()->id(),
-            'amount_received'        => $validated['amount_received'],
-            'checkin_payment_method' => $validated['checkin_payment_method'],
-            'checkin_notes'          => $validated['checkin_notes'] ?? null,
+            'status'        => 'checked_in',
+            'checked_in_at' => now(),
+            'checked_in_by' => auth()->id(),
+            'checkin_notes' => $validated['checkin_notes'] ?? null,
         ]);
-
-        // Record the check-in payment in the financial ledger if any amount was collected
-        if ((float) $validated['amount_received'] > 0) {
-            FinancialTransaction::create([
-                'building_id'       => $booking->building_id,
-                'recorded_by'       => auth()->id(),
-                'type'              => 'income',
-                'category'          => 'booking',
-                'reference_type'    => Booking::class,
-                'reference_id'      => $booking->id,
-                'description'       => "Check-in payment: {$booking->booking_reference} - {$booking->guest_name}",
-                'amount'            => $validated['amount_received'],
-                'payment_method'    => $validated['checkin_payment_method'],
-                'transaction_date'  => now()->toDateString(),
-            ]);
-        }
 
         AuditLog::log('booking.checked_in', $booking, ['status' => 'confirmed'], ['status' => 'checked_in', 'checked_in_by' => auth()->id()]);
 

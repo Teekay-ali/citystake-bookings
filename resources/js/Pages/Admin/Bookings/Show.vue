@@ -29,9 +29,8 @@ const lateCheckoutHours = ref(null)
 
 // ── Check-in ───────────────────────────────────────────────────
 const checkInForm = useForm({
-    amount_received:        props.booking.total_amount,
-    checkin_payment_method: '',
-    checkin_notes:          '',
+    // Payment is settled before check-in — check-in is arrival confirmation only.
+    checkin_notes: '',
 })
 function submitCheckIn() {
     checkInForm.post(route('manage.bookings.check-in', props.booking.booking_reference), { preserveScroll: true })
@@ -177,6 +176,13 @@ function installmentStatus(inst) {
 // The earliest unpaid installment is the one staff can record next.
 const nextDueInstallment = computed(() =>
     (props.booking.installments ?? []).find(i => !i.paid_at)
+)
+// Weekly bookings check in once week 1 is paid (rest is prepaid week-by-week);
+// everyone else must be fully paid. Mirrors Booking::canCheckIn().
+const paidEnoughToCheckIn = computed(() =>
+    props.booking.payment_status === 'paid'
+    || (props.booking.payment_plan === 'weekly'
+        && !!(props.booking.installments ?? []).find(i => i.week_number === 1)?.paid_at)
 )
 function submitInstallment(inst) {
     installmentForm.post(route('manage.bookings.installments.pay', [props.booking.booking_reference, inst.id]), {
@@ -726,24 +732,15 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                 <div class="space-y-3 mt-4 lg:mt-0 lg:sticky lg:top-20">
 
                     <!-- Check-in panel -->
-                    <div v-if="booking.status === 'confirmed' && booking.payment_status === 'paid' && can('confirm-checkin')" :class="card" class="p-4">
+                    <div v-if="booking.status === 'confirmed' && paidEnoughToCheckIn && can('confirm-checkin')" :class="card" class="p-4">
                         <p class="text-xs font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5"><LogIn class="w-3.5 h-3.5 text-emerald-500" /> Check In Guest</p>
                         <form @submit.prevent="submitCheckIn" class="space-y-3">
+                            <p class="text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-3 py-2">
+                                <template v-if="booking.payment_plan === 'weekly'">Week 1 is paid — the guest can check in. Later weeks are collected before each week begins.</template>
+                                <template v-else>Payment is settled. Confirm the guest's arrival.</template>
+                            </p>
                             <div>
-                                <label class="block text-xs text-gray-500 mb-1">Amount Received (₦)</label>
-                                <input v-model="checkInForm.amount_received" type="number" step="0.01" :class="inputCls(checkInForm.errors.amount_received)" required />
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Payment Method</label>
-                                <select v-model="checkInForm.checkin_payment_method" :class="inputCls(checkInForm.errors.checkin_payment_method)" required>
-                                    <option value="">Select method</option>
-                                    <option value="pos">POS</option>
-                                    <option value="bank_transfer">Bank Transfer</option>
-                                    <option value="cash">Cash</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Notes</label>
+                                <label class="block text-xs text-gray-500 mb-1">Notes <span class="text-gray-400">(optional)</span></label>
                                 <textarea v-model="checkInForm.checkin_notes" rows="2" :class="[...inputCls(false), 'resize-none']" />
                             </div>
                             <button type="submit" :disabled="checkInForm.processing"
