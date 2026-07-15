@@ -23,6 +23,7 @@ class Booking extends Model
         'unit_type_id',
         'unit_id',
         'user_id',
+        'organization_id',
         'created_by_admin_id',
         'check_in',
         'check_out',
@@ -138,6 +139,11 @@ class Booking extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
 

@@ -12,7 +12,7 @@ import {
     Search, Plus, Banknote, BadgeCheck, WifiOff,
     Inbox, CalendarCheck, MessageSquare, Clock, UserRound,
     ShieldCheck, UserCog, HelpCircle, MessagesSquare, Megaphone, ScrollText,
-    Home, Boxes, Settings
+    Home, Boxes, Settings, Briefcase
 } from 'lucide-vue-next'
 import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
@@ -363,6 +363,7 @@ const navGroups = computed(() => [
             { label: 'Guest Messages',   icon: MessageSquare,  route: 'manage.messages.index',               match: 'manage.messages.*',                   permission: 'manage-bookings', badge: unreadMessages.value },
             { label: 'Late Checkouts',   icon: Clock,          route: 'manage.bookings.late-checkout.index', match: 'manage.bookings.late-checkout.index', permission: 'approve-late-checkout', badge: pendingCount.value },
             { label: 'Caution Fees',     icon: Banknote,       route: 'manage.financials.deposits',          match: 'manage.financials.deposits',          permission: 'view-financials', badge: pendingCautionRefunds.value },
+            { label: 'Organizations',    icon: Briefcase,      route: 'manage.organizations.index',          match: 'manage.organizations.*',              permission: 'view-bookings' },
         ]
     },
     {

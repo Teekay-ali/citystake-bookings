@@ -1,12 +1,12 @@
 <script setup>
 import ManageLayout from '@/Layouts/ManageLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useAppToast } from '@/Composables/useAppToast';
 import {
     ArrowLeft, Calendar, Users, Mail, Phone,
     CreditCard, User, MessageSquare, Building2,
-    Home, Receipt, ChevronRight
+    Home, Receipt, ChevronRight, Briefcase, Plus
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -39,7 +39,41 @@ const form = useForm({
     currency:      'NGN',
     price_usd:     '',
     exchange_rate: '',
+    // Payer (Block D1) — optional organization
+    organization_id: '',
 })
+
+// ── Organizations (bill-to payer) ──
+const billToOrg   = ref(false)
+const orgs        = ref([])
+const showNewOrg  = ref(false)
+const newOrg      = ref({ name: '', contact_phone: '' })
+const creatingOrg = ref(false)
+
+onMounted(async () => {
+    try {
+        const res = await fetch(route('manage.organizations.options'))
+        orgs.value = await res.json()
+    } catch { orgs.value = [] }
+})
+
+watch(billToOrg, (on) => { if (!on) { form.organization_id = ''; showNewOrg.value = false } })
+
+async function createOrg() {
+    if (!newOrg.value.name.trim()) return
+    creatingOrg.value = true
+    try {
+        const { data: org } = await window.axios.post(route('manage.organizations.store'), newOrg.value)
+        orgs.value.unshift(org)
+        form.organization_id = org.id
+        showNewOrg.value = false
+        newOrg.value = { name: '', contact_phone: '' }
+    } catch {
+        toast.error('Could not create organization.')
+    } finally {
+        creatingOrg.value = false
+    }
+}
 
 const isUsd = computed(() => form.currency === 'USD')
 
@@ -429,6 +463,45 @@ const inputCls = (hasError) => [
                                 placeholder="Any special requirements..."
                                 class="w-full px-3 py-2.5 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all resize-none"
                             />
+                        </div>
+
+                        <!-- Bill to organization -->
+                        <div class="mt-4">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" v-model="billToOrg"
+                                       class="rounded border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-gray-900 dark:focus:ring-white" />
+                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                                    <Briefcase class="w-3.5 h-3.5" /> Bill to an organization
+                                </span>
+                            </label>
+
+                            <div v-if="billToOrg" class="mt-2 space-y-2">
+                                <div v-if="!showNewOrg" class="flex items-center gap-2">
+                                    <select v-model="form.organization_id" :class="inputCls(false)">
+                                        <option value="">Select organization…</option>
+                                        <option v-for="o in orgs" :key="o.id" :value="o.id">
+                                            {{ o.name }}<template v-if="o.contact_name"> · {{ o.contact_name }}</template>
+                                        </option>
+                                    </select>
+                                    <button type="button" @click="showNewOrg = true"
+                                            class="shrink-0 inline-flex items-center gap-1 px-3 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-800 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                                        <Plus class="w-3.5 h-3.5" /> New
+                                    </button>
+                                </div>
+
+                                <div v-else class="p-3 border border-gray-200 dark:border-gray-800 rounded-lg space-y-2 bg-gray-50/60 dark:bg-gray-900/40">
+                                    <input v-model="newOrg.name" type="text" placeholder="Organization name" :class="inputCls(false)" />
+                                    <input v-model="newOrg.contact_phone" type="text" placeholder="Contact phone (optional)" :class="inputCls(false)" />
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button" @click="showNewOrg = false" class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                                        <button type="button" @click="createOrg" :disabled="creatingOrg || !newOrg.name.trim()"
+                                                class="px-3 py-1.5 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50">
+                                            {{ creatingOrg ? 'Adding…' : 'Add organization' }}
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500">The organization is the payer; the guest above is the occupant.</p>
+                            </div>
                         </div>
                     </section>
 

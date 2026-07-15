@@ -10,7 +10,7 @@ import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
     Clock, CheckCircle, ChevronRight,
-    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag,
+    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -404,7 +404,12 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                                     <span class="text-sm font-semibold text-white dark:text-gray-900">{{ guestInitials }}</span>
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ booking.guest_name }}</p>
+                                    <p class="text-base font-semibold text-gray-900 dark:text-white truncate flex items-center gap-2">
+                                        {{ booking.guest_name }}
+                                        <span v-if="booking.organization" class="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400">
+                                            <Briefcase class="w-3 h-3" /> {{ booking.organization.name }}
+                                        </span>
+                                    </p>
                                     <div class="flex items-center gap-3 mt-0.5 flex-wrap">
                                         <a :href="`mailto:${booking.guest_email}`" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                             <Mail class="w-3 h-3" /> {{ booking.guest_email }}

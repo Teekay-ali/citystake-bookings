@@ -40,7 +40,7 @@ class BookingController extends Controller
         abort_unless(auth()->user()->can('view-bookings'), 403);
 
         $user  = auth()->user();
-        $query = Booking::with(['building', 'unitType', 'unit', 'user']);
+        $query = Booking::with(['building', 'unitType', 'unit', 'user', 'organization']);
 
         if (!$user->hasGlobalAccess()) {
             $query->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
@@ -166,6 +166,8 @@ class BookingController extends Controller
             'currency'      => 'nullable|in:NGN,USD',
             'price_usd'     => 'nullable|numeric|min:0|required_if:currency,USD',
             'exchange_rate' => 'nullable|numeric|min:0|required_if:currency,USD',
+            // Payer (Block D1) — optional organization billed for the booking
+            'organization_id' => 'nullable|exists:organizations,id',
         ]);
 
         try {
@@ -269,6 +271,7 @@ class BookingController extends Controller
                 'unit_type_id'      => $unitType->id,
                 'unit_id'           => $availableUnit->id,
                 'user_id'           => null,
+                'organization_id'   => $validated['organization_id'] ?? null,
                 'created_by_admin_id' => auth()->id(),
                 'check_in'          => $validated['check_in'],
                 'check_out'         => $validated['check_out'],
@@ -304,6 +307,7 @@ class BookingController extends Controller
                 'reference_type'   => Booking::class,
                 'reference_id'     => $booking->id,
                 'description'      => "Walk-in booking {$booking->booking_reference} - {$booking->guest_name}"
+                    . ($booking->organization_id ? " [Org: {$booking->organization?->name}]" : '')
                     . ($booking->currency === 'USD'
                         ? " (\${$booking->price_usd} @ ₦" . number_format((float) $booking->exchange_rate, 0) . "/\$)"
                         : ''),
@@ -379,7 +383,7 @@ class BookingController extends Controller
         }
 
         $booking->load([
-            'building', 'unitType', 'unit', 'user', 'adjustments',
+            'building', 'unitType', 'unit', 'user', 'organization', 'adjustments',
             'checkedInBy', 'checkedOutBy', 'lateCheckoutApprovedBy',
             'messages.sender',
             'adjustments.appliedBy',

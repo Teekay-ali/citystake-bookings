@@ -6,7 +6,7 @@ import {
     Search, Plus, Download, Eye, PauseCircle,
     CheckCircle, XCircle, Clock, AlertCircle,
     ChevronRight, ChevronLeft,
-    Hash, User, Building2, CalendarDays, Banknote, CircleDot, Flag,
+    Hash, User, Building2, CalendarDays, Banknote, CircleDot, Flag, Briefcase,
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -227,8 +227,14 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ formatDate(booking.created_at) }}</p>
                         </td>
                         <td class="px-4 py-2.5">
-                            <p class="font-medium text-gray-900 dark:text-white">{{ booking.guest_name }}</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ booking.guests }} guest{{ booking.guests > 1 ? 's' : '' }}</p>
+                            <p class="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                                {{ booking.guest_name }}
+                                <Briefcase v-if="booking.organization" class="w-3 h-3 text-indigo-500" :title="booking.organization.name" />
+                            </p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                                <template v-if="booking.organization">{{ booking.organization.name }}</template>
+                                <template v-else>{{ booking.guests }} guest{{ booking.guests > 1 ? 's' : '' }}</template>
+                            </p>
                         </td>
                         <td class="px-4 py-2.5">
                             <p class="text-gray-900 dark:text-white">{{ booking.unit_type.name }}</p>
