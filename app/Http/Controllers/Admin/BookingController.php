@@ -162,6 +162,10 @@ class BookingController extends Controller
             'manual_discount_amount' => 'nullable|numeric|min:0|required_if:discount_mode,manual',
             'discount_reason'        => 'nullable|string|max:255|required_if:discount_mode,manual',
             'cross_grade'            => 'nullable|boolean',
+            // Currency (Block B) — USD contracts, rate locked at creation
+            'currency'      => 'nullable|in:NGN,USD',
+            'price_usd'     => 'nullable|numeric|min:0|required_if:currency,USD',
+            'exchange_rate' => 'nullable|numeric|min:0|required_if:currency,USD',
         ]);
 
         try {
@@ -253,6 +257,9 @@ class BookingController extends Controller
                 'discount_mode'   => $validated['discount_mode'] ?? 'auto',
                 'manual_discount' => (float) ($validated['manual_discount_amount'] ?? 0),
                 'discount_reason' => $validated['discount_reason'] ?? null,
+                'currency'        => $validated['currency'] ?? 'NGN',
+                'price_usd'       => (float) ($validated['price_usd'] ?? 0),
+                'exchange_rate'   => (float) ($validated['exchange_rate'] ?? 0),
             ]);
 
             // Create booking
@@ -274,6 +281,9 @@ class BookingController extends Controller
                 'policy_version'    => $building->currentPolicy?->version,
                 'subtotal'          => $bookingModel->subtotal,
                 'total_amount'      => $bookingModel->total_amount,
+                'currency'          => $bookingModel->currency,
+                'price_usd'         => $bookingModel->price_usd,
+                'exchange_rate'     => $bookingModel->exchange_rate,
                 'discount_type'     => $bookingModel->discount_type,
                 'discount_percent'  => $bookingModel->discount_percent,
                 'discount_amount'   => $bookingModel->discount_amount,
@@ -293,7 +303,10 @@ class BookingController extends Controller
                 'category'         => 'booking',
                 'reference_type'   => Booking::class,
                 'reference_id'     => $booking->id,
-                'description'      => "Walk-in booking {$booking->booking_reference} - {$booking->guest_name}",
+                'description'      => "Walk-in booking {$booking->booking_reference} - {$booking->guest_name}"
+                    . ($booking->currency === 'USD'
+                        ? " (\${$booking->price_usd} @ ₦" . number_format((float) $booking->exchange_rate, 0) . "/\$)"
+                        : ''),
                 'amount'           => $booking->total_amount,
                 'payment_method'   => $validated['payment_method'],
                 'payment_reference'=> $validated['payment_reference'] ?? null,
@@ -498,13 +511,17 @@ class BookingController extends Controller
         $discountReason = $validated['discount_reason'] ?? ($wasManual ? $booking->discount_reason : null);
         $discountChanged = array_key_exists('discount_mode', $validated);
 
-        // Reprice when dates change (subtotal/caution depend on nights) or the discount is edited
+        // Reprice when dates change (subtotal/caution depend on nights) or the discount is edited.
+        // Preserve the booking's currency — a USD contract keeps its locked price/rate.
         if ($datesChanged || $discountChanged) {
             $priced = new Booking(['check_in' => $checkIn, 'check_out' => $checkOut]);
             $priced->calculateTotal($booking->unitType, [
                 'discount_mode'   => $discountMode,
                 'manual_discount' => (float) $manualAmount,
                 'discount_reason' => $discountReason,
+                'currency'        => $booking->currency ?? 'NGN',
+                'price_usd'       => (float) $booking->price_usd,
+                'exchange_rate'   => (float) $booking->exchange_rate,
             ]);
 
             $updates['subtotal']         = $priced->subtotal;

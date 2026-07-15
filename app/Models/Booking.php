@@ -30,6 +30,9 @@ class Booking extends Model
         'guests',
         'subtotal',
         'total_amount',
+        'currency',
+        'price_usd',
+        'exchange_rate',
         'discount_type',
         'discount_percent',
         'discount_amount',
@@ -91,6 +94,8 @@ class Booking extends Model
         'amount_received' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'price_usd' => 'decimal:2',
+        'exchange_rate' => 'decimal:2',
         'discount_percent' => 'decimal:2',
         'discount_amount'  => 'decimal:2',
         'late_checkout_requested'   => 'boolean',
@@ -210,18 +215,33 @@ class Booking extends Model
      */
     public function calculateTotal(UnitType $unitType, array $opts = []): void
     {
-        $this->nights         = Carbon::parse($this->check_in)->diffInDays($this->check_out);
-        $this->subtotal       = $this->nights * $unitType->base_price_per_night;
+        $this->nights = Carbon::parse($this->check_in)->diffInDays($this->check_out);
 
-        // Caution fee - 1-night bookings pay 1 night price, all others pay building's caution fee amount
         $building = $unitType->building ?? $unitType->building()->first();
         $defaultCautionFee = (float) ($building->caution_fee_amount ?? 70000);
 
-        $this->caution_fee = (int) $this->nights === 1
-            ? (float) $unitType->base_price_per_night
-            : $defaultCautionFee;
+        $currency = strtoupper($opts['currency'] ?? 'NGN');
 
-        $mode = $opts['discount_mode'] ?? 'auto';
+        if ($currency === 'USD') {
+            // Contracted in USD; converted to NGN at the rate locked now.
+            // All financials are stored/reported in NGN. Caution stays NGN.
+            $this->currency      = 'USD';
+            $this->price_usd     = (float) ($opts['price_usd'] ?? 0);
+            $this->exchange_rate = (float) ($opts['exchange_rate'] ?? 0);
+            $this->subtotal      = round($this->price_usd * $this->exchange_rate, 2);
+            $this->caution_fee   = $defaultCautionFee;
+            // Nightly auto-discount is meaningless for a flat USD contract
+            $mode = ($opts['discount_mode'] ?? 'none') === 'manual' ? 'manual' : 'none';
+        } else {
+            $this->currency      = 'NGN';
+            $this->price_usd     = null;
+            $this->exchange_rate = null;
+            $this->subtotal      = $this->nights * $unitType->base_price_per_night;
+            $this->caution_fee   = (int) $this->nights === 1
+                ? (float) $unitType->base_price_per_night
+                : $defaultCautionFee;
+            $mode = $opts['discount_mode'] ?? 'auto';
+        }
 
         if ($mode === 'manual') {
             // Discretionary flat ₦ discount - never exceeds the subtotal.

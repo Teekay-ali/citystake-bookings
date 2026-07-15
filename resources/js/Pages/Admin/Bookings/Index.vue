@@ -249,6 +249,7 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                         </td>
                         <td class="px-4 py-2.5 text-right whitespace-nowrap">
                             <p class="font-semibold tabular-nums text-gray-900 dark:text-white">{{ formatPrice(booking.total_amount) }}</p>
+                            <p v-if="booking.currency === 'USD'" class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">${{ Number(booking.price_usd).toLocaleString() }}</p>
                             <p class="text-xs mt-0.5" :class="booking.payment_status === 'paid' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'">
                                 {{ booking.payment_status === 'paid' ? 'Paid' : 'Pending' }}
                             </p>
@@ -307,7 +308,10 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                         </span>
                     </div>
                     <div class="flex flex-col items-end gap-1.5 shrink-0">
-                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatPrice(booking.total_amount) }}</p>
+                        <div class="text-right">
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatPrice(booking.total_amount) }}</p>
+                            <p v-if="booking.currency === 'USD'" class="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">${{ Number(booking.price_usd).toLocaleString() }}</p>
+                        </div>
                         <span :class="[getStatus(booking).cls, 'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium']">
                             {{ getStatus(booking).text }}
                         </span>

@@ -35,7 +35,16 @@ const form = useForm({
     manual_discount_amount: '',
     discount_reason:        '',
     cross_grade:            false,
+    // Currency (Block B) — USD contracts with a locked exchange rate
+    currency:      'NGN',
+    price_usd:     '',
+    exchange_rate: '',
 })
+
+const isUsd = computed(() => form.currency === 'USD')
+
+// Auto (nightly) discount is meaningless for a flat USD contract
+watch(isUsd, (usd) => { if (usd && form.discount_mode === 'auto') form.discount_mode = 'none' })
 
 // When cross-grading, the physical unit comes from a different (overflow) type
 // while form.unit_type_id stays as the billed/rate type.
@@ -134,16 +143,20 @@ watch([physicalUnitTypeId, () => form.check_in, () => form.check_out], async ([u
 
 
 const pricing = computed(() => {
-    if (!selectedUnitType.value || calculateNights.value === 0) {
-        return { subtotal: 0, cautionFee: 0, discountAmount: 0, discountPercent: 0, discountType: null, total: 0 };
-    }
+    const empty = { subtotal: 0, cautionFee: 0, discountAmount: 0, discountPercent: 0, discountType: null, total: 0 };
+    if (!selectedUnitType.value || calculateNights.value === 0) return empty;
 
     const nights     = calculateNights.value;
-    const price      = parseFloat(selectedUnitType.value.base_price_per_night) || 0;
-    const subtotal   = price * nights;
-    const cautionFee = nights === 1
-        ? price
-        : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000);
+    const cautionFee = isUsd.value
+        ? parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000)
+        : (nights === 1
+            ? (parseFloat(selectedUnitType.value.base_price_per_night) || 0)
+            : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000));
+
+    // Subtotal (always NGN): USD contract = price_usd × rate; otherwise nightly rate
+    const subtotal = isUsd.value
+        ? Math.round((parseFloat(form.price_usd) || 0) * (parseFloat(form.exchange_rate) || 0))
+        : (parseFloat(selectedUnitType.value.base_price_per_night) || 0) * nights;
 
     let discountPercent = 0;
     let discountType    = null;
@@ -152,7 +165,8 @@ const pricing = computed(() => {
     if (form.discount_mode === 'manual') {
         discountAmount = Math.min(Math.max(parseFloat(form.manual_discount_amount) || 0, 0), subtotal);
         discountType   = discountAmount > 0 ? 'manual' : null;
-    } else if (form.discount_mode === 'none') {
+    } else if (form.discount_mode === 'none' || isUsd.value) {
+        // Auto (nightly) discount is meaningless for a flat USD contract
         discountType = null;
     } else {
         if (nights >= 7) { discountPercent = 5; discountType = 'long_stay'; }
@@ -547,11 +561,40 @@ const inputCls = (hasError) => [
 
                         <div class="border-t border-gray-200 dark:border-gray-800" />
 
+                        <!-- Currency -->
+                        <div class="pb-1">
+                            <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                                <button v-for="c in [['NGN','₦ Naira'],['USD','$ USD contract']]" :key="c[0]"
+                                        type="button" @click="form.currency = c[0]"
+                                        :class="form.currency === c[0]
+                                            ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                        class="flex-1 py-1.5 rounded-md text-[11px] font-medium transition-all">
+                                    {{ c[1] }}
+                                </button>
+                            </div>
+                            <div v-if="isUsd" class="mt-2 grid grid-cols-2 gap-2">
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+                                    <input v-model.number="form.price_usd" type="number" min="0" step="0.01" placeholder="USD price"
+                                           class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all tabular-nums" />
+                                </div>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₦</span>
+                                    <input v-model.number="form.exchange_rate" type="number" min="0" step="0.01" placeholder="Rate /$"
+                                           class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all tabular-nums" />
+                                </div>
+                                <p class="col-span-2 text-[11px] text-gray-400 dark:text-gray-500">Rate is locked to this booking. Financials are recorded in ₦.</p>
+                                <p v-if="form.errors.price_usd || form.errors.exchange_rate" class="col-span-2 text-xs text-red-600">Enter both the USD price and the exchange rate.</p>
+                            </div>
+                        </div>
+
                         <!-- Pricing -->
                         <div class="space-y-2.5">
                             <div class="flex items-center justify-between text-xs">
                                 <span class="text-gray-500 dark:text-gray-400">
-                                    {{ formatPrice(selectedUnitType.base_price_per_night) }} × {{ calculateNights }}
+                                    <template v-if="isUsd">${{ Number(form.price_usd || 0).toLocaleString() }} × ₦{{ Number(form.exchange_rate || 0).toLocaleString() }}</template>
+                                    <template v-else>{{ formatPrice(selectedUnitType.base_price_per_night) }} × {{ calculateNights }}</template>
                                 </span>
                                 <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.subtotal) }}</span>
                             </div>
@@ -577,7 +620,7 @@ const inputCls = (hasError) => [
                         <!-- Discount control -->
                         <div class="pt-1">
                             <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
-                                <button v-for="mode in [['auto','Auto'],['manual','Manual ₦'],['none','None']]" :key="mode[0]"
+                                <button v-for="mode in (isUsd ? [['manual','Manual ₦'],['none','None']] : [['auto','Auto'],['manual','Manual ₦'],['none','None']])" :key="mode[0]"
                                         type="button" @click="form.discount_mode = mode[0]"
                                         :class="form.discount_mode === mode[0]
                                             ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm'

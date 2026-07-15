@@ -141,7 +141,11 @@
     <tr>
         <td>
             <strong>{{ $booking->unitType->name }}</strong><br>
-            <span style="font-size:11px;color:#9ca3af;">{{ $booking->nights }} night{{ $booking->nights > 1 ? 's' : '' }} × ₦{{ number_format($booking->subtotal / $booking->nights, 0) }}/night</span>
+            @if($booking->currency === 'USD')
+                <span style="font-size:11px;color:#9ca3af;">${{ number_format($booking->price_usd, 2) }} contract × ₦{{ number_format($booking->exchange_rate, 0) }}/$ (rate locked)</span>
+            @else
+                <span style="font-size:11px;color:#9ca3af;">{{ $booking->nights }} night{{ $booking->nights > 1 ? 's' : '' }} × ₦{{ number_format($booking->subtotal / max($booking->nights, 1), 0) }}/night</span>
+            @endif
         </td>
         <td class="right">₦{{ number_format($booking->subtotal, 0) }}</td>
     </tr>
@@ -161,7 +165,7 @@
         </tr>
     @endif
     <tr class="total-row">
-        <td>Total Amount Paid</td>
+        <td>Total Amount Paid{{ $booking->currency === 'USD' ? ' (NGN)' : '' }}</td>
         <td class="right">₦{{ number_format($booking->total_amount, 0) }}</td>
     </tr>
     </tbody>

@@ -417,6 +417,9 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                             </div>
                             <div class="text-right">
                                 <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ fmt(booking.total_amount) }}</p>
+                                <p v-if="booking.currency === 'USD'" class="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
+                                    ${{ Number(booking.price_usd).toLocaleString() }} @ ₦{{ Number(booking.exchange_rate).toLocaleString() }}/$
+                                </p>
                                 <p class="text-xs font-medium mt-0.5" :class="booking.payment_status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'">
                                     {{ booking.payment_status === 'paid' ? `Paid · ${booking.payment_method?.replace('_', ' ')}` : 'Payment pending' }}
                                 </p>

@@ -52,13 +52,24 @@
         </div>
 
         <div class="total-section">
-            <div class="total-row">
-                <span>{{ $booking->nights }} night{{ $booking->nights > 1 ? 's' : '' }}</span>
-                <span>₦{{ number_format($booking->subtotal, 0) }}</span>
-            </div>
+            @if($booking->currency === 'USD')
+                <div class="total-row">
+                    <span>Contract</span>
+                    <span>${{ number_format($booking->price_usd, 2) }}</span>
+                </div>
+                <div class="total-row">
+                    <span>Exchange rate</span>
+                    <span>₦{{ number_format($booking->exchange_rate, 0) }} / $</span>
+                </div>
+            @else
+                <div class="total-row">
+                    <span>{{ $booking->nights }} night{{ $booking->nights > 1 ? 's' : '' }}</span>
+                    <span>₦{{ number_format($booking->subtotal, 0) }}</span>
+                </div>
+            @endif
 
             <div class="total-row">
-                <span>Total Amount</span>
+                <span>Total Amount{{ $booking->currency === 'USD' ? ' (NGN)' : '' }}</span>
                 <span>₦{{ number_format($booking->total_amount, 0) }}</span>
             </div>
         </div>
