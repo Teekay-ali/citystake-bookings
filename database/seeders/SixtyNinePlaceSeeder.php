@@ -47,10 +47,7 @@ class SixtyNinePlaceSeeder extends Seeder
             'slug'                   => 'studio-apartment',
             'bedroom_type'           => 'studio',
             'max_guests'             => 2,
-            'base_price_per_night'   => 115000.00,
-            'cleaning_fee'           => 0.00,
-            'service_charge_percent' => 0.00, // VAT
-            'description'            => 'Compact and well-appointed studio apartments, ideal for solo travellers and couples.',
+            'base_price_per_night'   => 115000.00,            'description'            => 'Compact and well-appointed studio apartments, ideal for solo travellers and couples.',
             'is_active'              => true,
         ]);
 
@@ -69,10 +66,7 @@ class SixtyNinePlaceSeeder extends Seeder
             'slug'                   => '1-bedroom-apartment',
             'bedroom_type'           => '1-bed',
             'max_guests'             => 2,
-            'base_price_per_night'   => 130000.00,
-            'cleaning_fee'           => 0.00,
-            'service_charge_percent' => 0.00, // VAT
-            'description'            => 'Spacious one-bedroom apartments with a separate living area, perfect for extended stays.',
+            'base_price_per_night'   => 130000.00,            'description'            => 'Spacious one-bedroom apartments with a separate living area, perfect for extended stays.',
             'is_active'              => true,
         ]);
 
@@ -91,10 +85,7 @@ class SixtyNinePlaceSeeder extends Seeder
             'slug'                   => '2-bedroom-apartment',
             'bedroom_type'           => '2-bed',
             'max_guests'             => 4,
-            'base_price_per_night'   => 150000.00,
-            'cleaning_fee'           => 0.00,
-            'service_charge_percent' => 0.00, // VAT
-            'description'            => 'Generously sized two-bedroom apartments, ideal for families and groups.',
+            'base_price_per_night'   => 150000.00,            'description'            => 'Generously sized two-bedroom apartments, ideal for families and groups.',
             'is_active'              => true,
         ]);
 

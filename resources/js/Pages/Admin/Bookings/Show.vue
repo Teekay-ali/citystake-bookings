@@ -736,7 +736,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                         <p class="text-xs font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5"><LogIn class="w-3.5 h-3.5 text-emerald-500" /> Check In Guest</p>
                         <form @submit.prevent="submitCheckIn" class="space-y-3">
                             <p class="text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-3 py-2">
-                                <template v-if="booking.payment_plan === 'weekly'">Week 1 is paid — the guest can check in. Later weeks are collected before each week begins.</template>
+                                <template v-if="booking.payment_plan === 'weekly'">Week 1 is paid - the guest can check in. Later weeks are collected before each week begins.</template>
                                 <template v-else>Payment is settled. Confirm the guest's arrival.</template>
                             </p>
                             <div>
