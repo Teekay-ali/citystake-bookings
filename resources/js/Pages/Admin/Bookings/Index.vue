@@ -6,7 +6,7 @@ import {
     Search, Plus, Download, Eye, PauseCircle,
     CheckCircle, XCircle, Clock, AlertCircle,
     ChevronRight, ChevronLeft,
-    Hash, User, Building2, CalendarDays, Banknote, CircleDot, Flag, Briefcase,
+    Hash, User, Building2, CalendarDays, Banknote, CircleDot, Flag, Briefcase, Layers,
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -128,6 +128,13 @@ const selectClass = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gr
                     <Download class="w-3.5 h-3.5" />
                     Export
                 </button>
+                <Link
+                    v-if="$page.props.auth.user.permissions?.includes('create-bookings')"
+                    :href="route('manage.bookings.group.create')"
+                    class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg shadow-sm transition-all">
+                    <Layers class="w-3.5 h-3.5" />
+                    <span class="hidden sm:inline">Group</span>
+                </Link>
                 <Link
                     v-if="$page.props.auth.user.permissions?.includes('create-bookings')"
                     :href="route('manage.bookings.create')"

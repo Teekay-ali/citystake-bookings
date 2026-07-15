@@ -171,6 +171,10 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     // Bookings
     Route::get('/bookings/late-checkout-requests', [AdminBookingController::class, 'lateCheckoutRequests'])->name('bookings.late-checkout.index');
     Route::get('/bookings/create', [AdminBookingController::class, 'create'])->name('bookings.create');
+    // Group bookings (multiple units at once)
+    Route::get('/bookings/group/create', [\App\Http\Controllers\Admin\GroupBookingController::class, 'create'])->name('bookings.group.create');
+    Route::post('/bookings/group', [\App\Http\Controllers\Admin\GroupBookingController::class, 'store'])->name('bookings.group.store');
+    Route::get('/booking-groups/{group}', [\App\Http\Controllers\Admin\GroupBookingController::class, 'show'])->name('booking-groups.show');
     Route::get('/bookings/calendar', [BookingCalendarController::class, 'index'])->name('bookings.calendar');
     Route::get('/bookings/export', [BookingExportController::class, 'export'])->name('bookings.export');
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');

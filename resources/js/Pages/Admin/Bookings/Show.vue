@@ -10,7 +10,7 @@ import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
     Clock, CheckCircle, ChevronRight,
-    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase,
+    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -371,6 +371,10 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                                 <span :class="statusConfig.dot" class="w-1.5 h-1.5 rounded-full" />
                                 {{ statusConfig.label }}
                             </span>
+                            <Link v-if="booking.booking_group" :href="route('manage.booking-groups.show', booking.booking_group.reference)"
+                                  class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                <Layers class="w-3 h-3" /> Group
+                            </Link>
                         </div>
                         <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ fmtDate(booking.check_in) }} → {{ fmtDate(booking.check_out) }}</p>
                     </div>

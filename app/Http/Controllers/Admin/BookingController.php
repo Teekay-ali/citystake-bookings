@@ -383,7 +383,7 @@ class BookingController extends Controller
         }
 
         $booking->load([
-            'building', 'unitType', 'unit', 'user', 'organization', 'adjustments',
+            'building', 'unitType', 'unit', 'user', 'organization', 'bookingGroup', 'adjustments',
             'checkedInBy', 'checkedOutBy', 'lateCheckoutApprovedBy',
             'messages.sender',
             'adjustments.appliedBy',

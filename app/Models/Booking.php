@@ -24,6 +24,7 @@ class Booking extends Model
         'unit_id',
         'user_id',
         'organization_id',
+        'booking_group_id',
         'created_by_admin_id',
         'check_in',
         'check_out',
@@ -144,6 +145,11 @@ class Booking extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function bookingGroup(): BelongsTo
+    {
+        return $this->belongsTo(BookingGroup::class);
     }
 
 
