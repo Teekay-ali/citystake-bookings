@@ -62,7 +62,7 @@ onMounted(() => {
                             </button>
                         </div>
 
-                        <!-- Entries -->
+                        <!-- Entries  -->
                         <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
                             <div v-for="entry in entries" :key="entry.id" class="px-6 py-4">
                                 <div class="flex items-center gap-2 mb-1.5 flex-wrap">
