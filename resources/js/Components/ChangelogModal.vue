@@ -46,10 +46,10 @@ onMounted(() => {
                 <Transition enter-active-class="transition duration-200 ease-out"
                             enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100">
                     <div v-if="show"
-                         class="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden">
+                         class="relative flex flex-col w-full max-w-lg max-h-[calc(100dvh-2rem)] bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden">
 
                         <!-- Header -->
-                        <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
                             <div>
                                 <h2 class="text-base font-semibold text-gray-900 dark:text-white">What's New</h2>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -63,7 +63,7 @@ onMounted(() => {
                         </div>
 
                         <!-- Entries -->
-                        <div class="overflow-y-auto max-h-[60vh] divide-y divide-gray-100 dark:divide-gray-800">
+                        <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
                             <div v-for="entry in entries" :key="entry.id" class="px-6 py-4">
                                 <div class="flex items-center gap-2 mb-1.5 flex-wrap">
                                     <span :class="['inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full', typeColors[entry.type]]">
@@ -79,7 +79,7 @@ onMounted(() => {
                         </div>
 
                         <!-- Footer -->
-                        <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                        <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end shrink-0">
                             <button @click="dismiss"
                                     class="px-5 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">
                                 Got it
