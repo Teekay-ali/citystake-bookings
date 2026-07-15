@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\AuditLog;
+use App\Models\BookingInstallment;
 use App\Models\CautionFeeCharge;
 use App\Models\Unit;
 use App\Notifications\BookingModifiedNotification;
@@ -168,6 +169,8 @@ class BookingController extends Controller
             'exchange_rate' => 'nullable|numeric|min:0|required_if:currency,USD',
             // Payer (Block D1) — optional organization billed for the booking
             'organization_id' => 'nullable|exists:organizations,id',
+            // Payment plan (weekly prepaid installments)
+            'payment_plan' => 'nullable|in:full,weekly',
         ]);
 
         try {
@@ -255,11 +258,15 @@ class BookingController extends Controller
                 'check_in'  => $validated['check_in'],
                 'check_out' => $validated['check_out'],
             ]);
+            // Weekly plans are prepaid week-by-week at the standard nightly rate (NGN,
+            // no long-stay discount) so each weekly installment maps cleanly to its nights.
+            $weekly = ($validated['payment_plan'] ?? 'full') === 'weekly';
+
             $bookingModel->calculateTotal($unitType, [
-                'discount_mode'   => $validated['discount_mode'] ?? 'auto',
+                'discount_mode'   => $weekly ? 'none' : ($validated['discount_mode'] ?? 'auto'),
                 'manual_discount' => (float) ($validated['manual_discount_amount'] ?? 0),
                 'discount_reason' => $validated['discount_reason'] ?? null,
-                'currency'        => $validated['currency'] ?? 'NGN',
+                'currency'        => $weekly ? 'NGN' : ($validated['currency'] ?? 'NGN'),
                 'price_usd'       => (float) ($validated['price_usd'] ?? 0),
                 'exchange_rate'   => (float) ($validated['exchange_rate'] ?? 0),
             ]);
@@ -293,12 +300,21 @@ class BookingController extends Controller
                 'discount_reason'   => $bookingModel->discount_reason,
                 'caution_fee'       => $bookingModel->caution_fee,
                 'status'            => 'confirmed',
-                'payment_status'    => 'paid',
+                'payment_status'    => $weekly ? 'partial' : 'paid',
+                'payment_plan'      => $weekly ? 'weekly' : 'full',
                 'payment_method'    => $validated['payment_method'],
                 'paystack_reference'=> $validated['payment_reference'],
-                'paid_at'           => now(),
+                'paid_at'           => $weekly ? null : now(),
             ]);
 
+            // Weekly plan: generate the schedule and settle week 1 now (before check-in).
+            if ($weekly) {
+                foreach ($booking->buildWeeklySchedule() as $row) {
+                    $booking->installments()->create($row);
+                }
+                $this->settleInstallment($booking->installments()->orderBy('week_number')->first(), $validated['payment_method'], $validated['payment_reference'] ?? null);
+                $booking->update(['amount_received' => $booking->fresh()->installments_paid]);
+            } else {
             FinancialTransaction::create([
                 'building_id'      => $booking->building_id,
                 'recorded_by'      => auth()->id(),
@@ -316,6 +332,7 @@ class BookingController extends Controller
                 'payment_reference'=> $validated['payment_reference'] ?? null,
                 'transaction_date' => now()->toDateString(),
             ]);
+            }
 
             AuditLog::log('booking.created', $booking, null, ['reference' => $booking->booking_reference, 'guest' => $booking->guest_name, 'method' => $validated['payment_method']]);
 
@@ -383,19 +400,24 @@ class BookingController extends Controller
         }
 
         $booking->load([
-            'building', 'unitType', 'unit', 'user', 'organization', 'bookingGroup', 'adjustments',
+            'building', 'unitType', 'unit', 'unit.unitType', 'user', 'organization', 'bookingGroup', 'adjustments',
             'checkedInBy', 'checkedOutBy', 'lateCheckoutApprovedBy',
             'messages.sender',
             'adjustments.appliedBy',
             'documents.uploadedBy',
             'cautionCharges.recordedBy',
             'cautionCharges.voidedBy',
+            'installments.recordedBy',
         ]);
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => array_merge($booking->toArray(), [
                 'checked_in_by_name'  => $booking->checkedInBy?->name,
                 'checked_out_by_name' => $booking->checkedOutBy?->name,
+                'cross_graded'        => $booking->cross_graded,
+                'assigned_unit_type'  => $booking->unit?->unitType?->name,
+                'installments_paid'   => $booking->installments_paid,
+                'balance_due'         => $booking->balance_due,
                 'caution_used'        => $booking->caution_used,
                 'caution_available'   => $booking->caution_available,
                 'caution_charges'     => $booking->cautionCharges->map(fn($c) => [
@@ -1074,6 +1096,74 @@ class BookingController extends Controller
         NotificationService::send($recipients, new CautionRefundProcessedNotification($booking));
 
         return back()->with('success', $successMessage);
+    }
+
+    // ── Weekly payment plan ──
+
+    // Record an installment as paid + write its income transaction. Used at booking
+    // creation (week 1) and when staff record each subsequent weekly payment.
+    private function settleInstallment(BookingInstallment $installment, string $method, ?string $reference = null): void
+    {
+        if ($installment->paid_at) return;
+
+        $booking = $installment->booking;
+        $txn = FinancialTransaction::create([
+            'building_id'      => $booking->building_id,
+            'recorded_by'      => auth()->id(),
+            'type'             => 'income',
+            'category'         => 'booking',
+            'reference_type'   => Booking::class,
+            'reference_id'     => $booking->id,
+            'description'      => "Weekly payment (week {$installment->week_number}) — {$booking->booking_reference} · {$booking->guest_name}",
+            'amount'           => $installment->amount,
+            'payment_method'   => $method,
+            'payment_reference'=> $reference,
+            'transaction_date' => now()->toDateString(),
+        ]);
+
+        $installment->update([
+            'paid_at'                  => now(),
+            'recorded_by'              => auth()->id(),
+            'financial_transaction_id' => $txn->id,
+        ]);
+    }
+
+    public function payInstallment(Request $request, Booking $booking, BookingInstallment $installment)
+    {
+        $user = auth()->user();
+        abort_unless($user->can('manage-bookings') || $user->can('confirm-checkin'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
+        abort_unless($installment->booking_id === $booking->id, 404);
+
+        if ($installment->paid_at) {
+            return back()->with('error', 'That week is already paid.');
+        }
+
+        $validated = $request->validate([
+            'payment_method'    => 'required|in:pos,bank_transfer,cash',
+            'payment_reference' => 'nullable|string|max:255',
+        ]);
+
+        $this->settleInstallment($installment, $validated['payment_method'], $validated['payment_reference'] ?? null);
+
+        // Roll up: mark fully paid once every installment is settled.
+        $booking->refresh()->load('installments');
+        $allPaid = $booking->installments->every(fn ($i) => $i->paid_at !== null);
+        $booking->update([
+            'amount_received' => $booking->installments_paid,
+            'payment_status'  => $allPaid ? 'paid' : 'partial',
+            'paid_at'         => $allPaid ? now() : null,
+        ]);
+
+        AuditLog::log('booking.installment_paid', $booking, [], [
+            'week'   => $installment->week_number,
+            'amount' => $installment->amount,
+            'by'     => $user->id,
+        ]);
+
+        return back()->with('success', "Week {$installment->week_number} payment recorded.");
     }
 
     // ── In-stay charges against the caution fee (food, damages, etc.) ──

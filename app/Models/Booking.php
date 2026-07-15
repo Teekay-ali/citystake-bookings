@@ -41,6 +41,7 @@ class Booking extends Model
         'discount_reason',
         'status',
         'payment_status',
+        'payment_plan',
         'payment_method',
         'paystack_reference',
         'monnify_reference',
@@ -150,6 +151,54 @@ class Booking extends Model
     public function bookingGroup(): BelongsTo
     {
         return $this->belongsTo(BookingGroup::class);
+    }
+
+    public function installments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(BookingInstallment::class)->orderBy('week_number');
+    }
+
+    public function isWeekly(): bool
+    {
+        return $this->payment_plan === 'weekly';
+    }
+
+    // Build a prepaid weekly schedule: each week = its nights × nightly rate,
+    // caution rides with week 1, and the rows sum exactly to total_amount.
+    public function buildWeeklySchedule(): array
+    {
+        $nights  = (int) $this->nights;
+        if ($nights < 1) return [];
+        $nightly = (float) $this->subtotal / $nights;
+        $caution = (float) $this->caution_fee;
+        $weeks   = (int) ceil($nights / 7);
+        $start   = Carbon::parse($this->check_in);
+
+        $rows = [];
+        for ($w = 1; $w <= $weeks; $w++) {
+            $weekNights = min(7, $nights - ($w - 1) * 7);
+            $rows[] = [
+                'week_number' => $w,
+                'due_date'    => $start->copy()->addDays(($w - 1) * 7)->toDateString(),
+                'amount'      => round($weekNights * $nightly + ($w === 1 ? $caution : 0), 2),
+            ];
+        }
+        return $rows;
+    }
+
+    public function getInstallmentsPaidAttribute(): float
+    {
+        return (float) $this->installments->whereNotNull('paid_at')->sum('amount');
+    }
+
+    public function getBalanceDueAttribute(): float
+    {
+        return max(0, (float) $this->total_amount - $this->installments_paid);
+    }
+
+    public function hasOverdueInstallment(): bool
+    {
+        return $this->installments->contains(fn ($i) => $i->paid_at === null && $i->due_date->isPast());
     }
 
 
@@ -337,8 +386,13 @@ class Booking extends Model
 
     public function canCheckIn(): bool
     {
+        // Weekly plans check in once week 1 is paid (the rest is prepaid week-by-week);
+        // everyone else must be fully paid.
+        $paidEnough = $this->payment_status === 'paid'
+            || ($this->isWeekly() && $this->installments->firstWhere('week_number', 1)?->paid_at !== null);
+
         return $this->status === 'confirmed'
-            && $this->payment_status === 'paid'
+            && $paidEnough
             && $this->check_in->lte(now()->endOfDay());
     }
 

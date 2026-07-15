@@ -1,12 +1,13 @@
 <script setup>
 import ManageLayout from '@/Layouts/ManageLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed, watch, onMounted } from 'vue';
 import { useAppToast } from '@/Composables/useAppToast';
 import {
     ArrowLeft, Calendar, Users, Mail, Phone,
     CreditCard, User, MessageSquare, Building2,
-    Home, Receipt, ChevronRight, Briefcase, Plus
+    Home, Receipt, ChevronRight, Briefcase, Plus, SlidersHorizontal, X
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -41,10 +42,53 @@ const form = useForm({
     exchange_rate: '',
     // Payer (Block D1) — optional organization
     organization_id: '',
+    // Payment plan (weekly prepaid installments)
+    payment_plan: 'full',
+})
+
+const isWeekly = computed(() => form.payment_plan === 'weekly')
+
+// Weekly plans are NGN, no discount — keep the other controls consistent
+watch(isWeekly, (on) => {
+    if (on) { form.currency = 'NGN'; form.discount_mode = 'none' }
+})
+
+// Client-side weekly schedule preview (mirrors the server: week nights × nightly, caution on week 1)
+const weeklySchedule = computed(() => {
+    const n = calculateNights.value
+    if (!isWeekly.value || !selectedUnitType.value || n < 1) return []
+    const nightly = parseFloat(selectedUnitType.value.base_price_per_night) || 0
+    const caution = pricing.value.cautionFee
+    const weeks = Math.ceil(n / 7)
+    const start = form.check_in ? new Date(form.check_in) : null
+    const rows = []
+    for (let w = 1; w <= weeks; w++) {
+        const weekNights = Math.min(7, n - (w - 1) * 7)
+        const due = start ? new Date(start.getTime() + (w - 1) * 7 * 86400000) : null
+        rows.push({
+            week: w,
+            due: due ? due.toISOString().split('T')[0] : '',
+            amount: Math.round(weekNights * nightly + (w === 1 ? caution : 0)),
+        })
+    }
+    return rows
+})
+const dueNow = computed(() => weeklySchedule.value[0]?.amount ?? 0)
+
+// ── Advanced options modal ──
+const showOptions = ref(false)
+const selectedOrg = computed(() => orgs.value.find(o => o.id == form.organization_id))
+const activeOptions = computed(() => {
+    const tags = []
+    if (isWeekly.value) tags.push('Weekly plan')
+    if (isUsd.value) tags.push('USD contract')
+    if (form.discount_mode === 'manual') tags.push('Manual discount')
+    else if (form.discount_mode === 'none' && !isWeekly.value && !isUsd.value) tags.push('No discount')
+    if (form.organization_id) tags.push(selectedOrg.value?.name ?? 'Organization')
+    return tags
 })
 
 // ── Organizations (bill-to payer) ──
-const billToOrg   = ref(false)
 const orgs        = ref([])
 const showNewOrg  = ref(false)
 const newOrg      = ref({ name: '', contact_phone: '' })
@@ -56,8 +100,6 @@ onMounted(async () => {
         orgs.value = await res.json()
     } catch { orgs.value = [] }
 })
-
-watch(billToOrg, (on) => { if (!on) { form.organization_id = ''; showNewOrg.value = false } })
 
 async function createOrg() {
     if (!newOrg.value.name.trim()) return
@@ -110,6 +152,11 @@ const calculateNights = computed(() => {
     );
     return diff > 0 ? diff : 0;
 });
+
+// USD contracts are only for long (6-month+) stays (defined after calculateNights;
+// watch() evaluates its source at setup, so the dependency must already exist).
+const canUseUsd = computed(() => calculateNights.value >= 180)
+watch(canUseUsd, (ok) => { if (!ok && form.currency === 'USD') form.currency = 'NGN' })
 
 // Nights → auto-fill checkout
 watch([() => form.check_in, () => form.nights], ([checkIn, nights]) => {
@@ -465,44 +512,6 @@ const inputCls = (hasError) => [
                             />
                         </div>
 
-                        <!-- Bill to organization -->
-                        <div class="mt-4">
-                            <label class="flex items-center gap-2 cursor-pointer select-none">
-                                <input type="checkbox" v-model="billToOrg"
-                                       class="rounded border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-gray-900 dark:focus:ring-white" />
-                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                                    <Briefcase class="w-3.5 h-3.5" /> Bill to an organization
-                                </span>
-                            </label>
-
-                            <div v-if="billToOrg" class="mt-2 space-y-2">
-                                <div v-if="!showNewOrg" class="flex items-center gap-2">
-                                    <select v-model="form.organization_id" :class="inputCls(false)">
-                                        <option value="">Select organization…</option>
-                                        <option v-for="o in orgs" :key="o.id" :value="o.id">
-                                            {{ o.name }}<template v-if="o.contact_name"> · {{ o.contact_name }}</template>
-                                        </option>
-                                    </select>
-                                    <button type="button" @click="showNewOrg = true"
-                                            class="shrink-0 inline-flex items-center gap-1 px-3 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-800 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                                        <Plus class="w-3.5 h-3.5" /> New
-                                    </button>
-                                </div>
-
-                                <div v-else class="p-3 border border-gray-200 dark:border-gray-800 rounded-lg space-y-2 bg-gray-50/60 dark:bg-gray-900/40">
-                                    <input v-model="newOrg.name" type="text" placeholder="Organization name" :class="inputCls(false)" />
-                                    <input v-model="newOrg.contact_phone" type="text" placeholder="Contact phone (optional)" :class="inputCls(false)" />
-                                    <div class="flex justify-end gap-2">
-                                        <button type="button" @click="showNewOrg = false" class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
-                                        <button type="button" @click="createOrg" :disabled="creatingOrg || !newOrg.name.trim()"
-                                                class="px-3 py-1.5 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50">
-                                            {{ creatingOrg ? 'Adding…' : 'Add organization' }}
-                                        </button>
-                                    </div>
-                                </div>
-                                <p class="text-[11px] text-gray-400 dark:text-gray-500">The organization is the payer; the guest above is the occupant.</p>
-                            </div>
-                        </div>
                     </section>
 
                     <div class="border-t border-gray-100 dark:border-gray-800" />
@@ -514,14 +523,13 @@ const inputCls = (hasError) => [
                         </p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                             <!-- POS -->
-                            <label
+                            <button type="button" @click="form.payment_method = 'pos'"
                                 :class="[
-                                    'flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all',
+                                    'flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all text-left',
                                     form.payment_method === 'pos'
                                         ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-900'
                                         : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
                                 ]">
-                                <input v-model="form.payment_method" type="radio" value="pos" class="sr-only" />
                                 <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
                                     <CreditCard class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                 </div>
@@ -532,17 +540,16 @@ const inputCls = (hasError) => [
                                 <div v-if="form.payment_method === 'pos'" class="ml-auto w-4 h-4 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center">
                                     <div class="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-900" />
                                 </div>
-                            </label>
+                            </button>
 
                             <!-- Bank Transfer -->
-                            <label
+                            <button type="button" @click="form.payment_method = 'bank_transfer'"
                                 :class="[
-                                    'flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all',
+                                    'flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all text-left',
                                     form.payment_method === 'bank_transfer'
                                         ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-900'
                                         : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
                                 ]">
-                                <input v-model="form.payment_method" type="radio" value="bank_transfer" class="sr-only" />
                                 <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
                                     <Receipt class="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                 </div>
@@ -553,7 +560,7 @@ const inputCls = (hasError) => [
                                 <div v-if="form.payment_method === 'bank_transfer'" class="ml-auto w-4 h-4 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center">
                                     <div class="w-1.5 h-1.5 rounded-full bg-white dark:bg-gray-900" />
                                 </div>
-                            </label>
+                            </button>
                         </div>
 
                         <!-- Reference field -->
@@ -598,7 +605,7 @@ const inputCls = (hasError) => [
 
                         <!-- Property -->
                         <div>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Property</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">PROPERTY</p>
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ selectedUnitType.name }}</p>
                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ selectedBuilding.name }}</p>
                         </div>
@@ -617,11 +624,11 @@ const inputCls = (hasError) => [
 
                         <!-- Nights + Guests -->
                         <div class="flex items-center justify-between text-xs">
-                            <span class="text-gray-500 dark:text-gray-400">Duration</span>
+                            <span class="text-gray-500 dark:text-gray-400">DURATION</span>
                             <span class="font-medium text-gray-900 dark:text-white">{{ calculateNights }} night{{ calculateNights > 1 ? 's' : '' }}</span>
                         </div>
                         <div class="flex items-center justify-between text-xs">
-                            <span class="text-gray-500 dark:text-gray-400">Guests</span>
+                            <span class="text-gray-500 dark:text-gray-400">GUESTS</span>
                             <span class="font-medium text-gray-900 dark:text-white">{{ form.guests }}</span>
                         </div>
 
@@ -633,34 +640,6 @@ const inputCls = (hasError) => [
                         </div>
 
                         <div class="border-t border-gray-200 dark:border-gray-800" />
-
-                        <!-- Currency -->
-                        <div class="pb-1">
-                            <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
-                                <button v-for="c in [['NGN','₦ Naira'],['USD','$ USD contract']]" :key="c[0]"
-                                        type="button" @click="form.currency = c[0]"
-                                        :class="form.currency === c[0]
-                                            ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm'
-                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                        class="flex-1 py-1.5 rounded-md text-[11px] font-medium transition-all">
-                                    {{ c[1] }}
-                                </button>
-                            </div>
-                            <div v-if="isUsd" class="mt-2 grid grid-cols-2 gap-2">
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
-                                    <input v-model.number="form.price_usd" type="number" min="0" step="0.01" placeholder="USD price"
-                                           class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all tabular-nums" />
-                                </div>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₦</span>
-                                    <input v-model.number="form.exchange_rate" type="number" min="0" step="0.01" placeholder="Rate /$"
-                                           class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all tabular-nums" />
-                                </div>
-                                <p class="col-span-2 text-[11px] text-gray-400 dark:text-gray-500">Rate is locked to this booking. Financials are recorded in ₦.</p>
-                                <p v-if="form.errors.price_usd || form.errors.exchange_rate" class="col-span-2 text-xs text-red-600">Enter both the USD price and the exchange rate.</p>
-                            </div>
-                        </div>
 
                         <!-- Pricing -->
                         <div class="space-y-2.5">
@@ -690,28 +669,18 @@ const inputCls = (hasError) => [
                             </div>
                         </div>
 
-                        <!-- Discount control -->
-                        <div class="pt-1">
-                            <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
-                                <button v-for="mode in (isUsd ? [['manual','Manual ₦'],['none','None']] : [['auto','Auto'],['manual','Manual ₦'],['none','None']])" :key="mode[0]"
-                                        type="button" @click="form.discount_mode = mode[0]"
-                                        :class="form.discount_mode === mode[0]
-                                            ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm'
-                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                        class="flex-1 py-1.5 rounded-md text-[11px] font-medium transition-all">
-                                    {{ mode[1] }}
-                                </button>
-                            </div>
-                            <div v-if="form.discount_mode === 'manual'" class="mt-2 space-y-2">
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₦</span>
-                                    <input v-model.number="form.manual_discount_amount" type="number" min="0" :max="pricing.subtotal" placeholder="Discount amount"
-                                           class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all tabular-nums" />
-                                </div>
-                                <input v-model="form.discount_reason" type="text" placeholder="Reason (required)"
-                                       class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all" />
-                                <p v-if="form.errors.manual_discount_amount" class="text-xs text-red-600">{{ form.errors.manual_discount_amount }}</p>
-                                <p v-if="form.errors.discount_reason" class="text-xs text-red-600">{{ form.errors.discount_reason }}</p>
+                        <!-- Options (advanced) -->
+                        <div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-1.5">OPTIONS</p>
+                            <button type="button" @click="showOptions = true"
+                                    class="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-all">
+                                <span class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <SlidersHorizontal class="w-4 h-4 text-gray-400" /> Booking options
+                                </span>
+                                <ChevronRight class="w-4 h-4 text-gray-400" />
+                            </button>
+                            <div v-if="activeOptions.length" class="flex flex-wrap gap-1 mt-1.5">
+                                <span v-for="t in activeOptions" :key="t" class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{{ t }}</span>
                             </div>
                         </div>
 
@@ -719,8 +688,12 @@ const inputCls = (hasError) => [
 
                         <!-- Total -->
                         <div class="flex items-baseline justify-between">
-                            <span class="text-sm font-medium text-gray-900 dark:text-white">Total</span>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">{{ isWeekly ? 'Full stay total' : 'Total' }}</span>
                             <span class="text-xl font-semibold text-gray-900 dark:text-white">{{ formatPrice(pricing.total) }}</span>
+                        </div>
+                        <div v-if="isWeekly" class="flex items-baseline justify-between mt-1">
+                            <span class="text-sm font-medium text-emerald-700 dark:text-emerald-400">Collect now (week 1)</span>
+                            <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{{ formatPrice(dueNow) }}</span>
                         </div>
 
                         <!-- Payment method badge -->
@@ -746,5 +719,108 @@ const inputCls = (hasError) => [
 
             </div>
         </div>
+
+        <!-- ── Pricing & payment options modal ── -->
+        <Modal :show="showOptions" max-width="md" @close="showOptions = false">
+            <div class="p-6 space-y-5">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <SlidersHorizontal class="w-4 h-4 text-gray-400" /> Pricing &amp; payment options
+                    </h3>
+                    <button @click="showOptions = false" class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <X class="w-4 h-4" />
+                    </button>
+                </div>
+
+                <!-- Payment plan -->
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Payment plan</p>
+                    <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                        <button v-for="p in [['full','Pay in full'],['weekly','Weekly plan']]" :key="p[0]"
+                                type="button" @click="form.payment_plan = p[0]"
+                                :class="form.payment_plan === p[0] ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                class="flex-1 py-1.5 rounded-md text-xs font-medium transition-all">{{ p[1] }}</button>
+                    </div>
+                    <div v-if="isWeekly" class="mt-2 rounded-lg border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
+                        <div v-for="row in weeklySchedule" :key="row.week" class="flex items-center justify-between px-3 py-1.5 text-[11px]">
+                            <span class="text-gray-500 dark:text-gray-400">Week {{ row.week }} · {{ row.due }}<span v-if="row.week === 1" class="text-emerald-600 dark:text-emerald-400"> · due now</span></span>
+                            <span class="tabular-nums text-gray-900 dark:text-white">{{ formatPrice(row.amount) }}</span>
+                        </div>
+                    </div>
+                    <p v-if="isWeekly" class="mt-1.5 text-[11px] text-gray-400">Week 1 (incl. caution) is collected now; each week is paid before it begins.</p>
+                </div>
+
+                <!-- Currency -->
+                <div v-if="!isWeekly && canUseUsd">
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Currency</p>
+                    <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                        <button v-for="c in [['NGN','₦ Naira'],['USD','$ USD contract']]" :key="c[0]"
+                                type="button" @click="form.currency = c[0]"
+                                :class="form.currency === c[0] ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                class="flex-1 py-1.5 rounded-md text-xs font-medium transition-all">{{ c[1] }}</button>
+                    </div>
+                    <div v-if="isUsd" class="mt-2 grid grid-cols-2 gap-2">
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+                            <input v-model.number="form.price_usd" type="number" min="0" step="0.01" placeholder="USD price"
+                                   class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white tabular-nums" />
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₦</span>
+                            <input v-model.number="form.exchange_rate" type="number" min="0" step="0.01" placeholder="Rate /$"
+                                   class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white tabular-nums" />
+                        </div>
+                        <p class="col-span-2 text-[11px] text-gray-400">Rate is locked to this booking. Financials recorded in ₦.</p>
+                    </div>
+                </div>
+
+                <!-- Discount -->
+                <div v-if="!isWeekly">
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Discount</p>
+                    <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                        <button v-for="mode in (isUsd ? [['manual','Manual ₦'],['none','None']] : [['auto','Auto'],['manual','Manual ₦'],['none','None']])" :key="mode[0]"
+                                type="button" @click="form.discount_mode = mode[0]"
+                                :class="form.discount_mode === mode[0] ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                class="flex-1 py-1.5 rounded-md text-xs font-medium transition-all">{{ mode[1] }}</button>
+                    </div>
+                    <div v-if="form.discount_mode === 'manual'" class="mt-2 space-y-2">
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₦</span>
+                            <input v-model.number="form.manual_discount_amount" type="number" min="0" :max="pricing.subtotal" placeholder="Discount amount"
+                                   class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white tabular-nums" />
+                        </div>
+                        <input v-model="form.discount_reason" type="text" placeholder="Reason (required)"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                    </div>
+                </div>
+
+                <!-- Bill to organization -->
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1.5"><Briefcase class="w-3.5 h-3.5" /> Bill to organization</p>
+                    <div v-if="!showNewOrg" class="flex items-center gap-2">
+                        <select v-model="form.organization_id" :class="inputCls(false)">
+                            <option value="">Individual (no organization)</option>
+                            <option v-for="o in orgs" :key="o.id" :value="o.id">{{ o.name }}</option>
+                        </select>
+                        <button type="button" @click="showNewOrg = true" class="shrink-0 inline-flex items-center gap-1 px-3 py-2.5 text-xs font-medium border border-gray-200 dark:border-gray-800 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <Plus class="w-3.5 h-3.5" /> New
+                        </button>
+                    </div>
+                    <div v-else class="p-3 border border-gray-200 dark:border-gray-800 rounded-lg space-y-2 bg-gray-50/60 dark:bg-gray-900/40">
+                        <input v-model="newOrg.name" type="text" placeholder="Organization name" :class="inputCls(false)" />
+                        <input v-model="newOrg.contact_phone" type="text" placeholder="Contact phone (optional)" :class="inputCls(false)" />
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="showNewOrg = false" class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                            <button type="button" @click="createOrg" :disabled="creatingOrg || !newOrg.name.trim()" class="px-3 py-1.5 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50">
+                                {{ creatingOrg ? 'Adding…' : 'Add' }}
+                            </button>
+                        </div>
+                    </div>
+                    <p class="mt-1 text-[11px] text-gray-400">Organization is the payer; the guest is the occupant.</p>
+                </div>
+
+                <button @click="showOptions = false" class="w-full py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:opacity-90 transition-all">Done</button>
+            </div>
+        </Modal>
     </ManageLayout>
 </template>

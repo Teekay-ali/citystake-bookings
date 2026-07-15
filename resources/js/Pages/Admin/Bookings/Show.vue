@@ -10,7 +10,7 @@ import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
     Clock, CheckCircle, ChevronRight,
-    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers,
+    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -163,6 +163,25 @@ function requestLateCheckout() {
     router.post(route('manage.bookings.late-checkout.request', props.booking.booking_reference), {}, {
         preserveScroll: true,
         onFinish: () => { isLateCheckoutProcessing.value = false },
+    })
+}
+
+// ── Weekly payment plan ────────────────────────────────────────
+const payingInstallment = ref(null)
+const installmentForm   = useForm({ payment_method: 'bank_transfer', payment_reference: '' })
+
+function installmentStatus(inst) {
+    if (inst.paid_at) return 'paid'
+    return new Date(inst.due_date) < new Date(new Date().toDateString()) ? 'overdue' : 'upcoming'
+}
+// The earliest unpaid installment is the one staff can record next.
+const nextDueInstallment = computed(() =>
+    (props.booking.installments ?? []).find(i => !i.paid_at)
+)
+function submitInstallment(inst) {
+    installmentForm.post(route('manage.bookings.installments.pay', [props.booking.booking_reference, inst.id]), {
+        preserveScroll: true,
+        onSuccess: () => { payingInstallment.value = null; installmentForm.reset() },
     })
 }
 
@@ -436,13 +455,23 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                         </div>
 
                         <!-- Property line -->
-                        <div class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 mt-4">
+                        <div class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 mt-4 flex-wrap">
                             <Building2 class="w-3.5 h-3.5 text-gray-400 shrink-0" />
                             <span class="font-medium text-gray-900 dark:text-white">{{ booking.unit_type?.name }}</span>
                             <span class="text-gray-400">·</span>
                             <span>{{ booking.building?.name }}</span>
                             <span v-if="booking.unit?.unit_number" class="text-gray-400">·</span>
                             <span v-if="booking.unit?.unit_number">Unit {{ booking.unit.unit_number }}<template v-if="booking.unit?.floor">, Floor {{ booking.unit.floor }}</template></span>
+                        </div>
+
+                        <!-- Overflow / cross-grade notice -->
+                        <div v-if="booking.cross_graded" class="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20">
+                            <ArrowRightLeft class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <p class="text-xs text-amber-700 dark:text-amber-400">
+                                <span class="font-semibold">Overflow allocation</span> — billed as
+                                <span class="font-medium">{{ booking.unit_type?.name }}</span>, assigned
+                                <span class="font-medium">{{ booking.assigned_unit_type }}</span> (Unit {{ booking.unit?.unit_number }})
+                            </p>
                         </div>
 
                         <!-- Stay completed / settled badge -->
@@ -499,6 +528,53 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                             :readonly="!can('confirm-checkin')"
                             @updated="photoIdPrompt = false"
                         />
+                    </div>
+
+                    <!-- Weekly payment plan -->
+                    <div v-if="booking.payment_plan === 'weekly'" :class="card" class="p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <p :class="sectionLabel"><Receipt class="w-3.5 h-3.5" /> Weekly payment plan</p>
+                            <span class="text-xs font-medium tabular-nums" :class="booking.balance_due > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'">
+                                {{ booking.balance_due > 0 ? fmt(booking.balance_due) + ' outstanding' : 'Fully paid' }}
+                            </span>
+                        </div>
+                        <div class="space-y-1.5">
+                            <div v-for="inst in booking.installments" :key="inst.id"
+                                 class="flex items-center gap-3 rounded-lg px-3 py-2"
+                                 :class="installmentStatus(inst) === 'overdue' ? 'bg-red-50/60 dark:bg-red-900/10' : 'bg-gray-50/60 dark:bg-gray-800/30'">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-medium text-gray-900 dark:text-white">Week {{ inst.week_number }}</p>
+                                    <p class="text-[11px] text-gray-400 dark:text-gray-500">Due {{ fmtDate(inst.due_date) }}</p>
+                                </div>
+                                <span class="text-xs tabular-nums text-gray-900 dark:text-white">{{ fmt(inst.amount) }}</span>
+                                <span v-if="installmentStatus(inst) === 'paid'" class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">Paid</span>
+                                <span v-else-if="installmentStatus(inst) === 'overdue'" class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400">Overdue</span>
+                                <button v-if="!inst.paid_at && nextDueInstallment && inst.id === nextDueInstallment.id && can('confirm-checkin')"
+                                        @click="payingInstallment = payingInstallment === inst.id ? null : inst.id"
+                                        class="text-[11px] font-medium px-2 py-1 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition-all">
+                                    Record
+                                </button>
+                                <span v-else-if="!inst.paid_at" class="text-[10px] text-gray-400">Upcoming</span>
+                            </div>
+
+                            <!-- Inline record-payment form -->
+                            <div v-if="payingInstallment" class="rounded-lg border border-gray-200 dark:border-gray-800 p-3 space-y-2">
+                                <p class="text-[11px] font-medium text-gray-600 dark:text-gray-400">Record this week's payment</p>
+                                <select v-model="installmentForm.payment_method" :class="inputCls()">
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="pos">POS</option>
+                                    <option value="cash">Cash</option>
+                                </select>
+                                <input v-model="installmentForm.payment_reference" type="text" placeholder="Reference (optional)" :class="inputCls()" />
+                                <div class="flex justify-end gap-2">
+                                    <button @click="payingInstallment = null" class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                                    <button @click="submitInstallment(nextDueInstallment)" :disabled="installmentForm.processing"
+                                            class="px-3 py-1.5 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50">
+                                        Confirm payment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Financials receipt -->
