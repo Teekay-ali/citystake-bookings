@@ -1,6 +1,6 @@
 // Take over from any previously-installed worker immediately. An older version
 // of this worker intercepted every request and returned a synthetic 503 on
-// failure, which broke asset loading — this replaces it.
+// failure, which broke asset loading - this replaces it.
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
@@ -11,7 +11,7 @@ function notify(type) {
 }
 
 // Only watch top-level page navigations for connectivity. Never intercept
-// scripts, styles, or other assets — let the browser load them normally so a
+// scripts, styles, or other assets - let the browser load them normally so a
 // transient failure can't be turned into a hard 503.
 self.addEventListener('fetch', (event) => {
     if (event.request.mode !== 'navigate') return

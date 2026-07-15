@@ -23,9 +23,9 @@
     </style>
 </head>
 <body>
-<h1>CityStake — Financial Transactions</h1>
+<h1>CityStake - Financial Transactions</h1>
 <p class="meta">
-    Period: {{ $start->format('d M Y') }} — {{ $end->format('d M Y') }} &nbsp;·&nbsp;
+    Period: {{ $start->format('d M Y') }} - {{ $end->format('d M Y') }} &nbsp;·&nbsp;
     Generated: {{ now()->format('d M Y, H:i') }}
 </p>
 
@@ -67,8 +67,8 @@
             <td>{{ \App\Models\FinancialTransaction::categoryLabels()[$t->category] ?? $t->category }}</td>
             <td>{{ $t->description }}</td>
             <td>{{ $t->building?->name }}</td>
-            <td>{{ $t->payment_method ? ucfirst(str_replace('_', ' ', $t->payment_method)) : '—' }}</td>
-            <td>{{ $t->payment_reference ?? '—' }}</td>
+            <td>{{ $t->payment_method ? ucfirst(str_replace('_', ' ', $t->payment_method)) : '-' }}</td>
+            <td>{{ $t->payment_reference ?? '-' }}</td>
             <td class="amount">{{ $t->type === 'expense' ? '-' : '' }}₦{{ number_format($t->amount, 0) }}</td>
         </tr>
     @endforeach

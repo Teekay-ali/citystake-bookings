@@ -54,13 +54,13 @@ function formatDateTime(d) {
     return d ? new Date(d).toLocaleDateString('en-NG', {
         day: 'numeric', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit'
-    }) : '—'
+    }) : '-'
 }
 
 function formatDate(d) {
     return d ? new Date(d).toLocaleDateString('en-NG', {
         day: 'numeric', month: 'short', year: 'numeric'
-    }) : '—'
+    }) : '-'
 }
 </script>
 

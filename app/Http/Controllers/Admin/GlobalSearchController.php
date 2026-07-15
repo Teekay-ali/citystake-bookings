@@ -23,7 +23,7 @@ class GlobalSearchController extends Controller
         $user        = auth()->user();
         $buildingIds = $user->hasGlobalAccess() ? null : $user->accessibleBuildingIds();
 
-        // Bookings — by reference or guest name
+        // Bookings - by reference or guest name
         $bookings = Booking::with('building:id,name')
             ->when($buildingIds, fn($q) => $q->whereIn('building_id', $buildingIds))
             ->where(function ($q) use ($query) {
@@ -43,7 +43,7 @@ class GlobalSearchController extends Controller
                 'url'      => route('manage.bookings.show', $b->booking_reference),
             ]);
 
-        // Units — by unit number
+        // Units - by unit number
         $units = Unit::with('unitType.building')
             ->when($buildingIds, fn($q) => $q->whereHas('unitType.building', fn($b) => $b->whereIn('id', $buildingIds)))
             ->where('unit_number', 'like', "%{$query}%")
@@ -58,7 +58,7 @@ class GlobalSearchController extends Controller
                 'url'      => route('manage.availability.index'),
             ]);
 
-        // Staff/guests — by name or email, scoped to accessible buildings for non-global users
+        // Staff/guests - by name or email, scoped to accessible buildings for non-global users
         $users = User::where(function ($q) use ($query) {
             $q->where('name', 'like', "%{$query}%")
                 ->orWhere('email', 'like', "%{$query}%");

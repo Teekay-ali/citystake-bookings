@@ -19,7 +19,7 @@ const currentUserId = window.__page?.props?.auth?.user?.id
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric',
-}) : '—'
+}) : '-'
 
 const roleLabels = {
     'super-admin': 'Super Admin',
@@ -112,7 +112,7 @@ function resetPassword() {
                                 <KeyRound class="w-4 h-4" />
                             </button>
                         </div>
-                        <span v-else class="text-xs text-gray-400">—</span>
+                        <span v-else class="text-xs text-gray-400">-</span>
                     </td>
                 </tr>
                 </tbody>
@@ -170,7 +170,7 @@ function resetPassword() {
         v-if="resetModal"
         :show="!!resetModal"
         title="Reset Password"
-        :message="`This will generate a new random password for ${resetModal.name}. The new password will be shown once — make sure to copy it.`"
+        :message="`This will generate a new random password for ${resetModal.name}. The new password will be shown once - make sure to copy it.`"
         confirm-text="Reset Password"
         variant="danger"
         :processing="isProcessing"

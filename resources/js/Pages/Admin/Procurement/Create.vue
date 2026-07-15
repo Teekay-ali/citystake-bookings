@@ -206,7 +206,7 @@ function submit() {
                         <select v-model="form.vendor_id"
                                 class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white">
                             <option value="">Select supplier (optional)</option>
-                            <option v-for="v in vendors" :key="v.id" :value="v.id">{{ v.name }} — {{ v.phone }}</option>
+                            <option v-for="v in vendors" :key="v.id" :value="v.id">{{ v.name }} - {{ v.phone }}</option>
                         </select>
                     </div>
 
@@ -230,7 +230,7 @@ function submit() {
                             </div>
                         </div>
 
-                        <!-- Bank Details — full width, outside the 2-col grid -->
+                        <!-- Bank Details - full width, outside the 2-col grid -->
                         <div class="border-t border-gray-100 dark:border-gray-800 pt-3">
                             <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">Bank Details <span class="font-normal">(optional)</span></p>
                             <div class="space-y-3">

@@ -31,7 +31,7 @@ class DashboardController extends Controller
 
         $scopedIds = $this->scopedBuildingIds();
 
-        // Occupancy — units occupied today vs total units in scope
+        // Occupancy - units occupied today vs total units in scope
         $totalUnits = Unit::whereHas('unitType', fn ($q) => $q->whereIn('building_id', $scopedIds))->count();
 
         $occupiedUnits = $bookings()
@@ -80,7 +80,7 @@ class DashboardController extends Controller
             ? round((($revenue['this_month'] - $revenue['last_month']) / $revenue['last_month']) * 100, 1)
             : ($revenue['this_month'] > 0 ? 100 : 0);
 
-        // 12-month income trend (unified with the hero KPI — FinancialTransaction income)
+        // 12-month income trend (unified with the hero KPI - FinancialTransaction income)
         $start = Carbon::now()->subMonths(11)->startOfMonth();
         $monthlyRevenueRaw = FinancialTransaction::whereIn('building_id', $scopedIds)
             ->where('type', 'income')

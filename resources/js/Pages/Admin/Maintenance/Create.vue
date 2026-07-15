@@ -120,7 +120,7 @@ const labelClass = "block text-xs font-medium text-gray-500 dark:text-gray-400 m
                     <label :class="labelClass">Vendor / Contractor</label>
                     <select v-model="form.vendor_id" :class="inputClass">
                         <option value="">Select vendor (optional)</option>
-                        <option v-for="v in vendors" :key="v.id" :value="v.id">{{ v.name }} — {{ v.phone }}</option>
+                        <option v-for="v in vendors" :key="v.id" :value="v.id">{{ v.name }} - {{ v.phone }}</option>
                     </select>
                 </div>
 

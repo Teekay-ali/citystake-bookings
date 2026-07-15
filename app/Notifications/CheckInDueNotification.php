@@ -27,7 +27,7 @@ class CheckInDueNotification extends Notification
             'message' => "{$this->booking->guest_name}"
                 . ($unit ? " (Unit {$unit})" : '')
                 . ' has not been checked in'
-                . ($overdue ? ' — arrival was ' . $this->booking->check_in->format('j M') . '.' : ' yet.'),
+                . ($overdue ? ' - arrival was ' . $this->booking->check_in->format('j M') . '.' : ' yet.'),
             'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'booking',
         ];

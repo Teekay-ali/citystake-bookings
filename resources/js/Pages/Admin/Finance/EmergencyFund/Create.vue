@@ -76,7 +76,7 @@ function submit() {
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
                 <div class="flex items-center justify-between mb-3">
                     <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ selectedFund.name }} — {{ new Date().toLocaleDateString('en-NG', { month: 'long', year: 'numeric' }) }}
+                        {{ selectedFund.name }} - {{ new Date().toLocaleDateString('en-NG', { month: 'long', year: 'numeric' }) }}
                     </p>
                     <span :class="[
                         'text-xs font-medium px-2.5 py-1 rounded-full border',
@@ -144,7 +144,7 @@ function submit() {
                     :class="amountExceedsBalance ? 'border-red-400 dark:border-red-600' : ''"
                 />
                 <p v-if="form.amount && !amountExceedsBalance && selectedFund" class="mt-1 text-xs text-gray-500">
-                    {{ formatPrice(form.amount) }} — {{ formatPrice(selectedFund.remaining - parseFloat(form.amount || 0)) }} will remain after this request
+                    {{ formatPrice(form.amount) }} - {{ formatPrice(selectedFund.remaining - parseFloat(form.amount || 0)) }} will remain after this request
                 </p>
                 <p v-if="amountExceedsBalance" class="mt-1 text-sm text-red-600">
                     Amount exceeds available balance of {{ formatPrice(selectedFund?.remaining) }}

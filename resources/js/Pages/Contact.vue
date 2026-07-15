@@ -27,7 +27,7 @@ const submit = () => {
         <div class="bg-white dark:bg-gray-950 min-h-screen">
 
             <!-- ─── Hero ───────────────────────────────────────────── -->
-            <!-- Solid dark — distinct from the gradient hero on Home -->
+            <!-- Solid dark - distinct from the gradient hero on Home -->
             <div class="relative bg-gray-950 py-20 overflow-hidden">
                 <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"></div>
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -58,7 +58,7 @@ const submit = () => {
                                 Contact Information
                             </h2>
 
-                            <!-- Contact items — monochromatic icons, amber on hover -->
+                            <!-- Contact items - monochromatic icons, amber on hover -->
                             <div class="space-y-6">
                                 <div class="flex items-start gap-4 group">
                                     <div class="w-10 h-10 rounded-xl bg-gray-950 dark:bg-white flex items-center justify-center flex-shrink-0 group-hover:bg-amber-400 transition-colors duration-300">
@@ -142,7 +142,7 @@ const submit = () => {
                     <!-- ─── Right: Contact Form ─────────────────────── -->
                     <div class="lg:col-span-2">
                         <div class="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-                            <!-- Gold accent top border — matches search card on Home -->
+                            <!-- Gold accent top border - matches search card on Home -->
                             <div class="h-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500"></div>
 
                             <div class="p-8">

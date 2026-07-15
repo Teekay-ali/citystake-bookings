@@ -125,7 +125,7 @@ function confirmVoid(charge) {
             <!-- Settled / depleted notices -->
             <div v-if="booking.caution_fee_refunded"
                  class="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30 px-4 py-3 mb-5 text-xs text-gray-500 dark:text-gray-400">
-                The caution fee has been settled — no further charges can be added.
+                The caution fee has been settled - no further charges can be added.
             </div>
             <div v-else-if="available <= 0"
                  class="rounded-xl border border-amber-200/70 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-900/20 px-4 py-3 mb-5 text-xs text-amber-700 dark:text-amber-400">

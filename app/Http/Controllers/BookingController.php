@@ -68,7 +68,7 @@ class BookingController extends Controller
             $booking->update([
                 'status'                    => 'cancelled',
                 'cancelled_at'              => now(),
-                // Reset late checkout state — fee is void on cancellation
+                // Reset late checkout state - fee is void on cancellation
                 'late_checkout_requested'   => false,
                 'late_checkout_status'      => null,
                 'late_checkout_fee'         => null,

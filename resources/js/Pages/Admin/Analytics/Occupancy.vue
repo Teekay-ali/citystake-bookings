@@ -144,7 +144,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
         <!-- ── Main grid ── -->
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-3">
 
-            <!-- Monthly trend chart — 2/5 width -->
+            <!-- Monthly trend chart - 2/5 width -->
             <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <p class="text-sm font-semibold text-gray-900 dark:text-white mb-5">6-Month Trend</p>
 
@@ -182,7 +182,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 </div>
             </div>
 
-            <!-- Property performance table — 3/5 width -->
+            <!-- Property performance table - 3/5 width -->
             <div class="lg:col-span-3 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Property Performance</p>

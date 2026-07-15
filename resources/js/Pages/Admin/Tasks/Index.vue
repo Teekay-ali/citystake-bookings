@@ -132,7 +132,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
             </button>
         </div>
 
-        <!-- ── Summary cards — clickable filters ── -->
+        <!-- ── Summary cards - clickable filters ── -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <button
                 v-for="item in pipeline"

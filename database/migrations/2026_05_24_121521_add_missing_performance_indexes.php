@@ -5,10 +5,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Performance index migration — CityStake Bookings
+ * Performance index migration - CityStake Bookings
  *
  * Covers gaps left by the original 2026_02_20_045236 index migration.
- * All indexes use InnoDB online DDL — safe to run on live production
+ * All indexes use InnoDB online DDL - safe to run on live production
  * without locking tables (MySQL 5.6+ / 8.x).
  *
  * Grouped by table with a comment explaining the query each index supports.
@@ -32,7 +32,7 @@ return new class extends Migration
             //   WHERE status='pending' AND payment_status='pending' AND created_at < ?
             $table->index(['status', 'payment_status', 'created_at'], 'bookings_status_payment_created_idx');
 
-            // Soft-delete scoping — every query auto-appends AND deleted_at IS NULL
+            // Soft-delete scoping - every query auto-appends AND deleted_at IS NULL
             $table->index('deleted_at', 'bookings_deleted_at_idx');
         });
 

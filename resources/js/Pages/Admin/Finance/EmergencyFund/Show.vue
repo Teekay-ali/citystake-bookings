@@ -25,7 +25,7 @@ const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-}) : '—'
+}) : '-'
 
 const statusConfig = {
     pending:          { label: 'Pending Manager Review', color: 'amber',  icon: Clock },
@@ -131,7 +131,7 @@ const timelineSteps = [
 </script>
 
 <template>
-    <Head :title="`Emergency Fund — ${efRequest.reason}`" />
+    <Head :title="`Emergency Fund - ${efRequest.reason}`" />
 
     <div class="p-6 lg:p-8 max-w-3xl space-y-6">
 

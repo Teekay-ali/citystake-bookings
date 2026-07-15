@@ -42,6 +42,7 @@ class Booking extends Model
         'payment_reference',
         'paid_at',
         'special_requests',
+        'policy_version',
         'cancellation_reason',
         'cancelled_at',
         'checked_in_at',
@@ -199,7 +200,7 @@ class Booking extends Model
     }
 
     /**
-     * Price the booking off $unitType (the billed/rate type — may differ from the
+     * Price the booking off $unitType (the billed/rate type - may differ from the
      * physically assigned unit's type when cross-graded).
      *
      * $opts:
@@ -212,7 +213,7 @@ class Booking extends Model
         $this->nights         = Carbon::parse($this->check_in)->diffInDays($this->check_out);
         $this->subtotal       = $this->nights * $unitType->base_price_per_night;
 
-        // Caution fee — 1-night bookings pay 1 night price, all others pay building's caution fee amount
+        // Caution fee - 1-night bookings pay 1 night price, all others pay building's caution fee amount
         $building = $unitType->building ?? $unitType->building()->first();
         $defaultCautionFee = (float) ($building->caution_fee_amount ?? 70000);
 
@@ -223,7 +224,7 @@ class Booking extends Model
         $mode = $opts['discount_mode'] ?? 'auto';
 
         if ($mode === 'manual') {
-            // Discretionary flat ₦ discount — never exceeds the subtotal.
+            // Discretionary flat ₦ discount - never exceeds the subtotal.
             $amount = min((float) ($opts['manual_discount'] ?? 0), (float) $this->subtotal);
             $this->discount_type    = $amount > 0 ? 'manual' : null;
             $this->discount_percent = 0;
@@ -366,7 +367,7 @@ class Booking extends Model
 
         $today = now()->startOfDay();
 
-        // Confirmed but checkout date has passed without manual checkout — flag it
+        // Confirmed but checkout date has passed without manual checkout - flag it
         if ($this->check_out->lt($today)) return 'overdue_checkout';
         if ($this->check_in->lte($today) && $this->check_out->gte($today)) return 'active';
 

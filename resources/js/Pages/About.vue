@@ -106,7 +106,7 @@ import { Home, Award, Shield, Heart } from 'lucide-vue-next';
                             </h3>
                             <p class="text-gray-600 dark:text-gray-400">
                                 We maintain the highest standards in property quality, cleanliness,
-                                and guest service. Excellence isn't just a goal—it's our baseline.
+                                and guest service. Excellence isn't just a goal-it's our baseline.
                             </p>
                         </div>
 
@@ -116,7 +116,7 @@ import { Home, Award, Shield, Heart } from 'lucide-vue-next';
                             </h3>
                             <p class="text-gray-600 dark:text-gray-400">
                                 Transparency and honesty in all our dealings. What you see is what
-                                you get—no hidden fees, no surprises, just straightforward service.
+                                you get-no hidden fees, no surprises, just straightforward service.
                             </p>
                         </div>
 

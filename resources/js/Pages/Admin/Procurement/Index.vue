@@ -36,7 +36,7 @@ const pipeline = [
     { key: 'purchased',           label: 'Awaiting Receipt',    labelCls: 'text-amber-500' },
 ]
 
-// Terminal states read as "done" — dim the row
+// Terminal states read as "done" - dim the row
 const isTerminal = (s) => s === 'completed' || s === 'rejected'
 
 let searchTimeout = null
@@ -63,11 +63,11 @@ function formatDate(d) {
 }
 
 function formatTime(d) {
-    return d ? new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—'
+    return d ? new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-'
 }
 
 function formatRelative(d) {
-    if (!d) return '—'
+    if (!d) return '-'
     const diff = Math.floor((Date.now() - new Date(d)) / 1000)
     if (diff < 60)     return 'just now'
     if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`

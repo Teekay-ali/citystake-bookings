@@ -75,7 +75,7 @@ const revenueOptions = computed(() => ({
     tooltip: { theme: isDark.value ? 'dark' : 'light', y: { formatter: (v) => formatPriceFull(v) } },
 }))
 
-// ── Booking status (donut) — counts aren't sensitive, always shown ──
+// ── Booking status (donut) - counts aren't sensitive, always shown ──
 const statusMeta = [
     { key: 'confirmed',  label: 'Confirmed',  color: '#10b981' },
     { key: 'checked_in', label: 'Checked in', color: '#3b82f6' },

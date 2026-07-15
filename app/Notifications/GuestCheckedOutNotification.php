@@ -27,7 +27,7 @@ class GuestCheckedOutNotification extends Notification
                 . ($unit ? " (Unit {$unit})" : '')
                 . ' has checked out'
                 . ($this->booking->caution_fee > 0 && ! $this->booking->caution_fee_refunded
-                    ? ' — caution fee still needs settling.'
+                    ? ' - caution fee still needs settling.'
                     : '.'),
             'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'booking',

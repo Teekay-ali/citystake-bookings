@@ -45,7 +45,7 @@ const pipeline = [
     { key: 'ceo_approved',        label: 'Awaiting Payment',    labelCls: 'text-amber-500' },
 ]
 
-// Terminal states read as "done" — dim the row
+// Terminal states read as "done" - dim the row
 const isTerminal = (s) => s === 'completed' || s === 'rejected'
 
 function formatDate(d) {
@@ -53,15 +53,15 @@ function formatDate(d) {
 }
 
 function formatTime(d) {
-    return d ? new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—'
+    return d ? new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-'
 }
 
 function formatAmount(n) {
-    return n ? '₦' + Number(n).toLocaleString('en-NG') : '—'
+    return n ? '₦' + Number(n).toLocaleString('en-NG') : '-'
 }
 
 function formatRelative(d) {
-    if (!d) return '—'
+    if (!d) return '-'
     const diff = Math.floor((Date.now() - new Date(d)) / 1000)
     if (diff < 60)     return 'just now'
     if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`
@@ -91,7 +91,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             </Link>
         </div>
 
-        <!-- ── Pipeline cards — clickable filters ── -->
+        <!-- ── Pipeline cards - clickable filters ── -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <button
                 v-for="item in pipeline"

@@ -75,7 +75,7 @@ function occColor(rate) {
 }
 
 // ── Chart pixel height helpers ────────────────────────────────
-const CHART_H = 120  // px — matches style="height:120px" on chart containers
+const CHART_H = 120  // px - matches style="height:120px" on chart containers
 
 function barPx(value, max) {
     if (!value || !max) return '2px'
@@ -205,7 +205,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-3">
-                <!-- 6-month trend — horizontal bars, these are fine as-is -->
+                <!-- 6-month trend - horizontal bars, these are fine as-is -->
                 <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">6-Month Trend</p>
                     <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">Occupancy rate by month</p>
@@ -306,7 +306,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">YoY Growth</p>
                     <p class="text-2xl font-semibold tracking-tight mb-1"
                        :class="revenue.yoy_growth === null ? 'text-gray-400 dark:text-gray-500' : revenue.yoy_growth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
-                        {{ revenue.yoy_growth === null ? '—' : (revenue.yoy_growth >= 0 ? '+' : '') + revenue.yoy_growth + '%' }}
+                        {{ revenue.yoy_growth === null ? '-' : (revenue.yoy_growth >= 0 ? '+' : '') + revenue.yoy_growth + '%' }}
                     </p>
                     <p class="text-xs text-gray-400 dark:text-gray-500">vs {{ selectedYear - 1 }}</p>
                 </div>
@@ -562,7 +562,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
             <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 flex flex-col">
                 <div class="mb-4">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Profit Margin Trend</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Monthly profit margin % — last 12 months</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Monthly profit margin % - last 12 months</p>
                 </div>
                 <div class="flex-1 flex flex-col justify-end">
                     <div class="flex items-end gap-1.5" style="height: 80px;">

@@ -187,7 +187,7 @@ function submitCautionRequest() {
     })
 }
 
-// Manager approves pending request (no extra data needed — uses stored values)
+// Manager approves pending request (no extra data needed - uses stored values)
 function approveCautionRequest() {
     isRefunding.value = true
     router.post(route('manage.bookings.caution-fee.refund', props.booking.booking_reference), {}, {
@@ -291,11 +291,11 @@ const fmt = (v) => new Intl.NumberFormat('en-NG', {
 
 const fmtDate = (d) => d
     ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : '—'
+    : '-'
 
 const fmtDateTime = (d) => d
     ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : '—'
+    : '-'
 
 const guestInitials = computed(() =>
     (props.booking.guest_name ?? '').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()

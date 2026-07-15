@@ -49,7 +49,7 @@ class HomeController extends Controller
             ];
         });
 
-        // Active bookings for the logged-in guest — never cached
+        // Active bookings for the logged-in guest - never cached
         $activeBookings = [];
         if (auth()->check()) {
             $activeBookings = Booking::where('user_id', auth()->id())

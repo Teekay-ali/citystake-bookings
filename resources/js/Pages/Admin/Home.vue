@@ -320,7 +320,7 @@ function formatDate(d) {
                     <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                         <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                             <ShoppingCart class="w-4 h-4" />
-                            Approved — Ready to Purchase ({{ pendingPurchases.length }})
+                            Approved - Ready to Purchase ({{ pendingPurchases.length }})
                         </h2>
                         <Link :href="route('manage.procurement.index')" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                             View all →

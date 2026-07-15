@@ -130,7 +130,7 @@ function bookingForUnitType(unitTypeId) {
             <div class="max-w-7xl mx-auto px-6 lg:px-8 pb-20">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
 
-                    <!-- Left — main content -->
+                    <!-- Left - main content -->
                     <div class="lg:col-span-2 space-y-12">
 
                         <!-- Header -->
@@ -253,7 +253,7 @@ function bookingForUnitType(unitTypeId) {
                         </div>
                     </div>
 
-                    <!-- Right — sticky summary -->
+                    <!-- Right - sticky summary -->
                     <div class="lg:col-span-1">
                         <div class="sticky top-8 space-y-4">
 

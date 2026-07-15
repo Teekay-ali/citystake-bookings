@@ -158,7 +158,7 @@ function formatCompact(n) {
 const axisColor = computed(() => (isDark.value ? '#9ca3af' : '#9ca3af'))
 const gridColor = computed(() => (isDark.value ? '#1f2937' : '#f3f4f6'))
 
-// Income vs Expenses — grouped columns
+// Income vs Expenses - grouped columns
 const incomeExpenseSeries = computed(() => [
     { name: 'Income',   data: (props.trend ?? []).map(t => Math.round(t.income)) },
     { name: 'Expenses', data: (props.trend ?? []).map(t => Math.round(t.expenses)) },
@@ -182,7 +182,7 @@ const incomeExpenseOptions = computed(() => ({
     tooltip: { theme: isDark.value ? 'dark' : 'light', y: { formatter: (v) => formatAmount(v) } },
 }))
 
-// Net profit — smooth area with zero baseline
+// Net profit - smooth area with zero baseline
 const netSeries = computed(() => [
     { name: 'Net Profit', data: (props.trend ?? []).map(t => Math.round(t.net)) },
 ])
@@ -221,7 +221,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
             <div>
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Financials</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                    {{ formatDate(dateRange.start) }} — {{ formatDate(dateRange.end) }}
+                    {{ formatDate(dateRange.start) }} - {{ formatDate(dateRange.end) }}
                 </p>
             </div>
             <div class="flex items-center gap-2">

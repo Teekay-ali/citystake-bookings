@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { Clock, CheckCircle, Calendar, ArrowRight, AlertCircle } from 'lucide-vue-next'
 
 const props = defineProps({
-    booking: Object, // null-safe — component handles its own null guard
+    booking: Object, // null-safe - component handles its own null guard
 })
 
 const formatDate = (d) =>

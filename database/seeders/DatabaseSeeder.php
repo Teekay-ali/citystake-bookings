@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Admin user — credentials come from .env, never hardcoded
+        // Admin user - credentials come from .env, never hardcoded
         $email    = env('ADMIN_EMAIL');
         $password = env('ADMIN_PASSWORD');
         $name     = env('ADMIN_NAME', 'Admin');

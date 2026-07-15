@@ -21,7 +21,7 @@ const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric',
-}) : '—'
+}) : '-'
 
 function applyFilters() {
     router.get(route('manage.guests.index'), {

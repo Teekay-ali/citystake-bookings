@@ -143,7 +143,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                                 <Star class="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                                 <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ vendor.rating }}</span>
                             </div>
-                            <span v-else class="text-xs text-gray-300 dark:text-gray-600">—</span>
+                            <span v-else class="text-xs text-gray-300 dark:text-gray-600">-</span>
                         </td>
 
                         <td class="px-5 py-3.5">

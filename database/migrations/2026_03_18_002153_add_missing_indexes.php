@@ -10,7 +10,7 @@ return new class extends Migration
     {
         // bookings: unit_id alone (for lookups by unit without date range)
         // unit_type_id and building_id (for admin filters and reporting)
-        // booking_reference (for search — it's unique but needs a fast lookup index)
+        // booking_reference (for search - it's unique but needs a fast lookup index)
         // paid_at (for revenue reporting queries)
         Schema::table('bookings', function (Blueprint $table) {
             $table->index('unit_id');

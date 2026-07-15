@@ -26,7 +26,7 @@ const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric',
-}) : '—'
+}) : '-'
 
 const statusConfig = {
     pending:          { label: 'Pending',          color: 'amber',  icon: Clock },

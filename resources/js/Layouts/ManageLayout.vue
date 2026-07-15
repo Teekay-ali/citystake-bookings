@@ -95,7 +95,7 @@ onMounted(() => {
     ensureActiveGroupOpen()
 })
 
-// Collapsible nav groups — everything open by default (null), persisted once
+// Collapsible nav groups - everything open by default (null), persisted once
 // the user collapses something. Active group is always kept expanded.
 const storedGroups = typeof window !== 'undefined' ? localStorage.getItem('sidebar-groups-v2') : null
 const openGroups = ref(storedGroups ? JSON.parse(storedGroups) : null)
@@ -344,7 +344,7 @@ const dashboardRoute = computed(() => {
         : 'manage.home'
 })
 
-// ── Nav groups (flat — each group is a collapsible header) ────
+// ── Nav groups (flat - each group is a collapsible header) ────
 const navGroups = computed(() => [
     {
         label: 'Overview', icon: Home,
@@ -616,7 +616,7 @@ function canSeeItem(item) {
                     <Menu class="w-5 h-5" />
                 </button>
 
-                <!-- Global search — desktop only -->
+                <!-- Global search - desktop only -->
                 <div ref="searchRef" class="relative flex-1 max-w-sm hidden lg:block">
                     <div class="relative">
                         <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />

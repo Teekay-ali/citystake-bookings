@@ -97,7 +97,7 @@ const prominentBooking = computed(() => {
         <!-- ─── Hero ─────────────────────────────────────────────── -->
         <div class="relative min-h-[700px] bg-gray-950 overflow-hidden flex flex-col justify-center">
 
-            <!-- Bold editorial image — opacity-40, not ghosted at 15% -->
+            <!-- Bold editorial image - opacity-40, not ghosted at 15% -->
             <img
                 src="/images/hero-apartment.jpg"
                 alt=""
@@ -108,7 +108,7 @@ const prominentBooking = computed(() => {
                 aria-hidden="true"
             />
 
-            <!-- Single clean gradient — no pulsing grid -->
+            <!-- Single clean gradient - no pulsing grid -->
             <div class="absolute inset-0 bg-gradient-to-b from-gray-900/30 via-gray-900/20 to-gray-900/70 dark:from-gray-950/60 dark:via-gray-950/40 dark:to-gray-950/90"></div>
 
             <!-- Thin gold accent line at very top -->
@@ -134,7 +134,7 @@ const prominentBooking = computed(() => {
                     </div>
                 </div>
 
-                <!-- Headline — clean white, amber accent word, no weak gradient -->
+                <!-- Headline - clean white, amber accent word, no weak gradient -->
                 <div class="max-w-3xl mb-10">
                     <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-400/10 border border-amber-400/30 rounded-full text-amber-300 text-xs font-medium tracking-widest uppercase mb-6">
                         <Star class="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -151,7 +151,7 @@ const prominentBooking = computed(() => {
                     </p>
                 </div>
 
-                <!-- Search card — branded top accent, cleaner layout -->
+                <!-- Search card - branded top accent, cleaner layout -->
                 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl border border-gray-200/80 dark:border-gray-800 overflow-hidden">
                     <!-- Gold accent top border -->
                     <div class="h-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500"></div>
@@ -227,7 +227,7 @@ const prominentBooking = computed(() => {
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Unified card — image + info as one hover unit -->
+                    <!-- Unified card - image + info as one hover unit -->
                     <div
                         v-for="building in featuredProperties"
                         :key="building.id"
@@ -424,7 +424,7 @@ const prominentBooking = computed(() => {
                     </p>
                 </div>
 
-                <!-- Monochromatic feature cards — icon color animates to amber on hover -->
+                <!-- Monochromatic feature cards - icon color animates to amber on hover -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div class="group p-8 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-amber-200 dark:hover:border-amber-900/50 hover:shadow-lg hover:shadow-amber-50 dark:hover:shadow-amber-900/10 transition-all duration-300">
                         <div class="w-12 h-12 rounded-xl bg-gray-950 dark:bg-white flex items-center justify-center mb-6 group-hover:bg-amber-400 transition-colors duration-300">
@@ -457,7 +457,7 @@ const prominentBooking = computed(() => {
                     </div>
                 </div>
 
-                <!-- Trust badges — above a real border, not faded out -->
+                <!-- Trust badges - above a real border, not faded out -->
                 <div class="mt-14 pt-10 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 md:grid-cols-4 gap-6 items-center justify-items-center">
                     <div class="flex items-center gap-2">
                         <CheckCircle class="w-4 h-4 text-amber-500" />
@@ -480,9 +480,9 @@ const prominentBooking = computed(() => {
         </div>
 
         <!-- ─── CTA ───────────────────────────────────────────────── -->
-        <!-- Solid dark, distinct from hero — no repeated gradient -->
+        <!-- Solid dark, distinct from hero - no repeated gradient -->
         <div class="relative bg-gray-950 py-28 overflow-hidden">
-            <!-- Single subtle ambient glow — not two mirrored blobs -->
+            <!-- Single subtle ambient glow - not two mirrored blobs -->
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div class="w-[600px] h-[300px] bg-amber-400/5 rounded-full blur-3xl"></div>
             </div>

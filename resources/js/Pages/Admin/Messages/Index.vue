@@ -60,7 +60,7 @@ function timeAgo(date) {
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
 }
 
-// Guest name helper — messages[0] doesn't carry guest_name, booking does
+// Guest name helper - messages[0] doesn't carry guest_name, booking does
 function guestName(conv) {
     return conv.guest_name ?? 'Guest'
 }

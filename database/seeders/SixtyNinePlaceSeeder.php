@@ -12,7 +12,7 @@ class SixtyNinePlaceSeeder extends Seeder
     public function run(): void
     {
         if (Building::where('slug', '69place')->exists()) {
-            $this->command->info('69place already seeded — skipping.');
+            $this->command->info('69place already seeded - skipping.');
             return;
         }
 
@@ -106,6 +106,6 @@ class SixtyNinePlaceSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('69place seeded successfully — 3 unit types, 24 units.');
+        $this->command->info('69place seeded successfully - 3 unit types, 24 units.');
     }
 }

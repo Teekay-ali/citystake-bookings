@@ -112,6 +112,60 @@ class BuildingController extends Controller
             ->with('success', 'Property updated successfully!');
     }
 
+    // ── Property policy (versioned rich text) ──
+
+    public function editPolicy(Building $building)
+    {
+        abort_unless(auth()->user()->can('manage-properties'), 403);
+
+        $current = $building->currentPolicy;
+
+        return Inertia::render('Admin/Properties/EditPolicy', [
+            'building' => ['id' => $building->id, 'name' => $building->name, 'slug' => $building->slug],
+            'policy'   => $current ? [
+                'body'       => $current->body,
+                'version'    => $current->version,
+                'updated_at' => $current->updated_at,
+            ] : null,
+        ]);
+    }
+
+    public function updatePolicy(Request $request, Building $building)
+    {
+        abort_unless(auth()->user()->can('manage-properties'), 403);
+
+        $validated = $request->validate([
+            'body' => 'required|string|max:50000',
+        ]);
+
+        $body = $this->sanitizePolicy($validated['body']);
+
+        // Each save publishes a new immutable version so historical bookings can
+        // still point at exactly the policy that applied to them.
+        $nextVersion = (int) ($building->policies()->max('version') ?? 0) + 1;
+
+        $policy = $building->policies()->create([
+            'version'    => $nextVersion,
+            'body'       => $body,
+            'created_by' => auth()->id(),
+        ]);
+
+        AuditLog::log('building.policy_updated', $building, null, ['version' => $policy->version]);
+
+        return back()->with('success', "Policy saved as version {$policy->version}.");
+    }
+
+    private function sanitizePolicy(string $html): string
+    {
+        $config = \HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', 'p,br,strong,em,ul,ol,li,h2,h3,h4,a[href],blockquote');
+        $config->set('AutoFormat.RemoveEmpty', true);
+        $config->set('HTML.TargetBlank', true);
+        $config->set('Cache.DefinitionImpl', null);
+
+        return (new \HTMLPurifier($config))->purify($html);
+    }
+
     public function destroy(Building $building)
     {
         abort_unless(auth()->user()->can('create-properties'), 403);

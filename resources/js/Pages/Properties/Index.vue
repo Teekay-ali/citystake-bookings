@@ -13,7 +13,7 @@ const search    = ref('')
 const cityFilter = ref('')
 const bedroomFilter = ref('')
 
-// Seed from URL query params (home page search passes check_in etc — just pre-fill city if present)
+// Seed from URL query params (home page search passes check_in etc - just pre-fill city if present)
 onMounted(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('city')) cityFilter.value = params.get('city')

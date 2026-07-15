@@ -151,7 +151,7 @@ class UnitTypeController extends Controller
         // Group ranges by unit_id for fast lookup
         $byUnit = $ranges->groupBy('unit_id');
 
-        // Walk each day — but skip days where even one unit is free
+        // Walk each day - but skip days where even one unit is free
         $unavailable = [];
         $current     = new \DateTime($start);
         $endDt       = new \DateTime($end);
@@ -208,7 +208,7 @@ class UnitTypeController extends Controller
             ->withCount('unitTypes')
             ->get(['id', 'name', 'slug', 'city', 'address']);
 
-        // Active bookings for this building's unit types — guest-specific, not cached
+        // Active bookings for this building's unit types - guest-specific, not cached
         $userBuildingBookings = [];
         if (auth()->check()) {
             $unitTypeIds = $building->unitTypes->pluck('id');

@@ -22,7 +22,7 @@ const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric',
-}) : '—'
+}) : '-'
 
 const statusClass = (status) => ({
     confirmed:   'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',

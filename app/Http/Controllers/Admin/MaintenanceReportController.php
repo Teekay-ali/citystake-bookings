@@ -183,7 +183,7 @@ class MaintenanceReportController extends Controller
             return back()->with('success', 'Report rejected.');
         }
 
-        // Approve — advance the workflow
+        // Approve - advance the workflow
         if ($maintenance->canManagerApprove() && $user->can('approve-maintenance-manager')) {
             $maintenance->update([
                 'status'              => 'manager_approved',

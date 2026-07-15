@@ -408,7 +408,7 @@ const monthGroups = computed(() => {
                                     :class="[cellBg[cell.kind], 'relative border-r border-gray-100 dark:border-gray-800/50 h-10 p-0']"
                                     @click="handleCellClick(unit, cell, building, unitType)">
 
-                                    <!-- Booking bar — rendered once at its visible start, clamped to window -->
+                                    <!-- Booking bar - rendered once at its visible start, clamped to window -->
                                     <div v-if="cell.bar"
                                          :style="`width: calc(${cell.bar.span} * 2.5rem - 2px); min-width: calc(${cell.bar.span} * 2.5rem - 2px);`"
                                          :class="[
@@ -440,7 +440,7 @@ const monthGroups = computed(() => {
             </table>
         </div>
 
-        <!-- ── Drawer — booking detail or new booking ── -->
+        <!-- ── Drawer - booking detail or new booking ── -->
         <Transition
             enter-active-class="transition-all duration-250 ease-out"
             enter-from-class="translate-x-full opacity-0"

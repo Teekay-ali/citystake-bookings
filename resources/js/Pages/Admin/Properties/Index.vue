@@ -5,7 +5,7 @@ import { ref, computed, watch } from 'vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import {
     Plus, ChevronDown, Building2, Edit, Trash2,
-    Users, Eye, Home, Bed, MapPin, Search
+    Users, Eye, Home, Bed, MapPin, Search, ShieldCheck
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -229,6 +229,12 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
                     <!-- Actions -->
                     <div class="flex items-center gap-1 flex-shrink-0">
                         <Link
+                            :href="route('manage.properties.policy.edit', building.id)"
+                            class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                            title="Property policy">
+                            <ShieldCheck class="w-4 h-4" />
+                        </Link>
+                        <Link
                             :href="route('manage.properties.edit', building.id)"
                             class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                             title="Edit property">
@@ -319,7 +325,7 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
                                 </div>
                             </div>
 
-                            <!-- Actions — visible on hover -->
+                            <!-- Actions - visible on hover -->
                             <div class="flex items-center gap-1 flex-shrink-0">
                                 <Link
                                     v-if="unitType.slug"

@@ -271,7 +271,7 @@ class AnalyticsController extends Controller
                 'adr'       => $r->nights > 0 ? round($r->total / $r->nights, 2) : 0,
             ])->toArray();
 
-        // YoY + KPIs — single query for both years, grouped by year+month
+        // YoY + KPIs - single query for both years, grouped by year+month
         $yoyRows = Booking::where('payment_status', 'paid')
             ->whereIn('building_id', $scopedIds)
             ->whereIn(DB::raw('YEAR(check_in)'), [$year - 1, $year])

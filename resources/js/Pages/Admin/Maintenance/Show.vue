@@ -27,15 +27,15 @@ const canApprove = computed(() =>
 
 const formatPrice = (v) => v != null
     ? new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(v)
-    : '—'
+    : '-'
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric'
-}) : '—'
+}) : '-'
 
 const formatDateTime = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-}) : '—'
+}) : '-'
 
 // Status config
 const statusConfig = {
@@ -126,7 +126,7 @@ function deleteReport() {
 </script>
 
 <template>
-    <Head :title="`Maintenance — ${report.title}`" />
+    <Head :title="`Maintenance - ${report.title}`" />
 
     <div class="p-4 lg:p-6">
 
@@ -182,7 +182,7 @@ function deleteReport() {
                             <p class="text-xs text-gray-400 mb-1 flex items-center gap-1.5">
                                 <MapPin class="w-3 h-3" /> Location
                             </p>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ report.location ?? '—' }}</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ report.location ?? '-' }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 mb-1 flex items-center gap-1.5">

@@ -24,7 +24,7 @@ router.on('invalid', (event) => {
         /cloudflare|cf-browser-verification|challenge-platform|just a moment/i.test(body);
 
     if (!looksLikeCloudflare) {
-        return; // genuine error — let Inertia handle it normally
+        return; // genuine error - let Inertia handle it normally
     }
 
     event.preventDefault();

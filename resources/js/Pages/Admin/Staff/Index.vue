@@ -116,7 +116,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
 
                 <div class="flex items-center gap-3 flex-1 min-w-0">
 
-                    <!-- Avatar — initials, square -->
+                    <!-- Avatar - initials, square -->
                     <div class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
                         <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">
                             {{ initials(member.name) }}

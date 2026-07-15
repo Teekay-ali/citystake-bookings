@@ -18,7 +18,7 @@ class SendTaskOverdueReminders extends Command
         $today    = Carbon::today();
         $tomorrow = Carbon::tomorrow();
 
-        // ── 1. Warning — due tomorrow ─────────────────────────
+        // ── 1. Warning - due tomorrow ─────────────────────────
         $dueTomorrow = Task::whereNotIn('status', ['completed', 'cancelled'])
             ->whereDate('due_date', $tomorrow)
             ->whereNotNull('assigned_to')
@@ -31,7 +31,7 @@ class SendTaskOverdueReminders extends Command
 
         $this->info("Warning reminders sent: {$dueTomorrow->count()}");
 
-        // ── 2. Overdue — due today or up to 3 days ago ────────
+        // ── 2. Overdue - due today or up to 3 days ago ────────
         $overdue = Task::whereNotIn('status', ['completed', 'cancelled'])
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', $today)
@@ -52,7 +52,7 @@ class SendTaskOverdueReminders extends Command
                 $task->createdBy?->notify(new TaskOverdueNotification($task, $type));
             }
 
-            // Escalation — also notify managers of the building
+            // Escalation - also notify managers of the building
             if ($type === 'escalation') {
                 $managers = User::role(['manager', 'super-admin'])
                     ->whereHas('buildings', fn($q) => $q->where('buildings.id', $task->building_id))

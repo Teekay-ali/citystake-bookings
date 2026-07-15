@@ -39,7 +39,7 @@ const statusConfig = {
     resolved:    { label: 'Resolved',    icon: CheckCircle2,  cls: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' },
 }
 
-// Pipeline summary cards — clickable filters
+// Pipeline summary cards - clickable filters
 const pipeline = [
     { key: 'open',        label: 'Open',        countKey: 'open' },
     { key: 'in_progress', label: 'In Progress',  countKey: 'in_progress' },
@@ -110,7 +110,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
             </button>
         </div>
 
-        <!-- ── Summary cards — clickable filters ── -->
+        <!-- ── Summary cards - clickable filters ── -->
         <div class="grid grid-cols-3 gap-3 mb-6">
             <button
                 v-for="item in pipeline"

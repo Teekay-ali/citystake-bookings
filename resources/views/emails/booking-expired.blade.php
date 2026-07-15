@@ -45,7 +45,7 @@
     </div>
 
     <p class="email-text">
-        No payment was taken. If you'd still like to book, you're welcome to start a new reservation —
+        No payment was taken. If you'd still like to book, you're welcome to start a new reservation -
         subject to availability.
     </p>
 

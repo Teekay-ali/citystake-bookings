@@ -152,10 +152,10 @@ function actionColor(action) {
                                         {{ log.model_type.split('\\').pop() }}
                                         <span v-if="log.model_id" class="text-gray-400">#{{ log.model_id }}</span>
                                     </span>
-                                <span v-else class="text-gray-300 dark:text-gray-700">—</span>
+                                <span v-else class="text-gray-300 dark:text-gray-700">-</span>
                             </td>
                             <td class="px-5 py-3.5 text-xs font-mono text-gray-400">
-                                {{ log.ip_address ?? '—' }}
+                                {{ log.ip_address ?? '-' }}
                             </td>
                         </tr>
                         </tbody>

@@ -56,7 +56,7 @@ function formatDateTime(d) {
     return d ? new Date(d).toLocaleDateString('en-NG', {
         day: 'numeric', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit'
-    }) : '—'
+    }) : '-'
 }
 
 const timelineSteps = computed(() => [
@@ -211,7 +211,7 @@ const timelineSteps = computed(() => [
                             </div>
                         </div>
 
-                        <!-- Bank Details — below supplier row, full width -->
+                        <!-- Bank Details - below supplier row, full width -->
                         <template v-if="procurement.supplier_bank_name || procurement.supplier_account_number">
                             <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Bank Details</p>
@@ -282,7 +282,7 @@ const timelineSteps = computed(() => [
                 <!-- ── Sidebar ── -->
                 <div class="flex flex-col gap-4 order-1 lg:order-none lg:sticky lg:top-20 self-start">
 
-                    <!-- Action panel — inverted, matches the sidebar logo/avatar accent -->
+                    <!-- Action panel - inverted, matches the sidebar logo/avatar accent -->
                     <div v-if="canAct && !['completed','rejected'].includes(procurement.status)"
                          class="rounded-2xl bg-gray-900 dark:bg-white border border-gray-900 dark:border-gray-100 p-5">
                         <div class="flex items-start gap-3 mb-4">
@@ -349,7 +349,7 @@ const timelineSteps = computed(() => [
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-[11px] text-gray-400 font-medium">Building</span>
-                                <span class="text-[12px] font-medium text-gray-700 dark:text-gray-300">{{ procurement.building?.name ?? '—' }}</span>
+                                <span class="text-[12px] font-medium text-gray-700 dark:text-gray-300">{{ procurement.building?.name ?? '-' }}</span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-[11px] text-gray-400 font-medium">Items</span>

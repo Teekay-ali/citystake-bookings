@@ -84,6 +84,21 @@
         <a href="{{ route('bookings.show', $booking->id) }}" class="button">View Booking Details</a>
     </center>
 
+    @if($booking->policy_version)
+        <div class="info-box">
+            <p class="info-box-title">📋 Property Policy</p>
+            <p class="info-box-text">
+                Please take a moment to read our property policy before your stay.
+            </p>
+            <p style="margin-top: 10px;">
+                <a href="{{ route('properties.policy', ['building' => $booking->building->slug, 'v' => $booking->policy_version]) }}"
+                   style="color: #2563eb; font-weight: 600; text-decoration: underline;">
+                    Read our property policy →
+                </a>
+            </p>
+        </div>
+    @endif
+
     <p class="email-text">
         If you have any questions or need assistance, please don't hesitate to contact us.
     </p>

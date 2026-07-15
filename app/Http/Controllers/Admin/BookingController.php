@@ -271,6 +271,7 @@ class BookingController extends Controller
                 'guest_email'       => $validated['guest_email'],
                 'guest_phone'       => $validated['guest_phone'],
                 'special_requests'  => $validated['special_requests'] ?? null,
+                'policy_version'    => $building->currentPolicy?->version,
                 'subtotal'          => $bookingModel->subtotal,
                 'total_amount'      => $bookingModel->total_amount,
                 'discount_type'     => $bookingModel->discount_type,
@@ -538,7 +539,7 @@ class BookingController extends Controller
             $changes[] = "Dates {$fmtDate($old['check_in'])}→{$fmtDate($old['check_out'])} to {$fmtDate($checkIn)}→{$fmtDate($checkOut)}";
         }
         if ($unitChanged) {
-            $changes[] = 'Unit ' . ($old['unit_number'] ?? '—') . ' → ' . ($newUnitNumber ?? '—');
+            $changes[] = 'Unit ' . ($old['unit_number'] ?? '-') . ' → ' . ($newUnitNumber ?? '-');
         }
         if ($new['guests']      !== $old['guests'])      $changes[] = "Guests {$old['guests']} → {$new['guests']}";
         if ($new['guest_name']  !== $old['guest_name'])  $changes[] = "Guest name updated";
@@ -995,7 +996,7 @@ class BookingController extends Controller
                 $deduction      = 0;
                 $successMessage = $available > 0
                     ? '₦' . number_format($available, 0) . ' refunded to the guest.'
-                    : 'Caution fee settled — nothing left to refund.';
+                    : 'Caution fee settled - nothing left to refund.';
                 break;
 
             case 'partial_deduction':
@@ -1034,7 +1035,7 @@ class BookingController extends Controller
                 'category'         => 'caution_fee_deduction',
                 'reference_type'   => Booking::class,
                 'reference_id'     => $booking->id,
-                'description'      => "Caution fee deduction — {$booking->guest_name} ({$booking->booking_reference})"
+                'description'      => "Caution fee deduction - {$booking->guest_name} ({$booking->booking_reference})"
                     . ($reason ? ": {$reason}" : ''),
                 'amount'           => $deduction,
                 'payment_method'   => 'cash',
@@ -1093,7 +1094,7 @@ class BookingController extends Controller
                 'reference_type'   => Booking::class,
                 'reference_id'     => $booking->id,
                 'description'      => CautionFeeCharge::CATEGORIES[$validated['category']]
-                    . " — {$booking->guest_name} ({$booking->booking_reference}): {$validated['description']}",
+                    . " - {$booking->guest_name} ({$booking->booking_reference}): {$validated['description']}",
                 'amount'           => $validated['amount'],
                 'payment_method'   => 'caution_fee',
                 'transaction_date' => now()->toDateString(),

@@ -65,7 +65,7 @@
                     <!-- Footer -->
                     <tr>
                         <td style="background-color:#f9fafb; padding:28px 30px; text-align:center; border-top:1px solid #e5e7eb;">
-                            <p style="margin:0 0 6px 0; font-size:13px; color:#6b7280;">{{ config('app.name') }} — Premium Apartment Rentals in Abuja</p>
+                            <p style="margin:0 0 6px 0; font-size:13px; color:#6b7280;">{{ config('app.name') }} - Premium Apartment Rentals in Abuja</p>
                             <p style="margin:0; font-size:12px; color:#9ca3af;">© {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
                         </td>
                     </tr>

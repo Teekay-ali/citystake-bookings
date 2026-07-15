@@ -69,7 +69,7 @@ const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric'
 })
 
-// Confirmed, paid arrival not yet checked in — 'today', 'overdue', or null.
+// Confirmed, paid arrival not yet checked in - 'today', 'overdue', or null.
 function checkInDue(b) {
     if (b.status !== 'confirmed' || b.payment_status !== 'paid' || b.checked_in_at) return null
     const today = new Date(); today.setHours(0, 0, 0, 0)

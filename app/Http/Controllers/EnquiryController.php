@@ -29,7 +29,7 @@ class EnquiryController extends Controller
             abort(404);
         }
 
-        // Show an estimated price (not binding — reception finalises)
+        // Show an estimated price (not binding - reception finalises)
         $estimate = new Booking([
             'check_in'  => $request->check_in,
             'check_out' => $request->check_out,

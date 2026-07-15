@@ -25,7 +25,7 @@ class StaffMessageNotification extends Notification
         $isReply = $this->staffMessage->parent_id !== null;
 
         return (new MailMessage)
-            ->subject(($isReply ? 'Re: ' : '') . $subject . ' — ' . $sender)
+            ->subject(($isReply ? 'Re: ' : '') . $subject . ' - ' . $sender)
             ->view('emails.staff-messages.received', [
                 'staffMessage' => $this->staffMessage,
                 'notifiable'   => $notifiable,

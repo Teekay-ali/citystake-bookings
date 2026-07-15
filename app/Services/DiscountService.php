@@ -13,7 +13,7 @@ class DiscountService
 
     /**
      * Resolve the applicable discount for a booking.
-     * Returns the highest qualifying discount only — rules don't stack.
+     * Returns the highest qualifying discount only - rules don't stack.
      *
      * @param int $nights
      * @param int $unitsInSameBookingGroup  For future group bookings; pass 1 for single bookings

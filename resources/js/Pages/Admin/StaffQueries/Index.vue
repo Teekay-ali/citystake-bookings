@@ -89,7 +89,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
             </button>
         </div>
 
-        <!-- ── Summary cards — clickable filters ── -->
+        <!-- ── Summary cards - clickable filters ── -->
         <div class="grid grid-cols-3 gap-3 mb-6">
             <button
                 v-for="item in pipeline"
@@ -198,7 +198,7 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">New Staff Query</h2>
                     <button @click="showCreate = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><X class="w-4 h-4" /></button>
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-5">Confidential — visible only to managers and admins.</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-5">Confidential - visible only to managers and admins.</p>
                 <form @submit.prevent="submitCreate" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>

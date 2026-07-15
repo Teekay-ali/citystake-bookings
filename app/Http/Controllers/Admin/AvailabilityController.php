@@ -61,7 +61,7 @@ class AvailabilityController extends Controller
             ->get()
             ->groupBy('unit_id');
 
-        // Shape data — units carry their bookings + blocked ranges for the window
+        // Shape data - units carry their bookings + blocked ranges for the window
         $buildings->each(function ($building) use ($bookingsByUnit, $blockedByUnit) {
             $building->unitTypes->each(function ($unitType) use ($bookingsByUnit, $blockedByUnit) {
                 $unitType->units->each(function ($unit) use ($bookingsByUnit, $blockedByUnit, $unitType) {

@@ -26,7 +26,7 @@ class HandleInertiaRequests extends Middleware
         $user          = $request->user();
         $isManageRoute = $request->routeIs('manage.*');
 
-        // Compute once — reused across all badge closures
+        // Compute once - reused across all badge closures
         $buildingIds   = ($user && $isManageRoute && ! $user->hasGlobalAccess())
             ? $user->accessibleBuildingIds()
             : null;
@@ -65,7 +65,7 @@ class HandleInertiaRequests extends Middleware
 
             'appName' => config('app.name'),
 
-            // ── Badge counts (all lazy closures — skipped on partial Inertia navigations) ──
+            // ── Badge counts (all lazy closures - skipped on partial Inertia navigations) ──
 
             'lateCheckoutPendingCount' => fn () => ($user && $isManageRoute)
                 ? $applyBuildings(Booking::where('late_checkout_status', 'pending'))->count()

@@ -160,7 +160,7 @@ function formatDateTime(d) {
                 <!-- ── Sidebar ── -->
                 <div class="flex flex-col gap-4 order-1 lg:order-none lg:sticky lg:top-20 self-start">
 
-                    <!-- Log stock change — inverted panel, same as action panel in procurement -->
+                    <!-- Log stock change - inverted panel, same as action panel in procurement -->
                     <div class="rounded-2xl bg-gray-900 dark:bg-white border border-gray-900 dark:border-gray-100 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                         <p class="text-sm font-bold text-white dark:text-gray-900 mb-0.5">Log Stock Change</p>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-4">Record usage, restock, or adjustment</p>
@@ -203,11 +203,11 @@ function formatDateTime(d) {
                         <div class="px-5 py-3.5 space-y-2.5">
                             <div class="flex items-center justify-between">
                                 <span class="text-[11px] text-gray-400 font-medium">Category</span>
-                                <span class="text-[12px] font-medium text-gray-700 dark:text-gray-300">{{ item.category ?? '—' }}</span>
+                                <span class="text-[12px] font-medium text-gray-700 dark:text-gray-300">{{ item.category ?? '-' }}</span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-[11px] text-gray-400 font-medium">Building</span>
-                                <span class="text-[12px] font-medium text-gray-700 dark:text-gray-300">{{ item.building?.name ?? '—' }}</span>
+                                <span class="text-[12px] font-medium text-gray-700 dark:text-gray-300">{{ item.building?.name ?? '-' }}</span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-[11px] text-gray-400 font-medium">Unit</span>

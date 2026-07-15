@@ -26,12 +26,12 @@ const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric',
-}) : '—'
+}) : '-'
 
-const formatTime = (d) => d ? new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—'
+const formatTime = (d) => d ? new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-'
 
 const formatRelative = (d) => {
-    if (!d) return '—'
+    if (!d) return '-'
     const diff = Math.floor((Date.now() - new Date(d)) / 1000)
     if (diff < 60)    return 'just now'
     if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`
@@ -54,7 +54,7 @@ const statusClass = (status) => ({
     green: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
 }[statusConfig[status]?.color ?? 'amber'])
 
-// Terminal states read as "done" — dim the row like completed bookings
+// Terminal states read as "done" - dim the row like completed bookings
 const isTerminal = (status) => status === 'paid' || status === 'declined'
 
 function applyFilters() {

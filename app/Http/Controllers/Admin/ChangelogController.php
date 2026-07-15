@@ -52,7 +52,7 @@ class ChangelogController extends Controller
             'send_email' => 'boolean',
         ]);
 
-        // Body is rich-text HTML from the editor — sanitize to a safe allowlist
+        // Body is rich-text HTML from the editor - sanitize to a safe allowlist
         $validated['body'] = $this->sanitizeBody($validated['body']);
 
         $changelog = Changelog::create([

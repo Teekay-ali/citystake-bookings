@@ -31,7 +31,7 @@ const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-}) : '—'
+}) : '-'
 
 const statusConfig = {
     pending:  { label: 'Pending',  color: 'amber', icon: Clock },
@@ -183,7 +183,7 @@ function submitPaid() {
                 </div>
             </div>
 
-            <!-- Supporting Documents — separate card -->
+            <!-- Supporting Documents - separate card -->
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
                 <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
                     Supporting Documents

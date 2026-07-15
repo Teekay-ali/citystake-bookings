@@ -94,13 +94,15 @@ Route::get('/privacy', function () {
 Route::get('/properties', [UnitTypeController::class, 'index'])->name('properties.index');
 Route::get('/properties/{building:slug}', [UnitTypeController::class, 'showBuilding'])
     ->name('properties.building');
+// Must precede the {unitType:slug} route so "policy" isn't matched as a unit-type slug
+Route::get('/properties/{building:slug}/policy', [\App\Http\Controllers\PropertyPolicyController::class, 'show'])->name('properties.policy');
 Route::get('/properties/{building:slug}/{unitType:slug}', [UnitTypeController::class, 'show'])->name('properties.show');
 Route::post('/properties/{building:slug}/{unitType:slug}/check-availability', [UnitTypeController::class, 'checkAvailability'])
     ->name('properties.check-availability');
 Route::get('/properties/{building:slug}/{unitType:slug}/unavailable-dates', [UnitTypeController::class, 'unavailableDates'])
     ->name('properties.unavailable-dates');
 
-// Public booking enquiry ("Request to book" — no payment, no login required)
+// Public booking enquiry ("Request to book" - no payment, no login required)
 Route::get('/properties/{building:slug}/{unitType:slug}/book', [EnquiryController::class, 'create'])
     ->name('enquiries.create');
 Route::post('/properties/{building:slug}/{unitType:slug}/book', [EnquiryController::class, 'store'])
@@ -204,6 +206,8 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/properties/create', [BuildingController::class, 'create'])->name('properties.create');
     Route::post('/properties', [BuildingController::class, 'store'])->name('properties.store');
     Route::get('/properties/{building}/edit', [BuildingController::class, 'edit'])->name('properties.edit');
+    Route::get('/properties/{building}/policy', [BuildingController::class, 'editPolicy'])->name('properties.policy.edit');
+    Route::put('/properties/{building}/policy', [BuildingController::class, 'updatePolicy'])->name('properties.policy.update');
     Route::put('/properties/{building}', [BuildingController::class, 'update'])->name('properties.update');
     Route::delete('/properties/{building}', [BuildingController::class, 'destroy'])->name('properties.destroy');
 
