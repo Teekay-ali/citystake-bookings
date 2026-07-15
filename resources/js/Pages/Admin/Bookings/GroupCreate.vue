@@ -81,7 +81,9 @@ function memberPrice(m) {
     const price = parseFloat(ut.base_price_per_night) || 0
     const subtotal = price * nights.value
     const caution = nights.value === 1 ? price : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000)
-    const discount = nights.value >= 7 ? Math.round(subtotal * 0.05) : 0
+    // A group is always 2+ rooms by one payer, so multi-room applies: 5%, or 10% at 7+ nights.
+    const rate = nights.value >= 7 ? 0.10 : 0.05
+    const discount = Math.round(subtotal * rate)
     return (subtotal - discount) + caution
 }
 const grandTotal = computed(() => form.members.reduce((s, m) => s + memberPrice(m), 0))

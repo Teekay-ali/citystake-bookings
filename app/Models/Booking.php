@@ -273,6 +273,7 @@ class Booking extends Model
      *   discount_mode: 'auto' (default) | 'manual' | 'none'
      *   manual_discount: float ₦ amount (used when mode = 'manual')
      *   discount_reason: string
+     *   unit_count: int rooms booked together by one payer (group size); 1 for a single booking
      */
     public function calculateTotal(UnitType $unitType, array $opts = []): void
     {
@@ -317,8 +318,9 @@ class Booking extends Model
             $this->discount_amount  = 0;
             $this->discount_reason  = null;
         } else {
-            // Automatic rule-based discount
-            $discount = DiscountService::resolve((int) $this->nights);
+            // Automatic rule-based discount. unit_count reflects how many rooms the
+            // same payer is booking together (a group booking's size); 1 for a single booking.
+            $discount = DiscountService::resolve((int) $this->nights, (int) ($opts['unit_count'] ?? 1));
             $this->discount_type    = $discount['type'];
             $this->discount_percent = $discount['percent'];
             $this->discount_amount  = $discount['percent'] > 0

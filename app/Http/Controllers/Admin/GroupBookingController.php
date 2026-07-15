@@ -103,7 +103,9 @@ class GroupBookingController extends Controller
                 $unitType = $unit->unitType;
 
                 $model = new Booking(['check_in' => $checkIn->toDateString(), 'check_out' => $checkOut->toDateString()]);
-                $model->calculateTotal($unitType);
+                // Whole group is one payer booking multiple rooms, so every member is priced
+                // with the group's room count for the multi-room auto-discount.
+                $model->calculateTotal($unitType, ['unit_count' => count($validated['members'])]);
 
                 $booking = Booking::create([
                     'booking_reference'   => Booking::generateReference(),
