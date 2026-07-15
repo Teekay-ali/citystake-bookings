@@ -30,7 +30,19 @@ const form = useForm({
     special_requests:  props.prefill?.special_requests  ?? '',
     payment_method:    'pos',
     payment_reference: '',
+    // Pricing overrides (Block A)
+    discount_mode:          'auto',   // 'auto' | 'manual' | 'none'
+    manual_discount_amount: '',
+    discount_reason:        '',
+    cross_grade:            false,
 })
+
+// When cross-grading, the physical unit comes from a different (overflow) type
+// while form.unit_type_id stays as the billed/rate type.
+const crossGradeTypeId = ref('')
+const physicalUnitTypeId = computed(() =>
+    form.cross_grade && crossGradeTypeId.value ? crossGradeTypeId.value : form.unit_type_id
+)
 
 const availableUnits  = ref([])
 const loadingUnits    = ref(false)
@@ -87,7 +99,7 @@ watch(() => form.building_id, () => {
 
 let unitFetchController = null
 
-watch([() => form.unit_type_id, () => form.check_in, () => form.check_out], async ([unitTypeId, checkIn, checkOut]) => {
+watch([physicalUnitTypeId, () => form.check_in, () => form.check_out], async ([unitTypeId, checkIn, checkOut]) => {
     form.unit_id    = ''
     availableUnits.value = []
     unitsLoaded.value    = false
@@ -135,10 +147,19 @@ const pricing = computed(() => {
 
     let discountPercent = 0;
     let discountType    = null;
-    if (nights >= 7) { discountPercent = 5; discountType = 'long_stay'; }
+    let discountAmount  = 0;
 
-    const discountAmount = discountPercent > 0 ? Math.round(subtotal * (discountPercent / 100)) : 0;
-    const total          = (subtotal - discountAmount) + cautionFee;
+    if (form.discount_mode === 'manual') {
+        discountAmount = Math.min(Math.max(parseFloat(form.manual_discount_amount) || 0, 0), subtotal);
+        discountType   = discountAmount > 0 ? 'manual' : null;
+    } else if (form.discount_mode === 'none') {
+        discountType = null;
+    } else {
+        if (nights >= 7) { discountPercent = 5; discountType = 'long_stay'; }
+        discountAmount = discountPercent > 0 ? Math.round(subtotal * (discountPercent / 100)) : 0;
+    }
+
+    const total = (subtotal - discountAmount) + cautionFee;
 
     return { subtotal, cautionFee, discountAmount, discountPercent, discountType, total };
 });
@@ -222,7 +243,7 @@ const inputCls = (hasError) => [
                                 >
                                     <option value="">Select unit type</option>
                                     <option v-for="ut in availableUnitTypes" :key="ut.id" :value="ut.id">
-                                        {{ ut.name }} — {{ formatPrice(ut.base_price_per_night) }}/night
+                                        {{ ut.name }} - {{ formatPrice(ut.base_price_per_night) }}/night
                                     </option>
                                 </select>
                                 <p v-if="form.errors.unit_type_id" class="mt-1 text-xs text-red-600">{{ form.errors.unit_type_id }}</p>
@@ -288,14 +309,14 @@ const inputCls = (hasError) => [
                             <!-- Unit Selection -->
                             <div v-if="form.unit_type_id && form.check_in && form.check_out" class="mt-4">
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Unit <span class="text-gray-400 dark:text-gray-500">(optional — auto-assigned if blank)</span>
+                                    Unit <span class="text-gray-400 dark:text-gray-500">(optional - auto-assigned if blank)</span>
                                 </label>
                                 <div v-if="loadingUnits" class="flex items-center gap-2 px-3 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg">
                                     <div class="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
                                     <span class="text-xs text-gray-400">Checking availability…</span>
                                 </div>
                                 <select v-else v-model="form.unit_id" :class="inputCls(false)">
-                                    <option value="">Auto-assign best available unit</option>
+                                    <option value="" :disabled="form.cross_grade">{{ form.cross_grade ? 'Select the overflow unit…' : 'Auto-assign best available unit' }}</option>
                                     <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
                                         {{ unit.label }}
                                     </option>
@@ -306,6 +327,26 @@ const inputCls = (hasError) => [
                                 <p v-else-if="unitsLoaded" class="mt-1 text-xs text-gray-400 dark:text-gray-500">
                                     {{ availableUnits.length }} unit{{ availableUnits.length !== 1 ? 's' : '' }} available
                                 </p>
+
+                                <!-- Cross-grade (overflow allocation) -->
+                                <label class="mt-3 flex items-start gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" v-model="form.cross_grade"
+                                           class="mt-0.5 rounded border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-gray-900 dark:focus:ring-white" />
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">
+                                        Assign a different apartment type <span class="text-gray-400">(overflow)</span>
+                                        - still billed at the <span class="font-medium text-gray-700 dark:text-gray-300">{{ selectedUnitType?.name }}</span> rate
+                                    </span>
+                                </label>
+                                <div v-if="form.cross_grade" class="mt-2">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Physical apartment type <span class="text-red-500">*</span></label>
+                                    <select v-model="crossGradeTypeId" :class="inputCls(false)">
+                                        <option value="">Select the apartment being given…</option>
+                                        <option v-for="ut in availableUnitTypes.filter(t => t.id != form.unit_type_id)" :key="ut.id" :value="ut.id">
+                                            {{ ut.name }} - {{ formatPrice(ut.base_price_per_night) }}/night
+                                        </option>
+                                    </select>
+                                    <p class="mt-1 text-[11px] text-amber-600 dark:text-amber-400">Pick a specific unit above - auto-assign is off for overflow.</p>
+                                </div>
                             </div>
 
                         </div>
@@ -500,7 +541,7 @@ const inputCls = (hasError) => [
                         <div v-if="form.unit_id" class="flex items-center justify-between text-xs">
                             <span class="text-gray-500 dark:text-gray-400">Unit</span>
                             <span class="font-medium text-gray-900 dark:text-white">
-                                {{ availableUnits.find(u => u.id == form.unit_id)?.label ?? '—' }}
+                                {{ availableUnits.find(u => u.id == form.unit_id)?.label ?? '-' }}
                             </span>
                         </div>
 
@@ -515,7 +556,11 @@ const inputCls = (hasError) => [
                                 <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.subtotal) }}</span>
                             </div>
                             <div v-if="pricing.discountAmount > 0" class="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400">
-                                <span>Long stay ({{ pricing.discountPercent }}% off)</span>
+                                <span>
+                                    <template v-if="pricing.discountType === 'manual'">Discount (manual)</template>
+                                    <template v-else-if="pricing.discountType === 'long_stay'">Long stay ({{ pricing.discountPercent }}% off)</template>
+                                    <template v-else>Discount</template>
+                                </span>
                                 <span>−{{ formatPrice(pricing.discountAmount) }}</span>
                             </div>
                             <div v-if="pricing.cautionFee > 0" class="flex items-start justify-between text-xs">
@@ -526,6 +571,31 @@ const inputCls = (hasError) => [
                                     </span>
                                 </span>
                                 <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.cautionFee) }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Discount control -->
+                        <div class="pt-1">
+                            <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                                <button v-for="mode in [['auto','Auto'],['manual','Manual ₦'],['none','None']]" :key="mode[0]"
+                                        type="button" @click="form.discount_mode = mode[0]"
+                                        :class="form.discount_mode === mode[0]
+                                            ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                        class="flex-1 py-1.5 rounded-md text-[11px] font-medium transition-all">
+                                    {{ mode[1] }}
+                                </button>
+                            </div>
+                            <div v-if="form.discount_mode === 'manual'" class="mt-2 space-y-2">
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₦</span>
+                                    <input v-model.number="form.manual_discount_amount" type="number" min="0" :max="pricing.subtotal" placeholder="Discount amount"
+                                           class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all tabular-nums" />
+                                </div>
+                                <input v-model="form.discount_reason" type="text" placeholder="Reason (required)"
+                                       class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all" />
+                                <p v-if="form.errors.manual_discount_amount" class="text-xs text-red-600">{{ form.errors.manual_discount_amount }}</p>
+                                <p v-if="form.errors.discount_reason" class="text-xs text-red-600">{{ form.errors.discount_reason }}</p>
                             </div>
                         </div>
 

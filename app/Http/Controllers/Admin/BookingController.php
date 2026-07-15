@@ -157,6 +157,11 @@ class BookingController extends Controller
             'special_requests' => 'nullable|string|max:1000',
             'payment_method' => 'required|in:pos,bank_transfer',
             'payment_reference' => 'nullable|string|max:255',
+            // Pricing overrides (Block A)
+            'discount_mode'          => 'nullable|in:auto,manual,none',
+            'manual_discount_amount' => 'nullable|numeric|min:0|required_if:discount_mode,manual',
+            'discount_reason'        => 'nullable|string|max:255|required_if:discount_mode,manual',
+            'cross_grade'            => 'nullable|boolean',
         ]);
 
         try {
@@ -189,15 +194,32 @@ class BookingController extends Controller
                     ->withInput();
             }
 
+            $crossGrade = (bool) ($validated['cross_grade'] ?? false);
+
+            // Overflow allocation must name a specific unit (auto-assign can't cross types)
+            if ($crossGrade && empty($validated['unit_id'])) {
+                return redirect()->back()
+                    ->with('error', 'Select the specific overflow unit for a cross-graded booking.')
+                    ->withInput();
+            }
+
             // Use manually selected unit or auto-assign
             if (!empty($validated['unit_id'])) {
-                $availableUnit = Unit::findOrFail($validated['unit_id']);
+                $availableUnit = Unit::with('unitType')->findOrFail($validated['unit_id']);
 
-                // Verify the unit belongs to the selected unit type
+                // Normally the unit must belong to the billed type. Cross-grade allows a
+                // unit from a different type (overflow) as long as it's in the same building.
                 if ($availableUnit->unit_type_id !== $unitType->id) {
-                    return redirect()->back()
-                        ->with('error', 'Selected unit does not belong to the chosen unit type.')
-                        ->withInput();
+                    if (! $crossGrade) {
+                        return redirect()->back()
+                            ->with('error', 'Selected unit does not belong to the chosen unit type.')
+                            ->withInput();
+                    }
+                    if ((int) $availableUnit->unitType?->building_id !== (int) $building->id) {
+                        return redirect()->back()
+                            ->with('error', 'Cross-graded unit must belong to the same building.')
+                            ->withInput();
+                    }
                 }
 
                 // Verify it's actually available for the dates
@@ -227,7 +249,11 @@ class BookingController extends Controller
                 'check_in'  => $validated['check_in'],
                 'check_out' => $validated['check_out'],
             ]);
-            $bookingModel->calculateTotal($unitType);
+            $bookingModel->calculateTotal($unitType, [
+                'discount_mode'   => $validated['discount_mode'] ?? 'auto',
+                'manual_discount' => (float) ($validated['manual_discount_amount'] ?? 0),
+                'discount_reason' => $validated['discount_reason'] ?? null,
+            ]);
 
             // Create booking
             $booking = Booking::create([
@@ -250,6 +276,7 @@ class BookingController extends Controller
                 'discount_type'     => $bookingModel->discount_type,
                 'discount_percent'  => $bookingModel->discount_percent,
                 'discount_amount'   => $bookingModel->discount_amount,
+                'discount_reason'   => $bookingModel->discount_reason,
                 'caution_fee'       => $bookingModel->caution_fee,
                 'status'            => 'confirmed',
                 'payment_status'    => 'paid',
@@ -273,6 +300,23 @@ class BookingController extends Controller
             ]);
 
             AuditLog::log('booking.created', $booking, null, ['reference' => $booking->booking_reference, 'guest' => $booking->guest_name, 'method' => $validated['payment_method']]);
+
+            // Extra audit trail for discretionary pricing overrides
+            if ($booking->discount_type === 'manual') {
+                AuditLog::log('booking.manual_discount', $booking, null, [
+                    'amount' => $booking->discount_amount,
+                    'reason' => $booking->discount_reason,
+                    'by'     => auth()->id(),
+                ]);
+            }
+            if ($crossGrade && $booking->cross_graded) {
+                AuditLog::log('booking.cross_graded', $booking, null, [
+                    'billed_as'     => $unitType->name,
+                    'assigned_unit' => $availableUnit->unit_number,
+                    'assigned_type' => $availableUnit->unitType?->name,
+                    'by'            => auth()->id(),
+                ]);
+            }
 
             // Send confirmation email to guest
             Mail::to($booking->guest_email)->send(new BookingConfirmation($booking));
@@ -390,6 +434,10 @@ class BookingController extends Controller
             'guest_email' => 'sometimes|email|max:255',
             'guest_phone' => 'sometimes|string|max:20',
             'special_requests' => 'sometimes|nullable|string|max:1000',
+            // Optional pricing-override edits (preserves existing discount if omitted)
+            'discount_mode'          => 'sometimes|in:auto,manual,none',
+            'manual_discount_amount' => 'nullable|numeric|min:0|required_if:discount_mode,manual',
+            'discount_reason'        => 'nullable|string|max:255|required_if:discount_mode,manual',
         ]);
 
         $old = [
@@ -441,23 +489,30 @@ class BookingController extends Controller
             'special_requests' => $validated['special_requests'] ?? $booking->special_requests,
         ], fn($v) => $v !== null);
 
-        // Recalculate total if dates changed
-        if ($datesChanged) {
-            $unitType = $booking->unitType;
-            $subtotal = $unitType->base_price_per_night * $nights;
-            $discount = \App\Services\DiscountService::resolve($nights);
-            $discountAmt = $discount['percent'] > 0
-                ? round($subtotal * ($discount['percent'] / 100), 2)
-                : 0;
-            $cautionFee = $nights === 1
-                ? (float) $unitType->base_price_per_night
-                : (float) ($booking->building->caution_fee_amount ?? 70000);
+        // Determine discount handling: an explicit override wins, otherwise preserve
+        // the booking's current mode (so a manual discount survives a date change).
+        $wasManual      = $booking->discount_type === 'manual';
+        $discountMode   = $validated['discount_mode'] ?? ($wasManual ? 'manual' : 'auto');
+        $manualAmount   = $validated['manual_discount_amount'] ?? ($wasManual ? (float) $booking->discount_amount : 0);
+        $discountReason = $validated['discount_reason'] ?? ($wasManual ? $booking->discount_reason : null);
+        $discountChanged = array_key_exists('discount_mode', $validated);
 
-            $updates['subtotal']         = $subtotal;
-            $updates['discount_percent'] = $discount['percent'];
-            $updates['discount_amount']  = $discountAmt;
-            $updates['caution_fee']      = $cautionFee;
-            $updates['total_amount']     = ($subtotal - $discountAmt) + $cautionFee;
+        // Reprice when dates change (subtotal/caution depend on nights) or the discount is edited
+        if ($datesChanged || $discountChanged) {
+            $priced = new Booking(['check_in' => $checkIn, 'check_out' => $checkOut]);
+            $priced->calculateTotal($booking->unitType, [
+                'discount_mode'   => $discountMode,
+                'manual_discount' => (float) $manualAmount,
+                'discount_reason' => $discountReason,
+            ]);
+
+            $updates['subtotal']         = $priced->subtotal;
+            $updates['discount_type']    = $priced->discount_type;
+            $updates['discount_percent'] = $priced->discount_percent;
+            $updates['discount_amount']  = $priced->discount_amount;
+            $updates['discount_reason']  = $priced->discount_reason;
+            $updates['caution_fee']      = $priced->caution_fee;
+            $updates['total_amount']     = $priced->total_amount;
         }
 
         $booking->update($updates);

@@ -33,6 +33,7 @@ class Booking extends Model
         'discount_type',
         'discount_percent',
         'discount_amount',
+        'discount_reason',
         'status',
         'payment_status',
         'payment_method',
@@ -197,7 +198,16 @@ class Booking extends Model
         return 'CS-' . now()->format('Ymd') . '-' . strtoupper(Str::random(6));
     }
 
-    public function calculateTotal(UnitType $unitType): void
+    /**
+     * Price the booking off $unitType (the billed/rate type — may differ from the
+     * physically assigned unit's type when cross-graded).
+     *
+     * $opts:
+     *   discount_mode: 'auto' (default) | 'manual' | 'none'
+     *   manual_discount: float ₦ amount (used when mode = 'manual')
+     *   discount_reason: string
+     */
+    public function calculateTotal(UnitType $unitType, array $opts = []): void
     {
         $this->nights         = Carbon::parse($this->check_in)->diffInDays($this->check_out);
         $this->subtotal       = $this->nights * $unitType->base_price_per_night;
@@ -210,17 +220,42 @@ class Booking extends Model
             ? (float) $unitType->base_price_per_night
             : $defaultCautionFee;
 
-        // Resolve discount
-        $discount = DiscountService::resolve((int) $this->nights);
-        $this->discount_type    = $discount['type'];
-        $this->discount_percent = $discount['percent'];
-        $this->discount_amount  = $discount['percent'] > 0
-            ? round($this->subtotal * ($discount['percent'] / 100), 2)
-            : 0;
+        $mode = $opts['discount_mode'] ?? 'auto';
+
+        if ($mode === 'manual') {
+            // Discretionary flat ₦ discount — never exceeds the subtotal.
+            $amount = min((float) ($opts['manual_discount'] ?? 0), (float) $this->subtotal);
+            $this->discount_type    = $amount > 0 ? 'manual' : null;
+            $this->discount_percent = 0;
+            $this->discount_amount  = $amount;
+            $this->discount_reason  = $amount > 0 ? ($opts['discount_reason'] ?? null) : null;
+        } elseif ($mode === 'none') {
+            $this->discount_type    = null;
+            $this->discount_percent = 0;
+            $this->discount_amount  = 0;
+            $this->discount_reason  = null;
+        } else {
+            // Automatic rule-based discount
+            $discount = DiscountService::resolve((int) $this->nights);
+            $this->discount_type    = $discount['type'];
+            $this->discount_percent = $discount['percent'];
+            $this->discount_amount  = $discount['percent'] > 0
+                ? round($this->subtotal * ($discount['percent'] / 100), 2)
+                : 0;
+            $this->discount_reason  = null;
+        }
 
         // Total includes caution fee
         $this->total_amount = ($this->subtotal - $this->discount_amount)
             + $this->caution_fee;
+    }
+
+    // True when the physically assigned unit is of a different type than the billed type.
+    public function getCrossGradedAttribute(): bool
+    {
+        return $this->unit_id
+            && $this->unit
+            && (int) $this->unit->unit_type_id !== (int) $this->unit_type_id;
     }
 
     public function isPaid(): bool
