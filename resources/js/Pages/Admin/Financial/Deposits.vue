@@ -29,7 +29,7 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
 <template>
     <Head title="Security Deposits" />
 
-    <div class="p-6 lg:p-8">
+    <div class="p-4 lg:p-6">
 
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
@@ -40,35 +40,35 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
         </div>
 
         <!-- Summary cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6">
-            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                <p class="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2">Outstanding</p>
-                <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ formatPrice(summary.total_outstanding) }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ summary.count_outstanding }} booking{{ summary.count_outstanding !== 1 ? 's' : '' }} outstanding</p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none px-4 py-3">
+                <p class="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1.5">Outstanding</p>
+                <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ formatPrice(summary.total_outstanding) }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ summary.count_outstanding }} booking{{ summary.count_outstanding !== 1 ? 's' : '' }}</p>
             </div>
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-                <p class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">Pending Refund</p>
-                <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.count_pending_refund }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">awaiting manager approval</p>
+            <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none px-4 py-3">
+                <p class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1.5">Pending Refund</p>
+                <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ summary.count_pending_refund }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">awaiting approval</p>
             </div>
-            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-                <p class="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider mb-2">Refunded</p>
-                <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ formatPrice(summary.total_refunded) }}</p>
+            <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none px-4 py-3">
+                <p class="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider mb-1.5">Refunded</p>
+                <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ formatPrice(summary.total_refunded) }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-4">
-                <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Total Collected</p>
-                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none px-4 py-3">
+                <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Total Collected</p>
+                <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">
                     {{ formatPrice(Number(summary.total_outstanding) + Number(summary.total_refunded)) }}
                 </p>
             </div>
         </div>
 
         <!-- Filter tabs -->
-        <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 rounded-xl p-1 w-fit mb-6">
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 rounded-xl p-1 w-full sm:w-fit mb-6">
             <button
                 v-for="tab in [
                     { label: 'Outstanding', value: 'outstanding' },
-                    { label: 'Pending Refund', value: 'pending_refund' },
+                    { label: 'Pending', value: 'pending_refund' },
                     { label: 'Refunded', value: 'refunded' },
                     { label: 'All', value: 'all' },
                 ]"
@@ -77,14 +77,14 @@ const formatDate  = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-dig
                 :class="filter === tab.value
                     ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                class="flex-1 sm:flex-none px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all"
             >
                 {{ tab.label }}
             </button>
         </div>
 
         <!-- Table -->
-        <div class="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
             <div class="hidden md:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">

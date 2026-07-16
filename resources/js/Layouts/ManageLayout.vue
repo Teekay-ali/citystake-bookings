@@ -610,7 +610,7 @@ function canSeeItem(item) {
              class="flex-1 min-h-0 flex flex-col min-w-0 transition-all duration-300 bg-white dark:bg-gray-950 overflow-hidden lg:my-3 lg:mr-3 lg:rounded-2xl lg:border lg:border-gray-200/70 dark:border-gray-800/60 lg:shadow-sm">
 
             <!-- ── Topbar ── -->
-            <header class="h-16 bg-white dark:bg-gray-950 flex items-center gap-3 px-4 shrink-0 border-b border-gray-100 dark:border-gray-900">
+            <header class="h-16 bg-white dark:bg-gray-950 flex items-center gap-1.5 sm:gap-3 px-4 shrink-0 border-b border-gray-100 dark:border-gray-900">
                 <!-- Mobile hamburger -->
                 <button @click="sidebarOpen = true"
                         class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all lg:hidden">
@@ -727,13 +727,6 @@ function canSeeItem(item) {
                     </Transition>
                 </div>
 
-                <!-- Dark mode -->
-                <button @click="toggleDark"
-                        class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all">
-                    <Sun v-if="isDark" class="w-4 h-4" />
-                    <Moon v-else class="w-4 h-4" />
-                </button>
-
                 <!-- Message bell -->
                 <MessageBell />
 
@@ -783,6 +776,13 @@ function canSeeItem(item) {
                                 <Building2 class="w-4 h-4 text-gray-400" />
                                 Guest Site
                             </Link>
+                            <button @click="toggleDark" type="button"
+                                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-t border-gray-100 dark:border-gray-800">
+                                <Sun v-if="isDark" class="w-4 h-4 text-gray-400" />
+                                <Moon v-else class="w-4 h-4 text-gray-400" />
+                                <span class="flex-1 text-left">Theme</span>
+                                <span class="text-xs text-gray-400">{{ isDark ? 'Dark' : 'Light' }}</span>
+                            </button>
                             <Link :href="route('logout')" method="post" as="button"
                                   class="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-800">
                                 <LogOut class="w-4 h-4" />
