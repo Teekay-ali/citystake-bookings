@@ -173,7 +173,7 @@ class GroupBookingController extends Controller
         }
 
         return redirect()->route('manage.booking-groups.show', $group->reference)
-            ->with('success', "Group booking {$group->reference} created — " . count($validated['members']) . ' units.');
+            ->with('success', "Group booking {$group->reference} created - " . count($validated['members']) . ' units.');
     }
 
     public function show(BookingGroup $group)

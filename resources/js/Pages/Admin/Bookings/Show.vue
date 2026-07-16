@@ -29,7 +29,7 @@ const lateCheckoutHours = ref(null)
 
 // ── Check-in ───────────────────────────────────────────────────
 const checkInForm = useForm({
-    // Payment is settled before check-in — check-in is arrival confirmation only.
+    // Payment is settled before check-in - check-in is arrival confirmation only.
     checkin_notes: '',
 })
 function submitCheckIn() {
@@ -474,7 +474,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                         <div v-if="booking.cross_graded" class="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20">
                             <ArrowRightLeft class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                             <p class="text-xs text-amber-700 dark:text-amber-400">
-                                <span class="font-semibold">Overflow allocation</span> — billed as
+                                <span class="font-semibold">Overflow allocation</span> - billed as
                                 <span class="font-medium">{{ booking.unit_type?.name }}</span>, assigned
                                 <span class="font-medium">{{ booking.assigned_unit_type }}</span> (Unit {{ booking.unit?.unit_number }})
                             </p>

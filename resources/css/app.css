@@ -235,7 +235,7 @@
 .dark .rt-content a { color: #60a5fa; }
 .rt-content strong { font-weight: 600; color: inherit; }
 
-/* Date/time picker icon is near-black by default — invert it in dark mode so it's visible */
+/* Date/time picker icon is near-black by default - invert it in dark mode so it's visible */
 .dark input[type="date"]::-webkit-calendar-picker-indicator,
 .dark input[type="time"]::-webkit-calendar-picker-indicator,
 .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
@@ -281,7 +281,7 @@ textarea {
     box-shadow: none;
 }
 
-/* Custom scrollbars — rounded, subtle, themed to match the app.
+/* Custom scrollbars - rounded, subtle, themed to match the app.
    WebKit (Chrome/Safari/Edge) + Firefox. Thumb darkens on hover. */
 * {
     scrollbar-width: thin;                       /* Firefox */

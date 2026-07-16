@@ -25,7 +25,7 @@ class InstallmentDueNotification extends Notification
 
         return [
             'title'   => $overdue ? 'Weekly payment overdue' : 'Weekly payment due',
-            'message' => "{$this->booking->guest_name} — week {$this->installment->week_number} ({$amount}) "
+            'message' => "{$this->booking->guest_name} - week {$this->installment->week_number} ({$amount}) "
                 . ($overdue ? 'is overdue.' : 'is due today.'),
             'url'     => route('manage.bookings.show', $this->booking->booking_reference),
             'icon'    => 'finance',

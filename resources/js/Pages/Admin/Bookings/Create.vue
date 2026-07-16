@@ -36,21 +36,21 @@ const form = useForm({
     manual_discount_amount: '',
     discount_reason:        '',
     cross_grade:            false,
-    // Currency (Block B) — USD contracts with a locked exchange rate
+    // Currency (Block B) - USD contracts with a locked exchange rate
     currency:      'NGN',
     price_usd:     '',
     exchange_rate: '',
-    // Payer (Block D1) — optional organization
+    // Payer (Block D1) - optional organization
     organization_id: '',
     // Payment plan (weekly prepaid installments)
     payment_plan: 'full',
-    // Backdated booking — allow a past check-in (migration / walk-in already started)
+    // Backdated booking - allow a past check-in (migration / walk-in already started)
     backdated: false,
 })
 
 const isWeekly = computed(() => form.payment_plan === 'weekly')
 
-// Weekly plans are NGN, no discount — keep the other controls consistent
+// Weekly plans are NGN, no discount - keep the other controls consistent
 watch(isWeekly, (on) => {
     if (on) { form.currency = 'NGN'; form.discount_mode = 'none' }
 })

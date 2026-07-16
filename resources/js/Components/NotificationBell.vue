@@ -4,7 +4,7 @@ import { usePage, router, Link } from '@inertiajs/vue3'
 import {
     Bell, Home, XCircle, Clock, ShoppingCart,
     Wrench, AlertTriangle, CheckSquare, Banknote,
-    ShieldAlert, DollarSign, MessageSquare, Users, LogOut
+    ShieldAlert, DollarSign, MessageSquare, Users, LogOut, ClipboardCheck
 } from 'lucide-vue-next'
 import axios from 'axios'
 
@@ -30,6 +30,7 @@ const icons = {
     finance:           DollarSign,
     message:           MessageSquare,
     staff:             Users,
+    inspection:        ClipboardCheck,
 }
 
 const props = defineProps({

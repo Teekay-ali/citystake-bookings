@@ -287,6 +287,13 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/maintenance/{maintenance}/approve', [MaintenanceReportController::class, 'approve'])->name('maintenance.approve');
     Route::delete('/maintenance/{maintenance}', [MaintenanceReportController::class, 'destroy'])->name('maintenance.destroy');
 
+    // Quality Control - unit inspections
+    Route::get('/inspections', [\App\Http\Controllers\Admin\InspectionController::class, 'index'])->name('inspections.index');
+    Route::post('/inspections/start', [\App\Http\Controllers\Admin\InspectionController::class, 'start'])->name('inspections.start');
+    Route::get('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'show'])->name('inspections.show');
+    Route::post('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'update'])->name('inspections.update');
+    Route::post('/inspections/{inspection}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'complete'])->name('inspections.complete');
+
     // Procurement
     Route::get('/procurement', [ProcurementController::class, 'index'])->name('procurement.index');
     Route::get('/procurement/create', [ProcurementController::class, 'create'])->name('procurement.create');

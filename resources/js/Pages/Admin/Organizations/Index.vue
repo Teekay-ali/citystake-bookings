@@ -193,7 +193,7 @@ const inputCls = "w-full px-3 py-2 border border-gray-200 dark:border-gray-800 r
         <ConfirmationModal
             :show="!!deleting"
             title="Delete organization?"
-            message="This can't be undone. Organizations with bookings can't be deleted — deactivate instead."
+            message="This can't be undone. Organizations with bookings can't be deleted - deactivate instead."
             confirm-text="Delete" variant="danger"
             @confirm="confirmDelete" @close="deleting = null" />
     </div>

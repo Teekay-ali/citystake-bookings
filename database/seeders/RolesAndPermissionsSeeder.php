@@ -40,6 +40,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'submit-complaints',
             'manage-complaints',
 
+            // Quality Control (unit inspections)
+            'view-inspections',
+            'conduct-inspections',
+            'manage-inspections',
+
             // Maintenance
             'view-maintenance',
             'submit-maintenance',
@@ -141,6 +146,13 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-audit-logs',
                 'manage-guests',
                 'manage-changelogs',
+                'view-inspections', 'conduct-inspections', 'manage-inspections',
+            ],
+
+            'quality-control' => [
+                'view-inspections',
+                'conduct-inspections',
+                'view-properties',
             ],
 
             'head-of-procurement' => [

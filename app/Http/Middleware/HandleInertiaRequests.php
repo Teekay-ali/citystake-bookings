@@ -120,6 +120,12 @@ class HandleInertiaRequests extends Middleware
                 )->count()
                 : 0,
 
+            'pendingInspections' => fn () => ($user && $isManageRoute && $user->can('view-inspections'))
+                ? $applyBuildings(
+                    \App\Models\UnitInspection::where('status', 'in_progress')
+                )->count()
+                : 0,
+
             'pendingTasks' => fn () => ($user && $isManageRoute)
                 ? $applyBuildings(
                     Task::where('assigned_to', $user->id)

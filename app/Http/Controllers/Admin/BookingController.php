@@ -163,15 +163,15 @@ class BookingController extends Controller
             'manual_discount_amount' => 'nullable|numeric|min:0|required_if:discount_mode,manual',
             'discount_reason'        => 'nullable|string|max:255|required_if:discount_mode,manual',
             'cross_grade'            => 'nullable|boolean',
-            // Currency (Block B) — USD contracts, rate locked at creation
+            // Currency (Block B) - USD contracts, rate locked at creation
             'currency'      => 'nullable|in:NGN,USD',
             'price_usd'     => 'nullable|numeric|min:0|required_if:currency,USD',
             'exchange_rate' => 'nullable|numeric|min:0|required_if:currency,USD',
-            // Payer (Block D1) — optional organization billed for the booking
+            // Payer (Block D1) - optional organization billed for the booking
             'organization_id' => 'nullable|exists:organizations,id',
             // Payment plan (weekly prepaid installments)
             'payment_plan' => 'nullable|in:full,weekly',
-            // Backdated booking — lets staff record a past-dated stay (e.g. migrating
+            // Backdated booking - lets staff record a past-dated stay (e.g. migrating
             // bookings from the old platform, or a walk-in that already started).
             'backdated' => 'nullable|boolean',
         ]);
@@ -551,7 +551,7 @@ class BookingController extends Controller
         $discountChanged = array_key_exists('discount_mode', $validated);
 
         // Reprice when dates change (subtotal/caution depend on nights) or the discount is edited.
-        // Preserve the booking's currency — a USD contract keeps its locked price/rate.
+        // Preserve the booking's currency - a USD contract keeps its locked price/rate.
         if ($datesChanged || $discountChanged) {
             $priced = new Booking(['check_in' => $checkIn, 'check_out' => $checkOut]);
             $priced->calculateTotal($booking->unitType, [
@@ -658,7 +658,7 @@ class BookingController extends Controller
         }
 
         // Payment is always settled before check-in (at creation, or week 1 for a
-        // weekly plan), so check-in is arrival confirmation only — it records NO
+        // weekly plan), so check-in is arrival confirmation only - it records NO
         // income (doing so double-counted the booking payment).
         $validated = $request->validate([
             'checkin_notes' => 'nullable|string|max:500',
@@ -1110,7 +1110,7 @@ class BookingController extends Controller
             'category'         => 'booking',
             'reference_type'   => Booking::class,
             'reference_id'     => $booking->id,
-            'description'      => "Weekly payment (week {$installment->week_number}) — {$booking->booking_reference} · {$booking->guest_name}",
+            'description'      => "Weekly payment (week {$installment->week_number}) - {$booking->booking_reference} · {$booking->guest_name}",
             'amount'           => $installment->amount,
             'payment_method'   => $method,
             'payment_reference'=> $reference,

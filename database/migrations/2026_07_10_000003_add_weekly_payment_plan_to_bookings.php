@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         // 'partial' = a weekly-plan booking that is prepaid week-by-week (not the old
-        // unpaid "pending"; those are eliminated — bookings settle before check-in).
+        // unpaid "pending"; those are eliminated - bookings settle before check-in).
         DB::statement("ALTER TABLE bookings MODIFY payment_status ENUM('pending','paid','partial','refunded') NOT NULL DEFAULT 'pending'");
 
         Schema::table('bookings', function (Blueprint $table) {

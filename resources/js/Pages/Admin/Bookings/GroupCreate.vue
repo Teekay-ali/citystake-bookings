@@ -193,7 +193,7 @@ function submit() {
                             <div class="grid grid-cols-2 gap-2">
                                 <select v-model="m.unit_type_id" @change="onTypeChange(m)" :disabled="!form.building_id || !form.check_in || !form.check_out" :class="[inputCls, 'disabled:opacity-40']">
                                     <option value="">Apartment type…</option>
-                                    <option v-for="ut in unitTypes" :key="ut.id" :value="ut.id">{{ ut.name }} — {{ fmt(ut.base_price_per_night) }}/night</option>
+                                    <option v-for="ut in unitTypes" :key="ut.id" :value="ut.id">{{ ut.name }} - {{ fmt(ut.base_price_per_night) }}/night</option>
                                 </select>
                                 <select v-model="m.unit_id" :disabled="!m.unit_type_id" :class="[inputCls, 'disabled:opacity-40']">
                                     <option value="">{{ loadingTypes[m.unit_type_id] ? 'Loading…' : 'Select unit…' }}</option>
