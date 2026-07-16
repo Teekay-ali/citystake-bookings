@@ -110,14 +110,14 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
     <div class="p-4 lg:p-6 flex flex-col gap-4 min-h-full">
 
         <!-- ── Header ── -->
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Properties</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Manage your properties and unit types</p>
             </div>
             <Link
                 :href="route('manage.properties.create')"
-                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
+                class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all shrink-0">
                 <Plus class="w-3.5 h-3.5" />
                 Add Property
             </Link>
