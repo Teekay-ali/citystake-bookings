@@ -33,7 +33,7 @@ class GroupBookingController extends Controller
                 'unitTypes:id,building_id,name,base_price_per_night,max_guests',
                 'unitTypes.units:id,unit_type_id,unit_number,floor,status,is_available',
             ])
-            ->select('id', 'name', 'caution_fee_amount')
+            ->select('id', 'name', 'caution_fee_amount', 'one_night_caution_uses_rate')
             ->get();
 
         return Inertia::render('Admin/Bookings/GroupCreate', ['buildings' => $buildings]);

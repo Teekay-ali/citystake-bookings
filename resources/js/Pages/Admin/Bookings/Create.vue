@@ -231,11 +231,16 @@ const pricing = computed(() => {
     if (!selectedUnitType.value || calculateNights.value === 0) return empty;
 
     const nights     = calculateNights.value;
+    // 1-night caution = room rate only when the property opts in (defaults on);
+    // otherwise the flat property caution fee. Mirrors the server.
+    const flatCaution     = parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000);
+    const oneNightAtRate  = (selectedBuilding.value?.one_night_caution_uses_rate ?? true)
+        && nights === 1;
     const cautionFee = isUsd.value
-        ? parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000)
-        : (nights === 1
+        ? flatCaution
+        : (oneNightAtRate
             ? (parseFloat(selectedUnitType.value.base_price_per_night) || 0)
-            : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000));
+            : flatCaution);
 
     // Subtotal (always NGN): USD contract = price_usd × rate; otherwise nightly rate
     const subtotal = isUsd.value

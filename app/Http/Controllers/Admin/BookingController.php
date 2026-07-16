@@ -120,7 +120,7 @@ class BookingController extends Controller
                 'unitTypes:id,building_id,name,bedroom_type,base_price_per_night,max_guests',
                 'unitTypes.units:id,unit_type_id,unit_number,floor,status,is_available',
             ])
-            ->select('id', 'name', 'caution_fee_amount', 'standard_checkout_time', 'late_checkout_fee_per_hour')
+            ->select('id', 'name', 'caution_fee_amount', 'one_night_caution_uses_rate', 'standard_checkout_time', 'late_checkout_fee_per_hour')
             ->get();
 
         return Inertia::render('Admin/Bookings/Create', [
