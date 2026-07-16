@@ -24,6 +24,7 @@ class Building extends Model
         'address',
         'city',
         'caution_fee_amount',
+        'one_night_caution_uses_rate',
         'amenities',
         'house_rules',
         'monthly_emergency_limit',
@@ -34,6 +35,7 @@ class Building extends Model
 
     protected $casts = [
         'caution_fee_amount' => 'decimal:2',
+        'one_night_caution_uses_rate' => 'boolean',
         'amenities' => 'array',
         'house_rules' => 'array',
         'monthly_emergency_limit' => 'decimal:2',

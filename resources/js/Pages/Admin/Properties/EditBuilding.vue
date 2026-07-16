@@ -38,6 +38,7 @@ const form = useForm({
     monthly_emergency_limit:    props.building.monthly_emergency_limit ?? 200000,
     is_active:                  props.building.is_active,
     caution_fee_amount:         props.building.caution_fee_amount ?? 70000,
+    one_night_caution_uses_rate: props.building.one_night_caution_uses_rate ?? true,
 })
 
 const amenitiesList = [
@@ -300,11 +301,28 @@ const deleteBuilding = () => {
                                     class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
                                 />
                                 <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                    Charged on every booking and refunded at check-out if no damage. For 1-night bookings, the caution fee equals 1 night's rate.
+                                    Charged on every booking and refunded at check-out if no damage.
                                 </p>
                                 <p v-if="form.errors.caution_fee_amount" class="mt-1 text-sm text-red-600">
                                     {{ form.errors.caution_fee_amount }}
                                 </p>
+
+                                <!-- 1-night caution rule -->
+                                <button type="button"
+                                        @click="form.one_night_caution_uses_rate = !form.one_night_caution_uses_rate"
+                                        class="mt-4 w-full flex items-start justify-between gap-3 text-left px-4 py-3 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-xl hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
+                                    <span class="min-w-0">
+                                        <span class="block text-sm font-medium text-gray-900 dark:text-white">1-night caution = room rate</span>
+                                        <span class="block mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                            {{ form.one_night_caution_uses_rate
+                                                ? "For a 1-night stay, the caution fee is that night's room rate."
+                                                : 'For a 1-night stay, the flat caution fee above is used.' }}
+                                        </span>
+                                    </span>
+                                    <component :is="form.one_night_caution_uses_rate ? ToggleRight : ToggleLeft"
+                                               :class="form.one_night_caution_uses_rate ? 'text-green-600 dark:text-green-400' : 'text-gray-400'"
+                                               class="w-8 h-8 shrink-0" />
+                                </button>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

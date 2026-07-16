@@ -299,7 +299,10 @@ class Booking extends Model
             $this->price_usd     = null;
             $this->exchange_rate = null;
             $this->subtotal      = $this->nights * $unitType->base_price_per_night;
-            $this->caution_fee   = (int) $this->nights === 1
+            // 1-night caution defaults to the room rate, but a property can opt out
+            // (one_night_caution_uses_rate = false) to always use the flat fee.
+            $oneNightUsesRate    = $building->one_night_caution_uses_rate ?? true;
+            $this->caution_fee   = ((int) $this->nights === 1 && $oneNightUsesRate)
                 ? (float) $unitType->base_price_per_night
                 : $defaultCautionFee;
             $mode = $opts['discount_mode'] ?? 'auto';

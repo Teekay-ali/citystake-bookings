@@ -61,12 +61,28 @@
                     <span>Exchange rate</span>
                     <span>₦{{ number_format($booking->exchange_rate, 0) }} / $</span>
                 </div>
+                <div class="total-row">
+                    <span>Room charge (NGN)</span>
+                    <span>₦{{ number_format($booking->subtotal, 0) }}</span>
+                </div>
             @else
                 <div class="total-row">
-                    <span>{{ $booking->nights }} night{{ $booking->nights > 1 ? 's' : '' }}</span>
+                    <span>Room charge ({{ $booking->nights }} night{{ $booking->nights > 1 ? 's' : '' }})</span>
                     <span>₦{{ number_format($booking->subtotal, 0) }}</span>
                 </div>
             @endif
+
+            @if($booking->discount_amount > 0)
+                <div class="total-row" style="color: #059669;">
+                    <span>Discount{{ $booking->discount_percent > 0 ? ' (' . rtrim(rtrim(number_format($booking->discount_percent, 2), '0'), '.') . '%)' : '' }}</span>
+                    <span>&minus; ₦{{ number_format($booking->discount_amount, 0) }}</span>
+                </div>
+            @endif
+
+            <div class="total-row">
+                <span>Caution fee (refundable)</span>
+                <span>₦{{ number_format($booking->caution_fee, 0) }}</span>
+            </div>
 
             <div class="total-row">
                 <span>Total Amount{{ $booking->currency === 'USD' ? ' (NGN)' : '' }}</span>

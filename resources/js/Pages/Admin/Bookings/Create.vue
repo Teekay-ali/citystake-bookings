@@ -44,6 +44,8 @@ const form = useForm({
     organization_id: '',
     // Payment plan (weekly prepaid installments)
     payment_plan: 'full',
+    // Backdated booking — allow a past check-in (migration / walk-in already started)
+    backdated: false,
 })
 
 const isWeekly = computed(() => form.payment_plan === 'weekly')
@@ -85,6 +87,7 @@ const activeOptions = computed(() => {
     if (form.discount_mode === 'manual') tags.push('Manual discount')
     else if (form.discount_mode === 'none' && !isWeekly.value && !isUsd.value) tags.push('No discount')
     if (form.organization_id) tags.push(selectedOrg.value?.name ?? 'Organization')
+    if (form.backdated) tags.push('Backdated')
     return tags
 })
 
@@ -817,6 +820,18 @@ const inputCls = (hasError) => [
                         </div>
                     </div>
                     <p class="mt-1 text-[11px] text-gray-400">Organization is the payer; the guest is the occupant.</p>
+                </div>
+
+                <!-- Backdated booking -->
+                <div>
+                    <label class="flex items-start gap-2.5 cursor-pointer">
+                        <input v-model="form.backdated" type="checkbox"
+                               class="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-gray-900 focus:ring-gray-900 dark:focus:ring-white" />
+                        <span class="min-w-0">
+                            <span class="block text-sm font-medium text-gray-900 dark:text-white">Backdated booking</span>
+                            <span class="block text-[11px] text-gray-400">Allow a check-in date in the past (migrating an old booking, or a walk-in that already started). Recorded in the audit log.</span>
+                        </span>
+                    </label>
                 </div>
 
                 <button @click="showOptions = false" class="w-full py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-lg hover:opacity-90 transition-all">Done</button>

@@ -171,6 +171,9 @@ class BookingController extends Controller
             'organization_id' => 'nullable|exists:organizations,id',
             // Payment plan (weekly prepaid installments)
             'payment_plan' => 'nullable|in:full,weekly',
+            // Backdated booking — lets staff record a past-dated stay (e.g. migrating
+            // bookings from the old platform, or a walk-in that already started).
+            'backdated' => 'nullable|boolean',
         ]);
 
         try {
@@ -188,9 +191,11 @@ class BookingController extends Controller
             $checkIn = Carbon::parse($validated['check_in'])->startOfDay();
             $checkOut = Carbon::parse($validated['check_out'])->startOfDay();
 
-            if ($checkIn->isBefore(now()->startOfDay())) {
+            $isBackdated = (bool) ($validated['backdated'] ?? false);
+
+            if (! $isBackdated && $checkIn->isBefore(now()->startOfDay())) {
                 return redirect()->back()
-                    ->with('error', 'Check-in date cannot be in the past.')
+                    ->with('error', 'Check-in date cannot be in the past. Tick "Backdated booking" to record a past-dated stay.')
                     ->withInput();
             }
 
@@ -335,6 +340,14 @@ class BookingController extends Controller
             }
 
             AuditLog::log('booking.created', $booking, null, ['reference' => $booking->booking_reference, 'guest' => $booking->guest_name, 'method' => $validated['payment_method']]);
+
+            // Flag backdated bookings so the past-date override is traceable
+            if ($isBackdated) {
+                AuditLog::log('booking.backdated', $booking, null, [
+                    'reference' => $booking->booking_reference,
+                    'check_in'  => $booking->check_in->toDateString(),
+                ]);
+            }
 
             // Extra audit trail for discretionary pricing overrides
             if ($booking->discount_type === 'manual') {
