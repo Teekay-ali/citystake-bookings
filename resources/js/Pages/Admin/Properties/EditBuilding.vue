@@ -33,7 +33,7 @@ const form = useForm({
     description:                props.building.description ?? '',
     amenities:                  props.building.amenities ?? [],
     house_rules:                props.building.house_rules ?? [],
-    standard_checkout_time:     props.building.standard_checkout_time ?? '12:00',
+    standard_checkout_time:     (props.building.standard_checkout_time ?? '12:00').slice(0, 5),
     late_checkout_fee_per_hour: props.building.late_checkout_fee_per_hour ?? 10000,
     monthly_emergency_limit:    props.building.monthly_emergency_limit ?? 200000,
     is_active:                  props.building.is_active,
