@@ -17,7 +17,7 @@ class AuditLogController extends Controller
         // If an owner email is configured, only that account may view the logs;
         // otherwise fall back to the legacy permission check.
         if ($ownerEmail) {
-            abort_unless($user->email === $ownerEmail, 403);
+            abort_unless($user->isAuditOwner(), 403);
         } else {
             abort_unless($user->can('view-audit-logs'), 403);
         }

@@ -12,15 +12,24 @@ import {
     Search, Plus, Banknote, BadgeCheck, WifiOff,
     Inbox, CalendarCheck, MessageSquare, Clock, UserRound,
     ShieldCheck, UserCog, HelpCircle, MessagesSquare, Megaphone, ScrollText,
-    Home, Boxes, Settings, Briefcase, ClipboardCheck
+    Home, Boxes, Settings, Briefcase, ClipboardCheck, Eye
 } from 'lucide-vue-next'
 import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
+import RolePreviewBar from '@/Components/RolePreviewBar.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
 import { useFloating, offset, shift, flip } from '@floating-ui/vue'
 
 const toast = useAppToast()
 const { isDark, toggle: toggleDark } = useDarkMode()
+
+// "View as role" preview (super-admin only)
+const previewBar     = ref(null)
+const canPreviewRoles = computed(() => !!page.props.canPreviewRoles)
+function openRolePreview() {
+    closeUserMenu()
+    previewBar.value?.openPicker()
+}
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
@@ -446,6 +455,8 @@ function canSeeItem(item) {
 <template>
     <div class="fixed inset-0 overflow-hidden bg-gray-200/70 dark:bg-black flex flex-col">
 
+        <!-- ── Role preview banner + picker ────────────────── -->
+        <RolePreviewBar ref="previewBar" />
 
         <!-- ── Offline banner ─────────────────────────────── -->
         <Transition
@@ -778,6 +789,11 @@ function canSeeItem(item) {
                                 <Building2 class="w-4 h-4 text-gray-400" />
                                 Guest Site
                             </Link>
+                            <button v-if="canPreviewRoles" @click="openRolePreview" type="button"
+                                  class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-t border-gray-100 dark:border-gray-800">
+                                <Eye class="w-4 h-4 text-gray-400" />
+                                View as role
+                            </button>
                             <button @click="toggleDark" type="button"
                                   class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-t border-gray-100 dark:border-gray-800">
                                 <Sun v-if="isDark" class="w-4 h-4 text-gray-400" />

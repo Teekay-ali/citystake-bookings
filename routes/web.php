@@ -150,6 +150,11 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/search', App\Http\Controllers\Admin\GlobalSearchController::class)
         ->name('search');
 
+    // "View as role" preview (super-admin only, read-only)
+    Route::get('/preview/options', [App\Http\Controllers\Admin\RolePreviewController::class, 'options'])->name('preview.options');
+    Route::post('/preview', [App\Http\Controllers\Admin\RolePreviewController::class, 'store'])->name('preview.store');
+    Route::post('/preview/exit', [App\Http\Controllers\Admin\RolePreviewController::class, 'destroy'])->name('preview.exit');
+
     Route::get('/home', [AdminHomeController::class, 'index'])->name('home');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

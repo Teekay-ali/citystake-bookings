@@ -44,8 +44,14 @@ class HandleInertiaRequests extends Middleware
                     'email'             => $user->email,
                     'is_admin'          => $user->is_admin,
                     'is_staff'          => $user->is_staff ?? false,
-                    'is_audit_owner'    => (bool) config('audit.owner_email') && $user->email === config('audit.owner_email'),
-                    'roles'             => $isManageRoute ? $user->getRoleNames() : [],
+                    'is_audit_owner'    => $user->isAuditOwner(),
+                    // While previewing, report the previewed role so role-aware UI
+                    // (e.g. which dashboard to link to) matches what that role sees.
+                    'roles'             => $isManageRoute
+                        ? (\App\Support\RolePreview::role()
+                            ? collect([\App\Support\RolePreview::role()])
+                            : $user->getRoleNames())
+                        : [],
                     'permissions'       => $isManageRoute ? $user->getAllPermissions()->pluck('name') : [],
                     'buildings'         => $buildingIds,
                     'email_verified_at' => $user->email_verified_at,
@@ -55,6 +61,13 @@ class HandleInertiaRequests extends Middleware
                     'email_newsletters' => (bool) $user->email_newsletters,
                 ] : null,
             ],
+
+            // "View as role" preview — banner state + who may start one
+            'preview' => \App\Support\RolePreview::share(),
+            'canPreviewRoles' => $isManageRoute && \App\Support\RolePreview::canPreview($user),
+            'previewBuildings' => fn () => ($isManageRoute && \App\Support\RolePreview::canPreview($user))
+                ? \App\Models\Building::where('is_active', true)->orderBy('name')->get(['id', 'name'])
+                : [],
 
             'flash' => [
                 'success' => fn () => $request->session()->pull('success'),

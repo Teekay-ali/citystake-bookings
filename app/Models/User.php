@@ -12,7 +12,12 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, HasRoles;
+    // Alias the Spatie implementations so the role-preview overrides below can
+    // still reach the real checks (HasRoles is a trait, so there's no parent::).
+    use HasFactory, Notifiable, HasRoles {
+        hasPermissionTo   as protected realHasPermissionTo;
+        getAllPermissions as protected realGetAllPermissions;
+    }
 
     protected $fillable = [
         'name',
@@ -88,9 +93,75 @@ class User extends Authenticatable implements MustVerifyEmail
      * Super Admin and CEO see all buildings.
      * All other staff are scoped to their assigned buildings.
      */
+    /**
+     * True when this user is previewing the app as another role.
+     * Only applies to the currently authenticated user — never to other records.
+     */
+    protected function isPreviewing(): bool
+    {
+        return \App\Support\RolePreview::active()
+            && auth()->id() === $this->id;
+    }
+
+    /**
+     * Audit-log access is granted by identity (a configured owner email), not by
+     * a permission — so it must be suppressed during a role preview, otherwise
+     * every previewed role would still see the audit logs.
+     */
+    public function isAuditOwner(): bool
+    {
+        $ownerEmail = config('audit.owner_email');
+
+        return (bool) $ownerEmail
+            && $this->email === $ownerEmail
+            && ! $this->isPreviewing();
+    }
+
     public function hasGlobalAccess(): bool
     {
-        return $this->hasRole(['super-admin', 'ceo']);
+        $real = $this->hasRole(['super-admin', 'ceo']);
+
+        // While previewing, global access follows the previewed role — and a
+        // simulated building always means scoped, never global.
+        if ($this->isPreviewing()) {
+            return $real
+                && \App\Support\RolePreview::roleHasGlobalAccess()
+                && ! \App\Support\RolePreview::buildingId();
+        }
+
+        return $real;
+    }
+
+    /**
+     * Permission checks are intersected with the previewed role's permissions,
+     * so preview can only ever remove access, never grant it.
+     */
+    public function hasPermissionTo($permission, $guardName = null): bool
+    {
+        $real = $this->realHasPermissionTo($permission, $guardName);
+
+        if (! $real || ! $this->isPreviewing()) {
+            return $real;
+        }
+
+        $name = is_string($permission) ? $permission : ($permission->name ?? null);
+
+        return $name !== null
+            && in_array($name, \App\Support\RolePreview::permissions(), true);
+    }
+
+    /** Same intersection, for the list shared to the front-end nav. */
+    public function getAllPermissions(): \Illuminate\Support\Collection
+    {
+        $all = $this->realGetAllPermissions();
+
+        if (! $this->isPreviewing()) {
+            return $all;
+        }
+
+        $allowed = \App\Support\RolePreview::permissions();
+
+        return $all->filter(fn ($p) => in_array($p->name, $allowed, true))->values();
     }
 
     /**
@@ -104,6 +175,17 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         if ($this->hasGlobalAccess()) {
             return null;
+        }
+
+        // Previewing: a chosen building scopes to it; otherwise a non-global
+        // previewed role still sees every building (we're not impersonating a
+        // specific person, so there are no real building assignments to use).
+        if ($this->isPreviewing()) {
+            $buildingId = \App\Support\RolePreview::buildingId();
+
+            return $buildingId
+                ? [$buildingId]
+                : Building::pluck('id')->toArray();
         }
 
         if (! $this->_accessibleBuildingIdsLoaded) {
