@@ -193,6 +193,12 @@ class Booking extends Model
 
     public function getBalanceDueAttribute(): float
     {
+        // Non-weekly bookings are settled in full up front; only weekly plans
+        // carry a running balance across installments.
+        if (! $this->isWeekly()) {
+            return $this->payment_status === 'paid' ? 0.0 : (float) $this->total_amount;
+        }
+
         return max(0, (float) $this->total_amount - $this->installments_paid);
     }
 

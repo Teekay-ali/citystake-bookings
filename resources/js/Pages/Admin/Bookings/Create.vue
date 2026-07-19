@@ -148,6 +148,30 @@ const selectedUnitType = computed(() =>
     availableUnitTypes.value.find(ut => ut.id == form.unit_type_id)
 );
 
+// Overflow is an UPGRADE: only offer apartment types priced above the requested
+// one (cheapest upgrade first), never a downgrade.
+const overflowTypes = computed(() => {
+    const base = parseFloat(selectedUnitType.value?.base_price_per_night) || 0
+    return availableUnitTypes.value
+        .filter(t => t.id != form.unit_type_id && (parseFloat(t.base_price_per_night) || 0) > base)
+        .sort((a, b) => (parseFloat(a.base_price_per_night) || 0) - (parseFloat(b.base_price_per_night) || 0))
+})
+
+// The upgraded apartment type physically assigned when overflowing
+const crossGradeType = computed(() =>
+    form.cross_grade && crossGradeTypeId.value
+        ? availableUnitTypes.value.find(t => t.id == crossGradeTypeId.value)
+        : null
+)
+
+// Requested type is sold out for the chosen dates (drives the overflow nudge)
+const requestedTypeSoldOut = computed(() =>
+    !form.cross_grade && unitsLoaded.value && availableUnits.value.length === 0
+)
+
+// Clear the chosen overflow type whenever overflow is switched off
+watch(() => form.cross_grade, (on) => { if (!on) crossGradeTypeId.value = '' })
+
 const calculateNights = computed(() => {
     if (!form.check_in || !form.check_out) return 0;
     const diff = Math.ceil(
@@ -410,45 +434,65 @@ const inputCls = (hasError) => [
                             </div>
 
                             <!-- Unit Selection -->
-                            <div v-if="form.unit_type_id && form.check_in && form.check_out" class="mt-4">
-                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                                    Unit <span class="text-gray-400 dark:text-gray-500">(optional - auto-assigned if blank)</span>
-                                </label>
-                                <div v-if="loadingUnits" class="flex items-center gap-2 px-3 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg">
-                                    <div class="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                                    <span class="text-xs text-gray-400">Checking availability…</span>
-                                </div>
-                                <select v-else v-model="form.unit_id" :class="inputCls(false)">
-                                    <option value="" :disabled="form.cross_grade">{{ form.cross_grade ? 'Select the overflow unit…' : 'Auto-assign best available unit' }}</option>
-                                    <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
-                                        {{ unit.label }}
-                                    </option>
-                                </select>
-                                <p v-if="unitsLoaded && availableUnits.length === 0" class="mt-1 text-xs text-red-500">
-                                    No units available for these dates.
-                                </p>
-                                <p v-else-if="unitsLoaded" class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                    {{ availableUnits.length }} unit{{ availableUnits.length !== 1 ? 's' : '' }} available
-                                </p>
+                            <div v-if="form.unit_type_id && form.check_in && form.check_out" class="mt-4 space-y-3">
 
-                                <!-- Cross-grade (overflow allocation) -->
-                                <label class="mt-3 flex items-start gap-2 cursor-pointer select-none">
-                                    <input type="checkbox" v-model="form.cross_grade"
-                                           class="mt-0.5 rounded border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-gray-900 dark:focus:ring-white" />
-                                    <span class="text-xs text-gray-600 dark:text-gray-400">
-                                        Assign a different apartment type <span class="text-gray-400">(overflow)</span>
-                                        - still billed at the <span class="font-medium text-gray-700 dark:text-gray-300">{{ selectedUnitType?.name }}</span> rate
-                                    </span>
-                                </label>
-                                <div v-if="form.cross_grade" class="mt-2">
+                                <!-- Overflow (upgrade) — decided before picking a unit -->
+                                <div>
+                                    <label class="flex items-start gap-2 cursor-pointer select-none">
+                                        <input type="checkbox" v-model="form.cross_grade" :disabled="overflowTypes.length === 0"
+                                               class="mt-0.5 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-950 text-gray-900 dark:text-indigo-500 focus:ring-gray-900 dark:focus:ring-indigo-500 disabled:opacity-40" />
+                                        <span class="text-xs text-gray-600 dark:text-gray-400">
+                                            Assign an upgraded apartment type <span class="text-gray-400">(overflow)</span>
+                                            - still billed at the <span class="font-medium text-gray-700 dark:text-gray-300">{{ selectedUnitType?.name }}</span> rate
+                                        </span>
+                                    </label>
+
+                                    <!-- Nudge when the requested type is fully booked -->
+                                    <p v-if="requestedTypeSoldOut && overflowTypes.length > 0" class="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                                        All {{ selectedUnitType?.name }} units are booked for these dates — enable overflow to assign an upgraded apartment at the same rate.
+                                    </p>
+                                    <p v-else-if="requestedTypeSoldOut" class="mt-1.5 text-[11px] text-red-500">
+                                        All {{ selectedUnitType?.name }} units are booked and no upgraded apartment type is available to overflow into.
+                                    </p>
+                                </div>
+
+                                <!-- Physical apartment type (only when overflowing) — chosen before the unit -->
+                                <div v-if="form.cross_grade">
                                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Physical apartment type <span class="text-red-500">*</span></label>
                                     <select v-model="crossGradeTypeId" :class="inputCls(false)">
-                                        <option value="">Select the apartment being given…</option>
-                                        <option v-for="ut in availableUnitTypes.filter(t => t.id != form.unit_type_id)" :key="ut.id" :value="ut.id">
+                                        <option value="">Select the upgraded apartment being assigned…</option>
+                                        <option v-for="ut in overflowTypes" :key="ut.id" :value="ut.id">
                                             {{ ut.name }} - {{ formatPrice(ut.base_price_per_night) }}/night
                                         </option>
                                     </select>
-                                    <p class="mt-1 text-[11px] text-amber-600 dark:text-amber-400">Pick a specific unit above - auto-assign is off for overflow.</p>
+                                </div>
+
+                                <!-- Unit dropdown — reflects the effective (billed or overflow) type -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                                        Unit
+                                        <span v-if="form.cross_grade" class="text-red-500">*</span>
+                                        <span v-else class="text-gray-400 dark:text-gray-500">(optional - auto-assigned if blank)</span>
+                                    </label>
+                                    <div v-if="loadingUnits" class="flex items-center gap-2 px-3 py-2.5 border border-gray-200 dark:border-gray-800 rounded-lg">
+                                        <div class="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                        <span class="text-xs text-gray-400">Checking availability…</span>
+                                    </div>
+                                    <select v-else v-model="form.unit_id" :class="inputCls(false)"
+                                            :disabled="form.cross_grade && !crossGradeTypeId">
+                                        <option value="" :disabled="form.cross_grade">
+                                            {{ form.cross_grade ? (crossGradeTypeId ? 'Select the overflow unit…' : 'Choose a physical apartment type first') : 'Auto-assign best available unit' }}
+                                        </option>
+                                        <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
+                                            {{ unit.label }}
+                                        </option>
+                                    </select>
+                                    <p v-if="unitsLoaded && availableUnits.length === 0 && !(form.cross_grade && !crossGradeTypeId)" class="mt-1 text-xs text-red-500">
+                                        No units available for these dates.
+                                    </p>
+                                    <p v-else-if="unitsLoaded && availableUnits.length > 0" class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                        {{ availableUnits.length }} unit{{ availableUnits.length !== 1 ? 's' : '' }} available
+                                    </p>
                                 </div>
                             </div>
 
@@ -613,9 +657,16 @@ const inputCls = (hasError) => [
 
                         <!-- Property -->
                         <div>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">PROPERTY</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">{{ crossGradeType ? 'BOOKED (BILLED)' : 'PROPERTY' }}</p>
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ selectedUnitType.name }}</p>
                             <p class="text-xs text-gray-500 dark:text-gray-400">{{ selectedBuilding.name }}</p>
+                        </div>
+
+                        <!-- Upgraded apartment (overflow) -->
+                        <div v-if="crossGradeType" class="rounded-lg bg-indigo-50 dark:bg-indigo-500/10 px-3 py-2.5">
+                            <p class="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-0.5">Assigned apartment · Upgrade</p>
+                            <p class="text-sm font-semibold text-indigo-700 dark:text-indigo-300">{{ crossGradeType.name }}</p>
+                            <p class="text-[11px] text-indigo-500/90 dark:text-indigo-400/90 mt-0.5">Billed at the {{ selectedUnitType.name }} rate</p>
                         </div>
 
                         <!-- Dates -->
@@ -831,7 +882,7 @@ const inputCls = (hasError) => [
                 <div>
                     <label class="flex items-start gap-2.5 cursor-pointer">
                         <input v-model="form.backdated" type="checkbox"
-                               class="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-gray-900 focus:ring-gray-900 dark:focus:ring-white" />
+                               class="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-950 text-gray-900 dark:text-indigo-500 focus:ring-gray-900 dark:focus:ring-indigo-500" />
                         <span class="min-w-0">
                             <span class="block text-sm font-medium text-gray-900 dark:text-white">Backdated booking</span>
                             <span class="block text-[11px] text-gray-400">Allow a check-in date in the past (migrating an old booking, or a walk-in that already started). Recorded in the audit log.</span>

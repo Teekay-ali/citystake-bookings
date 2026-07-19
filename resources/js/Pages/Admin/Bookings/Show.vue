@@ -2,6 +2,7 @@
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import DocumentManager from '@/Components/DocumentManager.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
+import Modal from '@/Components/Modal.vue'
 import CautionChargesModal from './Partials/CautionChargesModal.vue'
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
@@ -9,8 +10,8 @@ import { useAppToast } from '@/Composables/useAppToast'
 import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
-    Clock, CheckCircle, ChevronRight,
-    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft,
+    Clock, CheckCircle,
+    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft, Pencil,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -234,10 +235,15 @@ function submitCautionDirect() {
 }
 
 // ── Modify booking ─────────────────────────────────────────────
+// Booking dates arrive as ISO datetimes; <input type="date"> needs YYYY-MM-DD.
+const ymd = (d) => d ? String(d).slice(0, 10) : ''
 const showModifyForm  = ref(false)
+const canModify = computed(() =>
+    !['cancelled', 'completed'].includes(props.booking.status) && can('manage-bookings')
+)
 const modifyForm      = useForm({
-    check_in:         props.booking.check_in,
-    check_out:        props.booking.check_out,
+    check_in:         ymd(props.booking.check_in),
+    check_out:        ymd(props.booking.check_out),
     nights:           props.booking.nights,
     unit_id:          props.booking.unit_id,
     guests:           props.booking.guests,
@@ -274,8 +280,8 @@ watch([() => modifyForm.check_in, () => modifyForm.check_out], async ([checkIn, 
 
 // Keep modifyForm in sync if Inertia refreshes the booking prop
 watch(() => props.booking, (booking) => {
-    modifyForm.check_in         = booking.check_in
-    modifyForm.check_out        = booking.check_out
+    modifyForm.check_in         = ymd(booking.check_in)
+    modifyForm.check_out        = ymd(booking.check_out)
     modifyForm.nights           = booking.nights
     modifyForm.unit_id          = booking.unit_id
     modifyForm.guests           = booking.guests
@@ -364,6 +370,42 @@ const statusConfig = computed(() => {
     return map[s] ?? map['confirmed']
 })
 
+// ── Lifecycle stepper ──────────────────────────────────────────
+const currentStatus = computed(() => props.booking.display_status ?? props.booking.status)
+const isCancelled   = computed(() => currentStatus.value === 'cancelled')
+
+const lifecycleSteps = computed(() => {
+    const s = currentStatus.value
+    let idx = 0                                   // Confirmed
+    if (['checked_in', 'paused', 'active', 'overdue_checkout'].includes(s)) idx = 1
+    else if (s === 'completed') idx = stayCompleted.value ? 4 : 2   // 4 = fully done
+    return ['Confirmed', 'Checked in', 'Checked out', 'Completed'].map((label, i) => ({
+        label,
+        state: i < idx ? 'done' : i === idx ? 'current' : 'upcoming',
+    }))
+})
+
+// ── Payment verdict ────────────────────────────────────────────
+const weeklyProgress = computed(() => {
+    const ins = props.booking.installments ?? []
+    if (!ins.length) return null
+    const paid = ins.filter(i => i.paid_at).length
+    return { paid, total: ins.length, pct: Math.round((paid / ins.length) * 100) }
+})
+const balanceDue = computed(() => Number(props.booking.balance_due ?? 0))
+
+// ── Mobile primary action (sticky bar) ─────────────────────────
+const primaryAction = computed(() => {
+    const s = currentStatus.value
+    if (s === 'confirmed' && paidEnoughToCheckIn.value && can('confirm-checkin')) {
+        return { label: 'Check in guest', run: submitCheckIn, icon: LogIn }
+    }
+    if (s === 'checked_in' && can('confirm-checkin')) {
+        return { label: 'Check out guest', run: () => { showCheckOutModal.value = true }, icon: LogOut }
+    }
+    return null
+})
+
 const inputCls = (hasError = false) => [
     'w-full px-3 py-2 bg-white dark:bg-gray-950 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
     hasError
@@ -380,7 +422,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
     <ManageLayout>
         <Head :title="`Booking · ${booking.booking_reference}`" />
 
-        <div class="p-4 lg:p-6">
+        <div class="p-4 lg:p-6" :class="primaryAction ? 'pb-24 lg:pb-6' : ''">
 
             <!-- ── Header row (sticky) ── -->
             <div class="sticky top-0 z-20 -mx-4 lg:-mx-6 -mt-4 lg:-mt-6 px-4 lg:px-6 py-3 mb-5 flex items-center justify-between gap-3 flex-wrap bg-white/90 dark:bg-gray-950/90 backdrop-blur border-b border-gray-100 dark:border-gray-800">
@@ -405,6 +447,10 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                     </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
+                    <button v-if="canModify" @click="showModifyForm = true"
+                            class="inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                        <Pencil class="w-3.5 h-3.5" /> Modify booking
+                    </button>
                     <a :href="route('manage.bookings.invoice', booking.booking_reference)" target="_blank"
                        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                         <Download class="w-3.5 h-3.5" /> Invoice
@@ -427,6 +473,34 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
 
                     <!-- Summary hero -->
                     <div :class="card" class="p-5">
+
+                        <!-- Lifecycle stepper -->
+                        <div v-if="!isCancelled" class="flex items-start mb-5">
+                            <template v-for="(step, i) in lifecycleSteps" :key="step.label">
+                                <div class="flex flex-col items-center gap-1.5 shrink-0">
+                                    <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold border-2 transition-colors"
+                                          :class="{
+                                              'bg-emerald-500 border-emerald-500 text-white': step.state === 'done',
+                                              'bg-gray-900 dark:bg-white border-gray-900 dark:border-white text-white dark:text-gray-900': step.state === 'current',
+                                              'bg-transparent border-gray-300 dark:border-gray-700 text-gray-400': step.state === 'upcoming',
+                                          }">
+                                        <CheckCircle v-if="step.state === 'done'" class="w-3.5 h-3.5" />
+                                        <template v-else>{{ i + 1 }}</template>
+                                    </span>
+                                    <span class="text-[10px] font-medium whitespace-nowrap"
+                                          :class="step.state === 'upcoming' ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300'">
+                                        {{ step.label }}
+                                    </span>
+                                </div>
+                                <div v-if="i < lifecycleSteps.length - 1" class="flex-1 h-0.5 mx-1 mt-3 rounded"
+                                     :class="lifecycleSteps[i + 1].state !== 'upcoming' ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-800'" />
+                            </template>
+                        </div>
+                        <div v-else class="flex items-center gap-2 mb-5 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20">
+                            <XCircle class="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                            <span class="text-xs font-semibold text-red-700 dark:text-red-400">Booking cancelled</span>
+                        </div>
+
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div class="w-11 h-11 rounded-xl bg-gray-900 dark:bg-white flex items-center justify-center shrink-0">
@@ -450,12 +524,10 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                                 </div>
                             </div>
                             <div class="text-right">
+                                <p class="text-[10px] text-gray-400 uppercase tracking-wider">Total</p>
                                 <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ fmt(booking.total_amount) }}</p>
                                 <p v-if="booking.currency === 'USD'" class="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
                                     ${{ Number(booking.price_usd).toLocaleString() }} @ ₦{{ Number(booking.exchange_rate).toLocaleString() }}/$
-                                </p>
-                                <p class="text-xs font-medium mt-0.5" :class="booking.payment_status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'">
-                                    {{ booking.payment_status === 'paid' ? `Paid · ${booking.payment_method?.replace('_', ' ')}` : 'Payment pending' }}
                                 </p>
                             </div>
                         </div>
@@ -470,13 +542,13 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                             <span v-if="booking.unit?.unit_number">Unit {{ booking.unit.unit_number }}<template v-if="booking.unit?.floor">, Floor {{ booking.unit.floor }}</template></span>
                         </div>
 
-                        <!-- Overflow / cross-grade notice -->
-                        <div v-if="booking.cross_graded" class="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-500/20">
-                            <ArrowRightLeft class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                            <p class="text-xs text-amber-700 dark:text-amber-400">
-                                <span class="font-semibold">Overflow allocation</span> - billed as
-                                <span class="font-medium">{{ booking.unit_type?.name }}</span>, assigned
-                                <span class="font-medium">{{ booking.assigned_unit_type }}</span> (Unit {{ booking.unit?.unit_number }})
+                        <!-- Upgraded apartment (overflow) notice -->
+                        <div v-if="booking.cross_graded" class="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20">
+                            <ArrowRightLeft class="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                            <p class="text-xs text-indigo-700 dark:text-indigo-300">
+                                <span class="font-semibold">Upgrade</span> - assigned
+                                <span class="font-medium">{{ booking.assigned_unit_type }}</span> (Unit {{ booking.unit?.unit_number }}),
+                                billed at the <span class="font-medium">{{ booking.unit_type?.name }}</span> rate
                             </p>
                         </div>
 
@@ -511,6 +583,32 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ booking.guests }}</p>
                             </div>
                         </div>
+                        <!-- Payment verdict -->
+                        <div class="mt-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
+                             :class="balanceDue > 0 ? 'bg-amber-50 dark:bg-amber-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <component :is="balanceDue > 0 ? AlertTriangle : CheckCircle" class="w-5 h-5 shrink-0"
+                                           :class="balanceDue > 0 ? 'text-amber-500' : 'text-emerald-500'" />
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold" :class="balanceDue > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'">
+                                        {{ balanceDue > 0 ? `${fmt(balanceDue)} balance due` : 'Paid in full' }}
+                                    </p>
+                                    <p v-if="weeklyProgress" class="text-[11px] text-gray-500 dark:text-gray-400">
+                                        Weekly plan · {{ weeklyProgress.paid }} of {{ weeklyProgress.total }} weeks paid
+                                    </p>
+                                    <p v-else class="text-[11px] text-gray-500 dark:text-gray-400 capitalize">
+                                        {{ booking.payment_method?.replace('_', ' ') }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div v-if="weeklyProgress" class="w-24 shrink-0">
+                                <div class="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                                    <div class="h-full rounded-full transition-all" :class="balanceDue > 0 ? 'bg-amber-500' : 'bg-emerald-500'"
+                                         :style="{ width: weeklyProgress.pct + '%' }" />
+                                </div>
+                            </div>
+                        </div>
+
                         <div v-if="booking.special_requests" class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Special requests</p>
                             <p class="text-xs text-gray-600 dark:text-gray-400">{{ booking.special_requests }}</p>
@@ -730,6 +828,8 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
 
                 <!-- ════ Actions rail ════ -->
                 <div class="space-y-3 mt-4 lg:mt-0 lg:sticky lg:top-20">
+
+                    <p v-if="!isCancelled" :class="sectionLabel" class="px-1"><Layers class="w-3.5 h-3.5" /> Actions</p>
 
                     <!-- Check-in panel -->
                     <div v-if="booking.status === 'confirmed' && paidEnoughToCheckIn && can('confirm-checkin')" :class="card" class="p-4">
@@ -966,59 +1066,23 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                         </p>
                     </div>
 
-                    <!-- Modify booking -->
-                    <div v-if="!['cancelled','completed'].includes(booking.status) && can('manage-bookings')" :class="card">
-                        <button @click="showModifyForm = !showModifyForm"
-                                class="w-full flex items-center justify-between px-4 py-3 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-2xl transition-all">
-                            <span class="flex items-center gap-1.5"><ChevronRight class="w-3.5 h-3.5" /> Modify Booking</span>
-                            <span :class="showModifyForm ? 'rotate-90' : ''" class="transition-transform"><ChevronRight class="w-3 h-3 text-gray-400" /></span>
-                        </button>
-                        <form v-if="showModifyForm" @submit.prevent="submitModify" class="px-4 pb-4 space-y-3 border-t border-gray-100 dark:border-gray-800 pt-3">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div><label class="block text-xs text-gray-500 mb-1">Check-in</label><input v-model="modifyForm.check_in" type="date" :class="inputCls(false)" /></div>
-                                <div><label class="block text-xs text-gray-500 mb-1">Check-out</label><input v-model="modifyForm.check_out" type="date" :class="inputCls(false)" /></div>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Nights</label>
-                                <input v-model.number="modifyForm.nights" type="number" min="1" :class="inputCls(false)" />
-                                <p class="mt-1 text-[11px] text-gray-400">Change nights to auto-update checkout</p>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Unit</label>
-                                <div v-if="loadingModifyUnits" class="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg">
-                                    <div class="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                                    <span class="text-xs text-gray-400">Checking…</span>
-                                </div>
-                                <select v-else v-model="modifyForm.unit_id" :class="inputCls(false)">
-                                    <option :value="booking.unit_id">Unit {{ booking.unit?.unit_number }} (current)</option>
-                                    <option v-for="u in modifyUnits" :key="u.id" :value="u.id">{{ u.label }}</option>
-                                </select>
-                            </div>
-                            <div><label class="block text-xs text-gray-500 mb-1">Guests</label><input v-model.number="modifyForm.guests" type="number" min="1" :class="inputCls(false)" /></div>
-                            <div><label class="block text-xs text-gray-500 mb-1">Guest Name</label><input v-model="modifyForm.guest_name" type="text" :class="inputCls(false)" /></div>
-                            <div><label class="block text-xs text-gray-500 mb-1">Phone</label><input v-model="modifyForm.guest_phone" type="tel" :class="inputCls(false)" /></div>
-                            <div><label class="block text-xs text-gray-500 mb-1">Email</label><input v-model="modifyForm.guest_email" type="email" :class="inputCls(false)" /></div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Special Requests</label>
-                                <textarea v-model="modifyForm.special_requests" rows="2" class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none" />
-                            </div>
-                            <div v-if="Object.keys(modifyForm.errors).length" class="text-xs text-red-500">{{ Object.values(modifyForm.errors)[0] }}</div>
-                            <div class="flex gap-2 pt-1">
-                                <button type="submit" :disabled="modifyForm.processing" class="flex-1 py-2 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all">Save Changes</button>
-                                <button type="button" @click="showModifyForm = false" class="px-4 py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">Cancel</button>
-                            </div>
-                        </form>
-                    </div>
-
                     <!-- Cancel -->
                     <div v-if="booking.status !== 'cancelled' && booking.status !== 'completed' && booking.status !== 'checked_in' && can('manage-bookings')">
                         <button @click="showCancelModal = true"
-                                class="w-full py-2.5 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg bg-white dark:bg-gray-900 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-1.5">
-                            <XCircle class="w-3.5 h-3.5" /> Cancel Booking
+                                class="w-full py-2.5 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg bg-white dark:bg-gray-900 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center">
+                            Cancel Booking
                         </button>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Mobile sticky primary action -->
+        <div v-if="primaryAction" class="lg:hidden fixed bottom-0 inset-x-0 z-30 p-3 bg-white/90 dark:bg-gray-950/90 backdrop-blur border-t border-gray-200 dark:border-gray-800">
+            <button @click="primaryAction.run" :disabled="checkInForm.processing || isCheckingOut"
+                    class="w-full inline-flex items-center justify-center gap-2 py-3 text-sm font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl hover:opacity-90 disabled:opacity-50 transition-all">
+                <component :is="primaryAction.icon" class="w-4 h-4" /> {{ primaryAction.label }}
+            </button>
         </div>
 
         <!-- Modals -->
@@ -1036,5 +1100,56 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
             @confirm="cancelBooking" @close="showCancelModal = false" />
 
         <CautionChargesModal :show="showCautionModal" :booking="booking" @close="showCautionModal = false" />
+
+        <!-- Modify booking modal -->
+        <Modal :show="showModifyForm" max-width="md" @close="showModifyForm = false">
+            <form @submit.prevent="submitModify" class="p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Pencil class="w-4 h-4 text-gray-400" /> Modify Booking
+                    </h3>
+                    <button type="button" @click="showModifyForm = false" class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <XCircle class="w-4 h-4" />
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs text-gray-500 mb-1">Check-in</label><input v-model="modifyForm.check_in" type="date" :class="inputCls(false)" /></div>
+                        <div><label class="block text-xs text-gray-500 mb-1">Check-out</label><input v-model="modifyForm.check_out" type="date" :class="inputCls(false)" /></div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Nights</label>
+                        <input v-model.number="modifyForm.nights" type="number" min="1" :class="inputCls(false)" />
+                        <p class="mt-1 text-[11px] text-gray-400">Change nights to auto-update checkout</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Unit</label>
+                        <div v-if="loadingModifyUnits" class="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg">
+                            <div class="w-3 h-3 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                            <span class="text-xs text-gray-400">Checking…</span>
+                        </div>
+                        <select v-else v-model="modifyForm.unit_id" :class="inputCls(false)">
+                            <option :value="booking.unit_id">Unit {{ booking.unit?.unit_number }} (current)</option>
+                            <option v-for="u in modifyUnits" :key="u.id" :value="u.id">{{ u.label }}</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs text-gray-500 mb-1">Guests</label><input v-model.number="modifyForm.guests" type="number" min="1" :class="inputCls(false)" /></div>
+                    <div><label class="block text-xs text-gray-500 mb-1">Guest Name</label><input v-model="modifyForm.guest_name" type="text" :class="inputCls(false)" /></div>
+                    <div><label class="block text-xs text-gray-500 mb-1">Phone</label><input v-model="modifyForm.guest_phone" type="tel" :class="inputCls(false)" /></div>
+                    <div><label class="block text-xs text-gray-500 mb-1">Email</label><input v-model="modifyForm.guest_email" type="email" :class="inputCls(false)" /></div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Special Requests</label>
+                        <textarea v-model="modifyForm.special_requests" rows="2" class="w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none" />
+                    </div>
+                    <div v-if="Object.keys(modifyForm.errors).length" class="text-xs text-red-500">{{ Object.values(modifyForm.errors)[0] }}</div>
+                </div>
+
+                <div class="flex gap-2 pt-4">
+                    <button type="submit" :disabled="modifyForm.processing" class="flex-1 py-2.5 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 transition-all">Save Changes</button>
+                    <button type="button" @click="showModifyForm = false" class="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Discard</button>
+                </div>
+            </form>
+        </Modal>
     </ManageLayout>
 </template>

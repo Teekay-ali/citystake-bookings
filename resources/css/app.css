@@ -151,6 +151,24 @@
     width: 384px !important;
 }
 
+/* Mobile: the library defaults to a full-bleed, square-cornered toast.
+   Inset it from the screen edges and keep the rounded corners. */
+@media only screen and (max-width: 600px) {
+    .Vue-Toastification__container {
+        width: auto !important;
+        left: 1rem !important;
+        right: 1rem !important;
+        bottom: 1rem !important;
+        top: auto !important;
+        padding: 0 !important;
+    }
+    .Vue-Toastification__toast {
+        border-radius: 0.5rem !important;
+        margin-bottom: 0.5rem;
+        max-width: 100%;
+    }
+}
+
 /* Override all type-specific backgrounds from the default CSS */
 .Vue-Toastification__toast,
 .Vue-Toastification__toast--success,
