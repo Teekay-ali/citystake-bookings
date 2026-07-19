@@ -32,7 +32,7 @@ class InspectionCompletedNotification extends Notification
             'message' => ($location ?: 'A unit')
                 . ($concerns > 0
                     ? " was inspected and {$concerns} concern" . ($concerns !== 1 ? 's were' : ' was') . ' reported.'
-                    : ' was inspected - everything OK.'),
+                    : ' was inspected - Everything OK.'),
             'url'     => route('manage.inspections.show', $this->inspection->id),
             'icon'    => 'inspection',
         ];

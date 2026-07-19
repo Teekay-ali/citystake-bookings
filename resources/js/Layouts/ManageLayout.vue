@@ -105,21 +105,22 @@ onMounted(() => {
     ensureActiveGroupOpen()
 })
 
-// Collapsible nav groups - everything open by default (null), persisted once
-// the user collapses something. Active group is always kept expanded.
-const storedGroups = typeof window !== 'undefined' ? localStorage.getItem('sidebar-groups-v2') : null
-const openGroups = ref(storedGroups ? JSON.parse(storedGroups) : null)
+// Collapsible nav groups - all collapsed by default; the open set is persisted
+// as the user expands/collapses. The group containing the current route is
+// always kept expanded (see ensureActiveGroupOpen).
+const GROUPS_KEY = 'sidebar-groups-v3'
+const storedGroups = typeof window !== 'undefined' ? localStorage.getItem(GROUPS_KEY) : null
+const openGroups = ref(storedGroups ? JSON.parse(storedGroups) : [])
 
 function toggleGroup(label) {
-    if (openGroups.value === null) openGroups.value = navGroups.value.map(g => g.label)
     const idx = openGroups.value.indexOf(label)
     if (idx > -1) openGroups.value.splice(idx, 1)
     else openGroups.value.push(label)
-    localStorage.setItem('sidebar-groups-v2', JSON.stringify(openGroups.value))
+    localStorage.setItem(GROUPS_KEY, JSON.stringify(openGroups.value))
 }
 
 function isGroupOpen(label) {
-    return openGroups.value === null || openGroups.value.includes(label)
+    return openGroups.value.includes(label)
 }
 
 // True when the current route lives in this group (for header highlight)
@@ -129,7 +130,6 @@ function isGroupActive(group) {
 
 // Always keep the group containing the current route expanded
 function ensureActiveGroupOpen() {
-    if (openGroups.value === null) return
     for (const group of navGroups.value) {
         if (group.items.some(item => canSeeItem(item) && isActive(item.match))
             && !openGroups.value.includes(group.label)) {
@@ -138,6 +138,7 @@ function ensureActiveGroupOpen() {
     }
 }
 watch(() => page.url, ensureActiveGroupOpen)
+onMounted(ensureActiveGroupOpen)
 
 function toggleCollapsed() {
     collapsed.value = !collapsed.value
@@ -326,7 +327,8 @@ onUnmounted(() => {
 const quickActionsOpen = ref(false)
 
 const quickActions = [
-    { label: 'Booking',             icon: CalendarDays,  route: 'manage.bookings.create',           permission: 'manage-bookings' },
+    { label: 'Single Booking',      icon: CalendarDays,  route: 'manage.bookings.create',           permission: 'create-bookings' },
+    { label: 'Group Booking',       icon: Users,         route: 'manage.bookings.group.create',     permission: 'create-bookings' },
     { label: 'Complaint',           icon: AlertTriangle, route: 'manage.complaints.index',          query: { new: 1 }, permission: 'view-complaints' },
     { label: 'Maintenance Request', icon: Wrench,        route: 'manage.maintenance.create',        permission: 'view-maintenance' },
     { label: 'Procurement',         icon: ShoppingCart,  route: 'manage.procurement.create',        permission: 'view-procurement' },

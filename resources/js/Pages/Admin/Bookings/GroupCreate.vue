@@ -89,6 +89,30 @@ function memberPrice(m) {
 }
 const grandTotal = computed(() => form.members.reduce((s, m) => s + memberPrice(m), 0))
 
+// Per-unit breakdown (mirrors memberPrice / the server).
+function memberSummary(m) {
+    const ut = unitTypes.value.find(t => t.id == m.unit_type_id)
+    if (!ut || nights.value === 0) return null
+    const price = parseFloat(ut.base_price_per_night) || 0
+    const subtotal = price * nights.value
+    const oneNightAtRate = (selectedBuilding.value?.one_night_caution_uses_rate ?? true) && nights.value === 1
+    const rate = nights.value >= 7 ? 10 : 5
+    const discount = Math.round(subtotal * (rate / 100))
+    const caution = oneNightAtRate ? price : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000)
+    const unit = ut.units?.find(u => u.id == m.unit_id)
+    return {
+        label: unit ? `Unit ${unit.unit_number}` : ut.name,
+        typeName: ut.name,
+        subtotal, discount, caution, rate,
+        total: subtotal - discount + caution,
+    }
+}
+
+// Rows for units that have a type selected, in member order.
+const lineItems = computed(() =>
+    form.members.map(m => memberSummary(m)).filter(Boolean)
+)
+
 // ── Organizations ──
 const orgs = ref([])
 onMounted(async () => {
@@ -223,10 +247,41 @@ function submit() {
                     <input v-model="form.payment_reference" type="text" placeholder="Payment reference (optional)" :class="inputCls" />
 
                     <div class="border-t border-gray-100 dark:border-gray-800 my-4" />
-                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        <span>{{ form.members.length }} units · {{ nights }} night{{ nights !== 1 ? 's' : '' }}</span>
+
+                    <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Booking Summary</p>
+
+                    <p v-if="lineItems.length === 0" class="text-xs text-gray-400 dark:text-gray-500">
+                        Select unit types and dates to see the breakdown.
+                    </p>
+
+                    <div v-else class="space-y-3">
+                        <div v-for="(li, i) in lineItems" :key="i" class="text-xs">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-medium text-gray-900 dark:text-white">{{ li.label }}</span>
+                                <span class="text-gray-400">{{ li.typeName }}</span>
+                            </div>
+                            <div class="space-y-1 pl-3 border-l border-gray-100 dark:border-gray-800">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">Room · {{ nights }} night{{ nights !== 1 ? 's' : '' }}</span>
+                                    <span class="text-gray-700 dark:text-gray-300 tabular-nums">{{ fmt(li.subtotal) }}</span>
+                                </div>
+                                <div v-if="li.discount > 0" class="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                                    <span>Discount ({{ li.rate }}%)</span>
+                                    <span class="tabular-nums">− {{ fmt(li.discount) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">Caution (refundable)</span>
+                                    <span class="text-gray-700 dark:text-gray-300 tabular-nums">{{ fmt(li.caution) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between pt-0.5 font-medium">
+                                    <span class="text-gray-900 dark:text-white">Subtotal</span>
+                                    <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(li.total) }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex items-baseline justify-between">
+
+                    <div class="flex items-baseline justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                         <span class="text-sm font-medium text-gray-900 dark:text-white">Group total</span>
                         <span class="text-xl font-semibold text-gray-900 dark:text-white tabular-nums">{{ fmt(grandTotal) }}</span>
                     </div>
