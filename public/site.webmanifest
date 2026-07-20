@@ -1,11 +1,11 @@
 {
+    "id": "/?source=pwa",
     "name": "CityStake Bookings",
     "short_name": "CityStake",
     "description": "CityStake property management and booking platform",
-    "start_url": "/manage/dashboard",
-    "scope": "/manage/",
+    "start_url": "/dashboard",
+    "scope": "/",
     "display": "standalone",
-    "orientation": "landscape",
     "theme_color": "#111827",
     "background_color": "#ffffff",
     "icons": [
@@ -19,7 +19,30 @@
             "src": "/android-chrome-512x512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "New booking",
+            "short_name": "New booking",
+            "url": "/manage/bookings/create"
+        },
+        {
+            "name": "Availability",
+            "short_name": "Availability",
+            "url": "/manage/availability"
+        },
+        {
+            "name": "Inspections",
+            "short_name": "Inspections",
+            "url": "/manage/inspections"
         }
     ]
 }

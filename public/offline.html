@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Offline · CityStake</title>
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        :root { color-scheme: light dark; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            font-family: 'Figtree', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f9fafb;
+            color: #111827;
+        }
+        .card {
+            width: 100%;
+            max-width: 26rem;
+            text-align: center;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+            padding: 2.5rem 2rem;
+        }
+        .icon {
+            width: 3rem; height: 3rem;
+            margin: 0 auto 1.25rem;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 9999px;
+            background: #f3f4f6;
+        }
+        h1 { font-size: 1.125rem; font-weight: 600; margin: 0 0 .5rem; }
+        p  { font-size: .875rem; line-height: 1.6; color: #6b7280; margin: 0 0 1.5rem; }
+        button {
+            width: 100%;
+            padding: .75rem 1rem;
+            font-size: .875rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: #ffffff;
+            background: #111827;
+            border: 0;
+            border-radius: .625rem;
+            cursor: pointer;
+        }
+        button:hover { opacity: .9; }
+        .hint { margin: 1rem 0 0; font-size: .75rem; color: #9ca3af; }
+
+        @media (prefers-color-scheme: dark) {
+            body { background: #000000; color: #f9fafb; }
+            .card { background: #111827; border-color: rgba(255, 255, 255, 0.08); box-shadow: none; }
+            .icon { background: rgba(255, 255, 255, 0.06); }
+            p { color: #9ca3af; }
+            button { background: #ffffff; color: #111827; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 2l20 20"/>
+                <path d="M8.5 16.5a5 5 0 0 1 7 0"/>
+                <path d="M2 8.82a15 15 0 0 1 4.17-2.65"/>
+                <path d="M10.66 5c4.01-.36 8.14.9 11.34 3.82"/>
+                <path d="M5 12.86a10 10 0 0 1 5.17-2.69"/>
+                <path d="M19 12.86a10 10 0 0 0-2.007-1.523"/>
+                <line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+        </div>
+        <h1>You're offline</h1>
+        <p>CityStake needs an internet connection. Your work isn't lost &mdash; reconnect and try again.</p>
+        <button type="button" onclick="location.reload()">Try again</button>
+        <p class="hint">This page will reload automatically once you're back online.</p>
+    </div>
+
+    <script>
+        // Reload as soon as the browser reports connectivity again.
+        window.addEventListener('online', () => location.reload())
+    </script>
+</body>
+</html>
