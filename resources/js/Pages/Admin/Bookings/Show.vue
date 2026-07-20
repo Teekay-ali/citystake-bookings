@@ -10,7 +10,7 @@ import { useAppToast } from '@/Composables/useAppToast'
 import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
-    Clock, CheckCircle,
+    Clock, CheckCircle, ChevronRight,
     Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft, Pencil,
 } from 'lucide-vue-next'
 
@@ -59,8 +59,15 @@ function cancelBooking() {
     })
 }
 
+// Photo ID is collapsed unless it still needs attention
+const showPhotoId = ref(props.promptPhotoId)
+
 // ── Adjustment ─────────────────────────────────────────────────
+const showAdjModal = ref(false)
 const showAdjForm = ref(false)
+const adjustmentsTotal = computed(() =>
+    (props.booking.adjustments ?? []).reduce((s, a) => s + Number(a.amount_naira ?? 0), 0)
+)
 const adjForm = useForm({
     amount_type:       'fixed',
     amount_value:      '',
@@ -523,7 +530,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-right">
+                            <div class="w-full sm:w-auto text-left sm:text-right flex items-baseline gap-2 sm:block pt-2 sm:pt-0 border-t sm:border-0 border-gray-100 dark:border-gray-800">
                                 <p class="text-[10px] text-gray-400 uppercase tracking-wider">Total</p>
                                 <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ fmt(booking.total_amount) }}</p>
                                 <p v-if="booking.currency === 'USD'" class="text-[11px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
@@ -618,20 +625,85 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                         </div>
                     </div>
 
-                    <!-- Photo ID -->
-                    <div :class="[card, photoIdPrompt ? 'ring-1 ring-amber-300 dark:ring-amber-700' : '']" class="p-4">
-                        <p :class="sectionLabel" class="mb-3"><Shield class="w-3.5 h-3.5" /> Guest Photo ID</p>
-                        <div v-if="photoIdPrompt" class="flex items-start gap-2 mb-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                            <AlertTriangle class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                            <p class="text-xs text-amber-700 dark:text-amber-400">Please upload the guest's photo ID before they check in.</p>
+                    <!-- Financials receipt -->
+                    <div :class="card" class="p-4">
+                        <p :class="sectionLabel" class="mb-3"><Receipt class="w-3.5 h-3.5" /> Financials</p>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500 dark:text-gray-400">{{ fmt(booking.subtotal / booking.nights) }} × {{ booking.nights }} nights</span>
+                                <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.subtotal) }}</span>
+                            </div>
+                            <div v-if="booking.discount_amount > 0" class="flex justify-between text-xs text-emerald-600 dark:text-emerald-400">
+                                <span>Discount ({{ booking.discount_percent }}% off)</span>
+                                <span class="tabular-nums">−{{ fmt(booking.discount_amount) }}</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                    Caution fee
+                                    <span v-if="booking.caution_fee_refunded" class="px-1 py-0.5 text-[10px] rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">Refunded</span>
+                                    <span v-else class="px-1 py-0.5 text-[10px] rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">Refundable</span>
+                                </span>
+                                <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.caution_fee) }}</span>
+                            </div>
+                            <div v-if="booking.late_checkout_fee > 0" class="flex justify-between text-xs">
+                                <span class="text-gray-500 dark:text-gray-400">Late checkout fee</span>
+                                <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.late_checkout_fee) }}</span>
+                            </div>
+                            <div v-if="adjustmentsTotal !== 0" class="flex justify-between text-xs">
+                                <span class="text-gray-500 dark:text-gray-400">Adjustments ({{ booking.adjustments.length }})</span>
+                                <span class="text-emerald-600 dark:text-emerald-400 tabular-nums">{{ fmt(adjustmentsTotal) }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm font-semibold pt-2 border-t border-gray-100 dark:border-gray-800">
+                                <span class="text-gray-900 dark:text-white">Total</span>
+                                <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.total_amount) }}</span>
+                            </div>
+                            <div class="flex justify-between text-xs pt-1">
+                                <span class="text-gray-400">Payment</span>
+                                <span :class="booking.payment_status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" class="font-medium capitalize">
+                                    {{ booking.payment_status === 'paid' ? `Paid · ${booking.payment_method?.replace('_', ' ')}` : 'Pending' }}
+                                </span>
+                            </div>
+                            <div v-if="booking.payment_reference" class="flex justify-between text-xs">
+                                <span class="text-gray-400">Reference</span>
+                                <span class="text-gray-600 dark:text-gray-400 font-mono text-[11px]">{{ booking.payment_reference }}</span>
+                            </div>
                         </div>
-                        <DocumentManager
-                            model-type="booking"
-                            :model-id="booking.id"
-                            :initial="booking.documents ?? []"
-                            :readonly="!can('confirm-checkin')"
-                            @updated="photoIdPrompt = false"
-                        />
+
+                        <button v-if="booking.adjustments?.length || can('manage-bookings')"
+                                @click="showAdjModal = true"
+                                class="mt-3 pt-3 w-full flex items-center justify-between border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+                            <span class="flex items-center gap-1.5"><AlertTriangle class="w-3.5 h-3.5" /> Adjustments</span>
+                            <span class="flex items-center gap-1">
+                                {{ booking.adjustments?.length ? `${booking.adjustments.length} applied` : 'None' }}
+                                <ChevronRight class="w-3.5 h-3.5" />
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- Photo ID -->
+                    <div :class="[card, photoIdPrompt ? 'ring-1 ring-amber-300 dark:ring-amber-700' : '']">
+                        <button @click="showPhotoId = !showPhotoId"
+                                class="w-full flex items-center justify-between px-4 py-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <span :class="sectionLabel"><Shield class="w-3.5 h-3.5" /> Guest Photo ID</span>
+                            <span class="flex items-center gap-2">
+                                <span v-if="photoIdPrompt" class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">Required</span>
+                                <span v-else class="text-xs text-gray-400">{{ (booking.documents ?? []).length || 'None' }}</span>
+                                <ChevronRight :class="showPhotoId ? 'rotate-90' : ''" class="w-3.5 h-3.5 text-gray-400 transition-transform" />
+                            </span>
+                        </button>
+                        <div v-if="showPhotoId" class="px-4 pb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
+                            <div v-if="photoIdPrompt" class="flex items-start gap-2 mb-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                                <AlertTriangle class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <p class="text-xs text-amber-700 dark:text-amber-400">Please upload the guest's photo ID before they check in.</p>
+                            </div>
+                            <DocumentManager
+                                model-type="booking"
+                                :model-id="booking.id"
+                                :initial="booking.documents ?? []"
+                                :readonly="!can('confirm-checkin')"
+                                @updated="photoIdPrompt = false"
+                            />
+                        </div>
                     </div>
 
                     <!-- Weekly payment plan -->
@@ -679,114 +751,6 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Financials receipt -->
-                    <div :class="card" class="p-4">
-                        <p :class="sectionLabel" class="mb-3"><Receipt class="w-3.5 h-3.5" /> Financials</p>
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-xs">
-                                <span class="text-gray-500 dark:text-gray-400">{{ fmt(booking.subtotal / booking.nights) }} × {{ booking.nights }} nights</span>
-                                <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.subtotal) }}</span>
-                            </div>
-                            <div v-if="booking.discount_amount > 0" class="flex justify-between text-xs text-emerald-600 dark:text-emerald-400">
-                                <span>Discount ({{ booking.discount_percent }}% off)</span>
-                                <span class="tabular-nums">−{{ fmt(booking.discount_amount) }}</span>
-                            </div>
-                            <div class="flex justify-between text-xs">
-                                <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                    Caution fee
-                                    <span v-if="booking.caution_fee_refunded" class="px-1 py-0.5 text-[10px] rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">Refunded</span>
-                                    <span v-else class="px-1 py-0.5 text-[10px] rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">Refundable</span>
-                                </span>
-                                <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.caution_fee) }}</span>
-                            </div>
-                            <div v-if="booking.late_checkout_fee > 0" class="flex justify-between text-xs">
-                                <span class="text-gray-500 dark:text-gray-400">Late checkout fee</span>
-                                <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.late_checkout_fee) }}</span>
-                            </div>
-                            <div class="flex justify-between text-sm font-semibold pt-2 border-t border-gray-100 dark:border-gray-800">
-                                <span class="text-gray-900 dark:text-white">Total</span>
-                                <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.total_amount) }}</span>
-                            </div>
-                            <div class="flex justify-between text-xs pt-1">
-                                <span class="text-gray-400">Payment</span>
-                                <span :class="booking.payment_status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" class="font-medium capitalize">
-                                    {{ booking.payment_status === 'paid' ? `Paid · ${booking.payment_method?.replace('_', ' ')}` : 'Pending' }}
-                                </span>
-                            </div>
-                            <div v-if="booking.payment_reference" class="flex justify-between text-xs">
-                                <span class="text-gray-400">Reference</span>
-                                <span class="text-gray-600 dark:text-gray-400 font-mono text-[11px]">{{ booking.payment_reference }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Adjustments -->
-                    <div v-if="booking.adjustments?.length || can('manage-bookings')" :class="card" class="p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <p :class="sectionLabel"><AlertTriangle class="w-3.5 h-3.5" /> Adjustments</p>
-                            <button v-if="can('manage-bookings') && !showAdjForm" @click="showAdjForm = true"
-                                    class="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">+ Add</button>
-                        </div>
-
-                        <div v-if="booking.adjustments?.length" class="space-y-2 mb-3">
-                            <div v-for="adj in booking.adjustments" :key="adj.id"
-                                 class="flex items-start justify-between text-xs p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                <div>
-                                    <p class="font-medium text-gray-900 dark:text-white">{{ adj.reason }}</p>
-                                    <p class="text-gray-400 mt-0.5">{{ fmtDate(adj.transaction_date) }}{{ adj.notes ? ` · ${adj.notes}` : '' }}</p>
-                                </div>
-                                <div class="flex items-center gap-2 shrink-0 ml-3">
-                                    <span class="text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">{{ fmt(adj.amount_naira) }}</span>
-                                    <button v-if="can('manage-bookings')" @click="deleteAdjustment(adj)"
-                                            class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors">
-                                        <Trash2 class="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <p v-else-if="!showAdjForm" class="text-xs text-gray-400 mb-3">No adjustments applied.</p>
-
-                        <form v-if="showAdjForm" @submit.prevent="submitAdjustment" class="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Type</label>
-                                    <select v-model="adjForm.amount_type" :class="inputCls()">
-                                        <option value="fixed">Fixed (₦)</option>
-                                        <option value="percent">Percent (%)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Amount</label>
-                                    <input v-model="adjForm.amount_value" type="number" step="0.01" min="0" :class="inputCls()" />
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Reason *</label>
-                                <input v-model="adjForm.reason" type="text" :class="inputCls()" />
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Date</label>
-                                    <input v-model="adjForm.transaction_date" type="date" :class="inputCls()" />
-                                </div>
-                                <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Reference</label>
-                                    <input v-model="adjForm.payment_reference" type="text" :class="inputCls()" />
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Notes</label>
-                                <input v-model="adjForm.notes" type="text" :class="inputCls()" />
-                            </div>
-                            <div class="flex gap-2">
-                                <button type="submit" :disabled="adjForm.processing"
-                                        class="flex-1 py-2 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-all">Apply</button>
-                                <button type="button" @click="showAdjForm = false"
-                                        class="px-4 py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">Cancel</button>
-                            </div>
-                        </form>
                     </div>
 
                     <!-- Timeline -->
@@ -1100,6 +1064,83 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
             @confirm="cancelBooking" @close="showCancelModal = false" />
 
         <CautionChargesModal :show="showCautionModal" :booking="booking" @close="showCautionModal = false" />
+
+        <!-- Adjustments modal -->
+        <Modal :show="showAdjModal" max-width="md" @close="showAdjModal = false; showAdjForm = false">
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <AlertTriangle class="w-4 h-4 text-gray-400" /> Adjustments
+                    </h3>
+                    <button type="button" @click="showAdjModal = false; showAdjForm = false" class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <XCircle class="w-4 h-4" />
+                    </button>
+                </div>
+
+                <div v-if="booking.adjustments?.length" class="space-y-2 mb-3">
+                    <div v-for="adj in booking.adjustments" :key="adj.id"
+                         class="flex items-start justify-between text-xs p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ adj.reason }}</p>
+                            <p class="text-gray-400 mt-0.5">{{ fmtDate(adj.transaction_date) }}{{ adj.notes ? ` · ${adj.notes}` : '' }}</p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 ml-3">
+                            <span class="text-emerald-600 dark:text-emerald-400 font-semibold tabular-nums">{{ fmt(adj.amount_naira) }}</span>
+                            <button v-if="can('manage-bookings')" @click="deleteAdjustment(adj)"
+                                    class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors">
+                                <Trash2 class="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p v-else-if="!showAdjForm" class="text-xs text-gray-400 mb-3">No adjustments applied.</p>
+
+                <button v-if="can('manage-bookings') && !showAdjForm" @click="showAdjForm = true"
+                        class="w-full py-2 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                    + Add adjustment
+                </button>
+
+                <form v-if="showAdjForm" @submit.prevent="submitAdjustment" class="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Type</label>
+                            <select v-model="adjForm.amount_type" :class="inputCls()">
+                                <option value="fixed">Fixed (₦)</option>
+                                <option value="percent">Percent (%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Amount</label>
+                            <input v-model="adjForm.amount_value" type="number" step="0.01" min="0" :class="inputCls()" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Reason *</label>
+                        <input v-model="adjForm.reason" type="text" :class="inputCls()" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Date</label>
+                            <input v-model="adjForm.transaction_date" type="date" :class="inputCls()" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Reference</label>
+                            <input v-model="adjForm.payment_reference" type="text" :class="inputCls()" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Notes</label>
+                        <input v-model="adjForm.notes" type="text" :class="inputCls()" />
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" :disabled="adjForm.processing"
+                                class="flex-1 py-2.5 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 transition-all">Apply</button>
+                        <button type="button" @click="showAdjForm = false"
+                                class="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Discard</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
 
         <!-- Modify booking modal -->
         <Modal :show="showModifyForm" max-width="md" @close="showModifyForm = false">
