@@ -117,6 +117,56 @@ class HomeController extends Controller
                 ->with(['building', 'submittedBy'])
                 ->latest()->limit(3)
                 ->get(['id', 'title', 'severity', 'building_id', 'submitted_by', 'created_at']);
+
+            // ── Operational charts (no financial data) ──
+            $totalUnits = \App\Models\Unit::whereHas('unitType', fn ($q) => $q->whereIn('building_id', $buildingIds))
+                ->where('is_available', true)->count();
+
+            // Occupancy % snapshot at the start of each of the last 12 weeks.
+            $occupancyTrend = [];
+            for ($i = 11; $i >= 0; $i--) {
+                $weekStart = $today->copy()->startOfWeek()->subWeeks($i);
+                $occupied = Booking::whereIn('building_id', $buildingIds)
+                    ->whereNotIn('status', ['cancelled'])
+                    ->whereDate('check_in', '<=', $weekStart)
+                    ->whereDate('check_out', '>', $weekStart)
+                    ->distinct('unit_id')->count('unit_id');
+                $occupancyTrend[] = [
+                    'label' => $weekStart->format('d M'),
+                    'rate'  => $totalUnits > 0 ? (int) round($occupied / $totalUnits * 100) : 0,
+                ];
+            }
+
+            // New bookings per month (count only), last 6 months.
+            $volumeRaw = Booking::whereIn('building_id', $buildingIds)
+                ->where('created_at', '>=', $today->copy()->subMonths(5)->startOfMonth())
+                ->selectRaw('YEAR(created_at) yr, MONTH(created_at) mo, COUNT(*) c')
+                ->groupBy('yr', 'mo')->get()
+                ->keyBy(fn ($r) => sprintf('%d-%02d', $r->yr, $r->mo));
+            $bookingVolume = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $m = $today->copy()->subMonths($i);
+                $bookingVolume[] = [
+                    'month' => $m->format('M'),
+                    'count' => (int) ($volumeRaw[$m->format('Y-m')]->c ?? 0),
+                ];
+            }
+
+            // Current booking status mix.
+            $statusRaw = Booking::whereIn('building_id', $buildingIds)
+                ->selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status');
+            $statusMix = [
+                ['label' => 'Confirmed',  'value' => (int) ($statusRaw['confirmed'] ?? 0)],
+                ['label' => 'Checked in', 'value' => (int) ($statusRaw['checked_in'] ?? 0)],
+                ['label' => 'Completed',  'value' => (int) ($statusRaw['completed'] ?? 0)],
+                ['label' => 'Cancelled',  'value' => (int) ($statusRaw['cancelled'] ?? 0)],
+            ];
+
+            $data['charts'] = [
+                'occupancyTrend' => $occupancyTrend,
+                'bookingVolume'  => $bookingVolume,
+                'statusMix'      => $statusMix,
+            ];
         }
 
         // ── Accountant data ───────────────────────────────────
