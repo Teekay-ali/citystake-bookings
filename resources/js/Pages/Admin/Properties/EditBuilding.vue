@@ -68,9 +68,7 @@ const toggleAmenity = (amenity) => {
 
 const submit = () => {
     form.put(route('manage.properties.update', props.building.id), {
-        onSuccess: () => {
-            toast.success('Property updated successfully!');
-        },
+        // Success toast comes from the global flash handler (controller flashes it).
         onError: (errors) => {
             const firstError = Object.values(errors)[0];
             if (firstError) toast.error(firstError);
@@ -81,9 +79,7 @@ const submit = () => {
 const deleteBuilding = () => {
     isDeleting.value = true;
     form.delete(route('manage.properties.destroy', props.building.id), {
-        onSuccess: () => {
-            toast.success('Property deleted successfully!');
-        },
+        // Success toast comes from the global flash handler (controller flashes it).
         onError: (errors) => {
             toast.error(errors.error || 'Failed to delete property');
             isDeleting.value = false;

@@ -76,9 +76,7 @@ const updateMaxGuests = () => {
 
 const submit = () => {
     form.post(route('manage.unit-types.store', props.building.id), {
-        onSuccess: () => {
-            toast.success('Unit type created successfully!');
-        },
+        // Success toast comes from the global flash handler (controller flashes it).
         onError: (errors) => {
             const firstError = Object.values(errors)[0];
             if (firstError) {
