@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\InspectionFinding;
+use App\Models\InspectionRound;
 use App\Models\Unit;
 use App\Models\UnitInspection;
-use App\Notifications\InspectionCompletedNotification;
+use App\Notifications\InspectionRoundCompletedNotification;
 use App\Services\NotificationService;
 use App\Traits\ScopedByBuilding;
 use Illuminate\Http\Request;
@@ -19,118 +20,213 @@ class InspectionController extends Controller
 {
     use ScopedByBuilding;
 
-    // Statuses that mean a guest currently holds the unit (so it's NOT vacant).
+    // Statuses that mean a guest currently holds the unit on a given date.
     private const OCCUPYING_STATUSES = ['confirmed', 'checked_in', 'paused'];
 
     private const CATEGORIES = ['cleanliness', 'damage', 'electrical', 'plumbing', 'appliance', 'furniture', 'safety', 'other'];
     private const SEVERITIES = ['low', 'medium', 'high'];
 
+    // Unit states that a QC must resolve before a round can close.
+    private const BLOCKING_STATES = ['pending', 'in_progress'];
+
+    // ── Landing: today's rounds per property + history ──────────────
     public function index(Request $request)
     {
         abort_unless(auth()->user()->can('view-inspections'), 403);
 
-        $tab         = $request->input('tab', 'to_inspect');
+        $tab         = $request->input('tab', 'today');
         $buildingIds = $this->scopedBuildingIds();
-        $vacant      = $this->vacantUnits($buildingIds);
+        $today       = Carbon::today();
 
         return Inertia::render('Admin/Inspections/Index', [
-            'tab'       => $tab,
-            'toInspect' => $tab === 'to_inspect' ? $vacant : [],
-            'history'   => $tab === 'history' ? $this->history($buildingIds) : null,
-            'stats'     => [
-                'to_inspect'      => collect($vacant)->sum(fn ($b) => count($b['units'])),
-                'in_progress'     => UnitInspection::whereIn('building_id', $buildingIds)->where('status', 'in_progress')->count(),
-                'completed_week'  => UnitInspection::whereIn('building_id', $buildingIds)->where('status', 'completed')
-                    ->where('completed_at', '>=', Carbon::now()->subDays(7))->count(),
+            'tab'     => $tab,
+            'today'   => $tab === 'today' ? $this->todayCards($buildingIds, $today) : [],
+            'history' => $tab === 'history' ? $this->history($buildingIds) : null,
+            'stats'   => [
+                'active_rounds'   => InspectionRound::whereIn('building_id', $buildingIds)
+                    ->where('status', 'in_progress')->whereDate('round_date', $today)->count(),
+                'inspected_today' => UnitInspection::whereIn('building_id', $buildingIds)
+                    ->where('status', 'completed')->whereDate('completed_at', $today)->count(),
+                'rounds_week'     => InspectionRound::whereIn('building_id', $buildingIds)
+                    ->where('status', 'completed')->where('completed_at', '>=', $today->copy()->subDays(7))->count(),
                 'open_concerns'   => InspectionFinding::whereHas('inspection', fn ($q) => $q->whereIn('building_id', $buildingIds))
                     ->where('resolved', false)->count(),
             ],
         ]);
     }
 
-    /** Vacant units in accessible buildings, grouped by building, with last-inspected + in-progress. */
-    private function vacantUnits(array $buildingIds): array
+    /** One summary card per accessible property for today. */
+    private function todayCards(array $buildingIds, Carbon $today): array
     {
-        $today = Carbon::today();
+        $buildings = \App\Models\Building::whereIn('id', $buildingIds)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        $units = Unit::where('status', 'available')
-            ->whereHas('unitType', fn ($q) => $q->whereIn('building_id', $buildingIds))
-            ->with('unitType:id,name,building_id,base_price_per_night', 'unitType.building:id,name')
-            ->get();
+        $rounds = InspectionRound::whereIn('building_id', $buildingIds)
+            ->whereDate('round_date', $today)
+            ->get()
+            ->keyBy('building_id');
 
-        $occupied = Booking::whereIn('status', self::OCCUPYING_STATUSES)
-            ->whereDate('check_in', '<=', $today)
-            ->whereDate('check_out', '>', $today)
-            ->pluck('unit_id')
-            ->filter()
-            ->unique();
+        return $buildings->map(function ($b) use ($rounds, $today) {
+            $round   = $rounds->get($b->id);
+            $rows    = $this->unitRows($b->id, $round, $today);
+            $counts  = $this->countStates($rows);
 
-        $vacant  = $units->reject(fn ($u) => $occupied->contains($u->id))->values();
-        $unitIds = $vacant->pluck('id');
-
-        $lastByUnit = UnitInspection::completed()
-            ->whereIn('unit_id', $unitIds)
-            ->selectRaw('unit_id, MAX(completed_at) as last_completed')
-            ->groupBy('unit_id')
-            ->pluck('last_completed', 'unit_id');
-
-        $inProgress = UnitInspection::where('status', 'in_progress')
-            ->whereIn('unit_id', $unitIds)
-            ->pluck('id', 'unit_id');
-
-        return $vacant
-            ->groupBy(fn ($u) => $u->unitType->building->id)
-            ->map(fn ($group) => [
-                'building_id'   => $group->first()->unitType->building->id,
-                'building_name' => $group->first()->unitType->building->name,
-                'units'         => $group->map(fn ($u) => [
-                    'id'                => $u->id,
-                    'unit_number'       => $u->unit_number,
-                    'floor'             => $u->floor,
-                    'unit_type'         => $u->unitType->name,
-                    'last_inspected_at' => $lastByUnit[$u->id] ?? null,
-                    'in_progress_id'    => $inProgress[$u->id] ?? null,
-                ])->values(),
-            ])
-            ->values()
-            ->all();
+            return [
+                'building_id'   => $b->id,
+                'building_name' => $b->name,
+                'round_id'      => $round?->id,
+                'status'        => $round?->status,           // null | in_progress | completed | cancelled
+                'total'         => count($rows),
+                'inspectable'   => $counts['inspectable'],
+                'inspected'     => $counts['inspected'],
+                'pending'       => $counts['pending'],
+                'occupied'      => $counts['occupied'],
+                'concerns'      => $counts['concerns'],
+            ];
+        })->all();
     }
 
     private function history(array $buildingIds)
     {
-        return UnitInspection::whereIn('building_id', $buildingIds)
-            ->where('status', 'completed')
-            ->with(['unit:id,unit_number', 'building:id,name', 'inspector:id,name'])
-            ->withCount('findings')
-            ->latest('completed_at')
-            ->paginate(20)
-            ->through(fn ($i) => [
-                'id'             => $i->id,
-                'unit_number'    => $i->unit?->unit_number,
-                'building_name'  => $i->building?->name,
-                'inspector'      => $i->inspector?->name,
-                'overall_result' => $i->overall_result,
-                'findings_count' => $i->findings_count,
-                'completed_at'   => $i->completed_at,
+        return InspectionRound::whereIn('building_id', $buildingIds)
+            ->whereIn('status', ['completed', 'cancelled'])
+            ->with(['building:id,name', 'completedBy:id,name'])
+            ->withCount(['unitInspections as inspected_count' => fn ($q) => $q->where('status', 'completed')])
+            ->latest('round_date')
+            ->latest('id')
+            ->paginate(15)
+            ->through(fn ($r) => [
+                'id'             => $r->id,
+                'building_name'  => $r->building?->name,
+                'round_date'     => $r->round_date,
+                'status'         => $r->status,
+                'inspected'      => $r->inspected_count,
+                'completed_by'   => $r->completedBy?->name,
+                'concerns'       => InspectionFinding::whereIn(
+                    'unit_inspection_id',
+                    $r->unitInspections()->where('status', 'completed')->pluck('id')
+                )->count(),
             ]);
     }
 
-    /** Start (or resume) an inspection for a vacant unit, then open the form. */
+    // ── Round lifecycle ─────────────────────────────────────────────
+
+    /** Open (creating if needed) today's round for a property. */
+    public function openRound(Request $request)
+    {
+        abort_unless(auth()->user()->can('conduct-inspections'), 403);
+
+        $data = $request->validate(['building_id' => 'required|exists:buildings,id']);
+        abort_unless(in_array((int) $data['building_id'], $this->scopedBuildingIds()), 403);
+
+        $round = InspectionRound::firstOrCreate(
+            ['building_id' => $data['building_id'], 'round_date' => Carbon::today()],
+            ['status' => 'in_progress', 'started_by' => auth()->id()]
+        );
+
+        // Reopen a round that was cancelled earlier today (unique per day).
+        if (! $round->wasRecentlyCreated && $round->status === 'cancelled') {
+            $round->update(['status' => 'in_progress', 'started_by' => auth()->id()]);
+        }
+
+        return redirect()->route('manage.inspections.round', $round->id);
+    }
+
+    /** Round detail: the unit checklist. */
+    public function round(InspectionRound $round)
+    {
+        abort_unless(auth()->user()->can('view-inspections'), 403);
+        abort_unless(in_array($round->building_id, $this->scopedBuildingIds()), 403);
+
+        $round->load('building:id,name', 'completedBy:id,name');
+
+        $rows   = $this->unitRows($round->building_id, $round, Carbon::parse($round->round_date));
+        $counts = $this->countStates($rows);
+
+        return Inertia::render('Admin/Inspections/Round', [
+            'round' => [
+                'id'            => $round->id,
+                'building_name' => $round->building?->name,
+                'round_date'    => $round->round_date,
+                'status'        => $round->status,
+                'completed_by'  => $round->completedBy?->name,
+                'completed_at'  => $round->completed_at,
+                'note'          => $round->note,
+            ],
+            'units'  => $rows,
+            'counts' => $counts,
+            // A round can close once nothing inspectable is still outstanding.
+            'canComplete' => $round->status === 'in_progress' && $counts['pending'] === 0,
+        ]);
+    }
+
+    public function cancelRound(InspectionRound $round)
+    {
+        abort_unless(auth()->user()->can('conduct-inspections'), 403);
+        abort_unless(in_array($round->building_id, $this->scopedBuildingIds()), 403);
+        abort_unless($round->status === 'in_progress', 422, 'Only an active round can be cancelled.');
+
+        $round->update(['status' => 'cancelled']);
+
+        return redirect()->route('manage.inspections.index')->with('success', 'Round discarded.');
+    }
+
+    public function completeRound(InspectionRound $round)
+    {
+        abort_unless(auth()->user()->can('conduct-inspections'), 403);
+        abort_unless(in_array($round->building_id, $this->scopedBuildingIds()), 403);
+        abort_unless($round->status === 'in_progress', 422, 'This round is not active.');
+
+        $rows   = $this->unitRows($round->building_id, $round, Carbon::parse($round->round_date));
+        $counts = $this->countStates($rows);
+
+        if ($counts['pending'] > 0) {
+            return back()->with('error', 'Every vacant unit must be inspected before completing the round.');
+        }
+
+        $round->update([
+            'status'       => 'completed',
+            'completed_by' => auth()->id(),
+            'completed_at' => now(),
+        ]);
+
+        NotificationService::send(
+            NotificationService::getUsersByRoles(['ceo', 'super-admin']),
+            new InspectionRoundCompletedNotification($round, $counts['inspected'], $counts['concerns'])
+        );
+
+        return redirect()->route('manage.inspections.index')
+            ->with('success', 'Round completed. The CEO has been notified.');
+    }
+
+    // ── Per-unit inspection ─────────────────────────────────────────
+
+    /** Start (or resume) a unit's inspection within a round, then open the form. */
     public function start(Request $request)
     {
         abort_unless(auth()->user()->can('conduct-inspections'), 403);
 
-        $data = $request->validate(['unit_id' => 'required|exists:units,id']);
+        $data = $request->validate([
+            'round_id' => 'required|exists:inspection_rounds,id',
+            'unit_id'  => 'required|exists:units,id',
+        ]);
+
+        $round = InspectionRound::findOrFail($data['round_id']);
+        abort_unless(in_array($round->building_id, $this->scopedBuildingIds()), 403);
+        abort_unless($round->status === 'in_progress', 422, 'This round is no longer active.');
 
         $unit = Unit::with('unitType')->findOrFail($data['unit_id']);
-        abort_unless(in_array($unit->unitType->building_id, $this->scopedBuildingIds()), 403);
+        abort_unless($unit->unitType->building_id === $round->building_id, 403);
 
         $inspection = UnitInspection::firstOrCreate(
-            ['unit_id' => $unit->id, 'status' => 'in_progress'],
+            ['inspection_round_id' => $round->id, 'unit_id' => $unit->id],
             [
-                'building_id'  => $unit->unitType->building_id,
+                'building_id'  => $round->building_id,
                 'inspector_id' => auth()->id(),
                 'created_by'   => auth()->id(),
+                'status'       => 'in_progress',
                 'started_at'   => now(),
             ]
         );
@@ -148,6 +244,7 @@ class InspectionController extends Controller
         return Inertia::render('Admin/Inspections/Show', [
             'inspection' => [
                 'id'             => $inspection->id,
+                'round_id'       => $inspection->inspection_round_id,
                 'status'         => $inspection->status,
                 'overall_result' => $inspection->overall_result,
                 'summary'        => $inspection->summary,
@@ -177,10 +274,10 @@ class InspectionController extends Controller
         return back()->with('success', 'Inspection saved.');
     }
 
+    /** Finish a single unit; returns to the round (the round is what notifies the CEO). */
     public function complete(Request $request, UnitInspection $inspection)
     {
         $this->authorizeEdit($inspection);
-
         $this->applyForm($request, $inspection);
 
         if (! $inspection->overall_result) {
@@ -197,14 +294,12 @@ class InspectionController extends Controller
             'inspector_id' => $inspection->inspector_id ?? auth()->id(),
         ]);
 
-        // Notify CEO + super-admin.
-        NotificationService::send(
-            NotificationService::getUsersByRoles(['ceo', 'super-admin']),
-            new InspectionCompletedNotification($inspection)
-        );
+        if ($inspection->inspection_round_id) {
+            return redirect()->route('manage.inspections.round', $inspection->inspection_round_id)
+                ->with('success', "Unit {$inspection->unit?->unit_number} inspected.");
+        }
 
-        return redirect()->route('manage.inspections.index')
-            ->with('success', 'Inspection completed. The CEO has been notified.');
+        return redirect()->route('manage.inspections.index')->with('success', 'Inspection saved.');
     }
 
     private function authorizeEdit(UnitInspection $inspection): void
@@ -212,6 +307,80 @@ class InspectionController extends Controller
         abort_unless(auth()->user()->can('conduct-inspections'), 403);
         abort_unless(in_array($inspection->building_id, $this->scopedBuildingIds()), 403);
         abort_if($inspection->status === 'completed', 422, 'This inspection is already completed.');
+    }
+
+    // ── Shared helpers ──────────────────────────────────────────────
+
+    /**
+     * Every unit in a property with its state for the given round/date.
+     * States: occupied | offline | pending | in_progress | ok | concern
+     */
+    private function unitRows(int $buildingId, ?InspectionRound $round, Carbon $date): array
+    {
+        $units = Unit::whereHas('unitType', fn ($q) => $q->where('building_id', $buildingId))
+            ->with('unitType:id,name,building_id')
+            ->orderBy('unit_number')
+            ->get();
+
+        $unitIds = $units->pluck('id');
+
+        $occupied = Booking::whereIn('unit_id', $unitIds)
+            ->whereIn('status', self::OCCUPYING_STATUSES)
+            ->whereDate('check_in', '<=', $date)
+            ->whereDate('check_out', '>', $date)
+            ->pluck('unit_id')
+            ->unique();
+
+        $inspections = $round
+            ? UnitInspection::where('inspection_round_id', $round->id)
+                ->withCount('findings')->get()->keyBy('unit_id')
+            : collect();
+
+        return $units->map(function ($u) use ($occupied, $inspections) {
+            $insp  = $inspections->get($u->id);
+            $state = 'pending';
+
+            if ($insp && $insp->status === 'completed') {
+                $state = $insp->overall_result === 'concerns' ? 'concern' : 'ok';
+            } elseif ($insp && $insp->status === 'in_progress') {
+                $state = 'in_progress';
+            } elseif ($occupied->contains($u->id)) {
+                $state = 'occupied';
+            } elseif ($u->status !== 'available') {
+                $state = 'offline';
+            }
+
+            return [
+                'unit_id'        => $u->id,
+                'unit_number'    => $u->unit_number,
+                'floor'          => $u->floor,
+                'unit_type'      => $u->unitType->name,
+                'state'          => $state,
+                'inspection_id'  => $insp?->id,
+                'findings_count' => $insp?->findings_count ?? 0,
+            ];
+        })->all();
+    }
+
+    private function countStates(array $rows): array
+    {
+        $states = collect($rows)->pluck('state');
+
+        $inspected = $states->filter(fn ($s) => in_array($s, ['ok', 'concern']))->count();
+        $pending   = $states->filter(fn ($s) => in_array($s, self::BLOCKING_STATES))->count();
+        $occupied  = $states->filter(fn ($s) => in_array($s, ['occupied', 'offline']))->count();
+
+        $concerns = collect($rows)
+            ->filter(fn ($r) => $r['state'] === 'concern')
+            ->sum('findings_count');
+
+        return [
+            'inspected'   => $inspected,
+            'pending'     => $pending,
+            'occupied'    => $occupied,
+            'inspectable' => count($rows) - $occupied,
+            'concerns'    => $concerns,
+        ];
     }
 
     /** Save photos, overall result, summary and findings from the form (draft state). */
@@ -230,7 +399,6 @@ class InspectionController extends Controller
             'findings.*.description' => 'required|string|max:1000',
         ]);
 
-        // Photos: keep existing minus removed, then append newly uploaded.
         $photos = collect($inspection->photos ?? []);
         if (! empty($validated['remove_photos'])) {
             foreach ($validated['remove_photos'] as $path) {
@@ -253,8 +421,6 @@ class InspectionController extends Controller
             'started_at'     => $inspection->started_at ?? now(),
         ]);
 
-        // Findings are the source of truth from the form: OK clears them,
-        // concerns replaces them with the submitted set.
         $inspection->findings()->delete();
         if ($result === 'concerns' && ! empty($validated['findings'])) {
             foreach ($validated['findings'] as $f) {

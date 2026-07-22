@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class UnitInspection extends Model
 {
     protected $fillable = [
-        'building_id', 'unit_id', 'inspector_id', 'created_by',
+        'building_id', 'inspection_round_id', 'unit_id', 'inspector_id', 'created_by',
         'status', 'overall_result', 'scheduled_for',
         'started_at', 'completed_at', 'summary', 'photos',
     ];
@@ -27,6 +27,11 @@ class UnitInspection extends Model
     public function building(): BelongsTo
     {
         return $this->belongsTo(Building::class);
+    }
+
+    public function round(): BelongsTo
+    {
+        return $this->belongsTo(InspectionRound::class, 'inspection_round_id');
     }
 
     public function unit(): BelongsTo

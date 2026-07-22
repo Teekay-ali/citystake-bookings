@@ -79,8 +79,9 @@ const cardCls = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border
 
     <div class="p-4 lg:p-6 max-w-3xl mx-auto">
 
-        <Link :href="route('manage.inspections.index')" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors mb-4">
-            <ArrowLeft class="w-4 h-4" /> Inspections
+        <Link :href="inspection.round_id ? route('manage.inspections.round', inspection.round_id) : route('manage.inspections.index')"
+              class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors mb-4">
+            <ArrowLeft class="w-4 h-4" /> {{ inspection.round_id ? 'Back to round' : 'Inspections' }}
         </Link>
 
         <!-- Hero -->

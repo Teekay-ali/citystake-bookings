@@ -292,8 +292,12 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/maintenance/{maintenance}/approve', [MaintenanceReportController::class, 'approve'])->name('maintenance.approve');
     Route::delete('/maintenance/{maintenance}', [MaintenanceReportController::class, 'destroy'])->name('maintenance.destroy');
 
-    // Quality Control - unit inspections
+    // Quality Control - inspection rounds (one property per day) + per-unit inspections
     Route::get('/inspections', [\App\Http\Controllers\Admin\InspectionController::class, 'index'])->name('inspections.index');
+    Route::post('/inspections/rounds/open', [\App\Http\Controllers\Admin\InspectionController::class, 'openRound'])->name('inspections.rounds.open');
+    Route::get('/inspections/rounds/{round}', [\App\Http\Controllers\Admin\InspectionController::class, 'round'])->name('inspections.round');
+    Route::post('/inspections/rounds/{round}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'completeRound'])->name('inspections.round.complete');
+    Route::post('/inspections/rounds/{round}/cancel', [\App\Http\Controllers\Admin\InspectionController::class, 'cancelRound'])->name('inspections.round.cancel');
     Route::post('/inspections/start', [\App\Http\Controllers\Admin\InspectionController::class, 'start'])->name('inspections.start');
     Route::get('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'show'])->name('inspections.show');
     Route::post('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'update'])->name('inspections.update');
