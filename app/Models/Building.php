@@ -20,6 +20,7 @@ class Building extends Model
     protected $fillable = [
         'name',
         'slug',
+        'guest_site_url',
         'description',
         'address',
         'city',

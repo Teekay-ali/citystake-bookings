@@ -42,7 +42,7 @@ class MaintenanceReportController extends Controller
             $query->where('issue_type', $request->issue_type);
         }
 
-        $reports = $query->paginate(20)->withQueryString();
+        $reports = $query->paginate(10)->withQueryString();
 
         $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
             $q->whereIn('id', $user->accessibleBuildingIds());

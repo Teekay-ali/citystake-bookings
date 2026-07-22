@@ -1,11 +1,11 @@
 <script setup>
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import {
     Plus, ChevronDown, Building2, Edit, Trash2,
-    Users, Eye, Home, Bed, MapPin, Search, ShieldCheck
+    Users, Eye, Home, Bed, MapPin, Search, ShieldCheck, ExternalLink
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -13,6 +13,13 @@ defineOptions({ layout: ManageLayout })
 const props = defineProps({
     buildings: Array,
 })
+
+// Edit: manager/ceo/super-admin (via manage-properties).
+// Delete: ceo/super-admin only (via create-properties). Permission-based so
+// role-preview intersects correctly.
+const can = (p) => usePage().props.auth.user?.permissions?.includes(p)
+const canEdit   = computed(() => can('manage-properties'))
+const canDelete = computed(() => can('create-properties'))
 
 const showDeleteModal         = ref(false)
 const showDeleteUnitTypeModal = ref(false)
@@ -228,6 +235,15 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
 
                     <!-- Actions -->
                     <div class="flex items-center gap-1 flex-shrink-0">
+                        <a
+                            v-if="building.guest_site_url"
+                            :href="building.guest_site_url"
+                            target="_blank"
+                            rel="noopener"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 mr-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all"
+                            title="Open the guest site">
+                            <ExternalLink class="w-3.5 h-3.5" /> Guest site
+                        </a>
                         <Link
                             :href="route('manage.properties.policy.edit', building.id)"
                             class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
@@ -235,12 +251,14 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
                             <ShieldCheck class="w-4 h-4" />
                         </Link>
                         <Link
+                            v-if="canEdit"
                             :href="route('manage.properties.edit', building.id)"
                             class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                             title="Edit property">
                             <Edit class="w-4 h-4" />
                         </Link>
                         <button
+                            v-if="canDelete"
                             @click="openDeleteModal(building)"
                             class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                             title="Delete property">
@@ -336,12 +354,14 @@ const inputClass = "px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 d
                                     <Eye class="w-3.5 h-3.5" />
                                 </Link>
                                 <Link
+                                    v-if="canEdit"
                                     :href="route('manage.unit-types.edit', [building.id, unitType.id])"
                                     class="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                                     title="Edit unit type">
                                     <Edit class="w-3.5 h-3.5" />
                                 </Link>
                                 <button
+                                    v-if="canDelete"
                                     @click="openDeleteUnitTypeModal(building, unitType)"
                                     class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                                     title="Delete unit type">

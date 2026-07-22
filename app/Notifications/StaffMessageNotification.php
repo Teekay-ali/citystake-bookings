@@ -15,7 +15,27 @@ class StaffMessageNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['database', 'mail'];
+    }
+
+    public function toDatabase(object $notifiable): array
+    {
+        $sender  = $this->staffMessage->sender->name;
+        $isReply = $this->staffMessage->parent_id !== null;
+        // Link a reply to its thread root; a new message links to itself.
+        $threadId = $this->staffMessage->parent_id ?? $this->staffMessage->id;
+        $subject  = $this->staffMessage->subject
+            ?? optional($this->staffMessage->parent)->subject
+            ?? 'a message';
+
+        return [
+            'title'   => $isReply ? "New reply from {$sender}" : "New message from {$sender}",
+            'message' => $isReply
+                ? "{$sender} replied to \"{$subject}\"."
+                : "{$sender} sent you \"{$subject}\".",
+            'url'     => route('manage.staff-messages.show', $threadId),
+            'icon'    => 'message',
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

@@ -39,6 +39,7 @@ const form = useForm({
     is_active:                  props.building.is_active,
     caution_fee_amount:         props.building.caution_fee_amount ?? 70000,
     one_night_caution_uses_rate: props.building.one_night_caution_uses_rate ?? true,
+    guest_site_url:             props.building.guest_site_url ?? '',
 })
 
 const amenitiesList = [
@@ -253,6 +254,22 @@ const deleteBuilding = () => {
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                 Optional - Provide details about the property
                             </p>
+                        </div>
+
+                        <div class="mt-6">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Guest Site URL
+                            </label>
+                            <input
+                                v-model="form.guest_site_url"
+                                type="url"
+                                placeholder="https://thepalmbycitystake.ninetentech.net"
+                                class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
+                            />
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                Public marketing site for this property. Shown as a "Visit guest site" link on the properties list.
+                            </p>
+                            <p v-if="form.errors.guest_site_url" class="mt-1 text-sm text-red-600">{{ form.errors.guest_site_url }}</p>
                         </div>
                     </div>
 
