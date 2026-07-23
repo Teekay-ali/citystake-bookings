@@ -122,9 +122,9 @@ const statusTotal = computed(() => statusSeries.value.reduce((a, b) => a + b, 0)
                     <EyeOff v-if="financialsVisible" class="w-3.5 h-3.5" /><Eye v-else class="w-3.5 h-3.5" />
                     {{ financialsVisible ? 'Hide figures' : 'Show figures' }}
                 </button>
-                <Link :href="route('manage.bookings.calendar')"
+                <Link :href="route('manage.availability.index')"
                       class="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                    <Calendar class="w-3.5 h-3.5" /> Calendar
+                    <Calendar class="w-3.5 h-3.5" /> Availability
                 </Link>
                 <Link :href="route('manage.bookings.create')"
                       class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">

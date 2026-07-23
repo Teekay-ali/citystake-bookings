@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\AuditLogController;
 use  App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BlockedDateController;
-use App\Http\Controllers\Admin\BookingCalendarController;
 use App\Http\Controllers\Admin\BookingExportController;
 use App\Http\Controllers\Admin\ChangelogController;
 use App\Http\Controllers\Admin\DocumentController;
@@ -180,7 +179,6 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/bookings/group/create', [\App\Http\Controllers\Admin\GroupBookingController::class, 'create'])->name('bookings.group.create');
     Route::post('/bookings/group', [\App\Http\Controllers\Admin\GroupBookingController::class, 'store'])->name('bookings.group.store');
     Route::get('/booking-groups/{group}', [\App\Http\Controllers\Admin\GroupBookingController::class, 'show'])->name('booking-groups.show');
-    Route::get('/bookings/calendar', [BookingCalendarController::class, 'index'])->name('bookings.calendar');
     Route::get('/bookings/export', [BookingExportController::class, 'export'])->name('bookings.export');
     Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
     Route::post('/bookings', [AdminBookingController::class, 'storeAdminBooking'])->name('bookings.store');
