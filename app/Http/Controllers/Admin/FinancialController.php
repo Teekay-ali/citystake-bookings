@@ -85,6 +85,21 @@ class FinancialController extends Controller
             ->whereBetween('transaction_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->sum('amount');
 
+        // Same window one period back, so each KPI can show a vs-previous delta.
+        [$prevStart, $prevEnd] = $this->previousDateRange($period, $startDate, $endDate);
+
+        $prevRow = FinancialTransaction::whereIn('building_id', $scopedIds)
+            ->whereBetween('transaction_date', [$prevStart->toDateString(), $prevEnd->toDateString()])
+            ->selectRaw("
+                SUM(CASE WHEN type = 'income'  THEN amount ELSE 0 END) as income,
+                SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses
+            ")
+            ->first();
+
+        $prevIncome   = (float) ($prevRow->income ?? 0);
+        $prevExpenses = (float) ($prevRow->expenses ?? 0);
+        $prevNet      = $prevIncome - $prevExpenses;
+
         // Income by category for the period (surfaces restaurant + caution-fee charges)
         $incomeByCategory = FinancialTransaction::whereIn('building_id', $scopedIds)
             ->where('type', 'income')
@@ -117,6 +132,12 @@ class FinancialController extends Controller
                 'net_profit'     => (float) ($income - $expenses),
                 'profit_margin'  => $income > 0 ? round((($income - $expenses) / $income) * 100, 1) : 0,
                 'pending_count'  => $pendingMaintenance->count() + $pendingProcurement->count(),
+                'pending_total'  => (float) ($pendingMaintenance->sum('total_amount') + $pendingProcurement->sum('total_amount')),
+                // Period-over-period change (null when there's no prior basis)
+                'income_delta'   => $this->delta((float) $income, $prevIncome),
+                'expenses_delta' => $this->delta((float) $expenses, $prevExpenses),
+                'net_delta'      => $this->delta((float) ($income - $expenses), $prevNet),
+                'previous_label' => $this->previousLabel($period),
             ],
             'trend'            => $trend,
             'incomeBreakdown'  => $incomeBreakdown,
@@ -351,6 +372,38 @@ class FinancialController extends Controller
     }
 
     // ── Private helpers ────────────────────────────────────────
+
+    /** The equivalent range one period earlier, for period-over-period deltas. */
+    private function previousDateRange(string $period, Carbon $start, Carbon $end): array
+    {
+        return match($period) {
+            'daily'     => [$start->copy()->subDay()->startOfDay(), $start->copy()->subDay()->endOfDay()],
+            'quarterly' => [$start->copy()->subMonths(3)->startOfMonth(), $start->copy()->subMonths(3)->addMonths(2)->endOfMonth()],
+            'yearly'    => [$start->copy()->subYear()->startOfYear(), $start->copy()->subYear()->endOfYear()],
+            default     => [$start->copy()->subMonth()->startOfMonth(), $start->copy()->subMonth()->endOfMonth()],
+        };
+    }
+
+    /** Human label for what the delta is measured against. */
+    private function previousLabel(string $period): string
+    {
+        return match($period) {
+            'daily'     => 'vs previous day',
+            'quarterly' => 'vs last quarter',
+            'yearly'    => 'vs last year',
+            default     => 'vs last month',
+        };
+    }
+
+    /** Percentage change, guarding division by zero. */
+    private function delta(float $current, float $previous): ?float
+    {
+        if ($previous == 0.0) {
+            return $current > 0 ? 100.0 : null;   // null = no basis for comparison
+        }
+
+        return round((($current - $previous) / abs($previous)) * 100, 1);
+    }
 
     private function resolveDateRange(string $period, int $year, int $month, int $quarter, string $date): array
     {

@@ -4,7 +4,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import {
     TrendingUp, TrendingDown, Download, FileText,
-    AlertCircle, Plus, X, Eye, EyeOff
+    AlertCircle, Plus, X, Eye, EyeOff, ChevronDown
 } from 'lucide-vue-next'
 import { useFinancialVisibility } from '@/Composables/useFinancialVisibility'
 import { useDarkMode } from '@/Composables/useDarkMode'
@@ -35,8 +35,20 @@ const pendingItems = computed(() => [
     ...(props.pendingProcurement ?? []).map(r => ({ ...r, kind: 'procurement' })),
 ])
 
-function scrollToPending() {
-    document.getElementById('pending-queue')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+const showPending = ref(false)
+
+// Period-over-period delta rendering. `invert` marks metrics where a rise is
+// bad (expenses), so colour reflects "good/bad", not merely up/down.
+function deltaInfo(value, invert = false) {
+    if (value === null || value === undefined) return null
+    const good = value === 0 ? null : (invert ? value < 0 : value > 0)
+    return {
+        pct:  Math.abs(value),
+        up:   value > 0,
+        cls:  good === null ? 'text-gray-400'
+            : good ? 'text-emerald-600 dark:text-emerald-400'
+                   : 'text-red-600 dark:text-red-400',
+    }
 }
 
 // ── Filters ───────────────────────────────────────────────────
@@ -247,40 +259,6 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
             </div>
         </div>
 
-        <!-- ── Pending payment queue ── -->
-        <div v-if="pendingItems.length > 0" id="pending-queue"
-             class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6 scroll-mt-20">
-            <div class="flex items-center gap-2 mb-3">
-                <AlertCircle class="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <h2 class="text-sm font-semibold text-amber-700 dark:text-amber-400">
-                    Pending Payments ({{ pendingItems.length }})
-                </h2>
-            </div>
-            <div class="space-y-2">
-                <div v-for="item in pendingItems" :key="item.kind + '-' + item.id"
-                     class="flex items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-amber-100 dark:border-amber-800 rounded-lg p-3.5">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-0.5">
-                            <span class="text-xs font-medium text-amber-600 dark:text-amber-400 capitalize">
-                                {{ item.kind }}
-                            </span>
-                            <span class="text-xs text-gray-400 dark:text-gray-500">{{ item.building?.name }}</span>
-                        </div>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.title }}</p>
-                        <p class="text-xs text-gray-400 dark:text-gray-500">
-                            {{ formatAmount(item.actual_cost ?? item.total_amount) }}
-                            · {{ item.vendor?.name ?? (item.supplier_name ?? 'No vendor') }}
-                        </p>
-                    </div>
-                    <button
-                        @click="openPayModal(item.kind, item)"
-                        class="inline-flex items-center px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-700 dark:hover:bg-gray-100 transition-all shrink-0">
-                        Record Payment
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- ── Period filters ── -->
         <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-3.5 mb-6 flex flex-wrap gap-2 items-center">
             <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
@@ -327,48 +305,103 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
             </select>
         </div>
 
-        <!-- ── Summary cards ── -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-emerald-500 uppercase tracking-wider mb-2">Total Income</p>
-                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {{ financialsVisible ? formatAmount(summary.total_income) : '₦ ••••••' }}
-                </p>
-            </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-red-500 uppercase tracking-wider mb-2">Total Expenses</p>
-                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {{ financialsVisible ? formatAmount(summary.total_expenses) : '₦ ••••••' }}
-                </p>
-            </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Net Profit</p>
-                <p class="text-2xl font-semibold"
-                   :class="summary.net_profit >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'">
-                    {{ summary.net_profit < 0 ? '-' : '' }}{{ financialsVisible ? formatAmount(Math.abs(summary.net_profit)) : '₦ ••••••' }}
-                </p>
-                <div class="flex items-center gap-1 mt-1.5">
-                    <TrendingUp v-if="summary.net_profit >= 0" class="w-3 h-3 text-emerald-500" />
-                    <TrendingDown v-else class="w-3 h-3 text-red-500" />
-                    <span class="text-xs" :class="summary.net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'">
-                        {{ summary.profit_margin }}% margin
-                    </span>
+        <!-- ── Hero KPI band ── -->
+        <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 sm:p-6 mb-3">
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+
+                <!-- Net profit — the headline -->
+                <div class="min-w-0">
+                    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Net profit</p>
+                    <p class="text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight"
+                       :class="summary.net_profit >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'">
+                        {{ summary.net_profit < 0 ? '−' : '' }}{{ financialsVisible ? formatAmount(Math.abs(summary.net_profit)) : '₦ ••••••' }}
+                    </p>
+                    <div class="flex items-center gap-3 mt-2 flex-wrap">
+                        <span v-if="deltaInfo(summary.net_delta)" class="inline-flex items-center gap-1 text-xs font-medium" :class="deltaInfo(summary.net_delta).cls">
+                            <TrendingUp v-if="deltaInfo(summary.net_delta).up" class="w-3.5 h-3.5" />
+                            <TrendingDown v-else class="w-3.5 h-3.5" />
+                            {{ deltaInfo(summary.net_delta).pct }}% {{ summary.previous_label }}
+                        </span>
+                        <span v-else class="text-xs text-gray-400">No prior period to compare</span>
+                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ summary.profit_margin }}% margin</span>
+                    </div>
                 </div>
-            </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 transition-colors"
-                 :class="summary.pending_count > 0 ? 'cursor-pointer hover:border-amber-300 dark:hover:border-amber-700' : ''"
-                 @click="summary.pending_count > 0 && scrollToPending()">
-                <p class="text-xs font-medium text-amber-500 uppercase tracking-wider mb-2">Pending Payments</p>
-                <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ summary.pending_count }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">awaiting action</p>
+
+                <!-- Supporting figures -->
+                <div class="grid grid-cols-2 gap-6 sm:gap-10 shrink-0">
+                    <div>
+                        <p class="text-xs font-medium text-emerald-500 uppercase tracking-wider mb-1.5">Income</p>
+                        <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">
+                            {{ financialsVisible ? formatAmount(summary.total_income) : '₦ ••••••' }}
+                        </p>
+                        <span v-if="deltaInfo(summary.income_delta)" class="inline-flex items-center gap-1 text-xs font-medium mt-1" :class="deltaInfo(summary.income_delta).cls">
+                            <TrendingUp v-if="deltaInfo(summary.income_delta).up" class="w-3 h-3" />
+                            <TrendingDown v-else class="w-3 h-3" />
+                            {{ deltaInfo(summary.income_delta).pct }}%
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-red-500 uppercase tracking-wider mb-1.5">Expenses</p>
+                        <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">
+                            {{ financialsVisible ? formatAmount(summary.total_expenses) : '₦ ••••••' }}
+                        </p>
+                        <!-- invert: rising expenses is bad -->
+                        <span v-if="deltaInfo(summary.expenses_delta, true)" class="inline-flex items-center gap-1 text-xs font-medium mt-1" :class="deltaInfo(summary.expenses_delta, true).cls">
+                            <TrendingUp v-if="deltaInfo(summary.expenses_delta, true).up" class="w-3 h-3" />
+                            <TrendingDown v-else class="w-3 h-3" />
+                            {{ deltaInfo(summary.expenses_delta, true).pct }}%
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- ── Charts ── -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+        <!-- ── Pending payments (action strip) ── -->
+        <div v-if="pendingItems.length > 0"
+             class="bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-800/60 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none mb-6 overflow-hidden">
+            <button @click="showPending = !showPending"
+                    class="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-amber-50/60 dark:hover:bg-amber-900/10 transition-colors">
+                <span class="flex items-center gap-2 min-w-0 text-left">
+                    <AlertCircle class="w-4 h-4 text-amber-500 shrink-0" />
+                    <span class="text-sm text-gray-700 dark:text-gray-300 truncate">
+                        <strong class="font-semibold">{{ pendingItems.length }}</strong>
+                        payment{{ pendingItems.length !== 1 ? 's' : '' }} approved and awaiting settlement
+                        <span v-if="financialsVisible" class="text-gray-400 dark:text-gray-500">· {{ formatAmount(summary.pending_total) }}</span>
+                    </span>
+                </span>
+                <span class="flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 shrink-0">
+                    {{ showPending ? 'Hide' : 'Review' }}
+                    <ChevronDown :class="showPending ? 'rotate-180' : ''" class="w-3.5 h-3.5 transition-transform" />
+                </span>
+            </button>
+
+            <div v-if="showPending" class="border-t border-gray-100 dark:border-gray-800 p-3 space-y-2">
+                <div v-for="item in pendingItems" :key="item.kind + '-' + item.id"
+                     class="flex items-center justify-between gap-4 bg-gray-50 dark:bg-gray-800/40 rounded-lg p-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="text-xs font-medium text-amber-600 dark:text-amber-400 capitalize">{{ item.kind }}</span>
+                            <span class="text-xs text-gray-400 dark:text-gray-500">{{ item.building?.name }}</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.title }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">
+                            {{ formatAmount(item.actual_cost ?? item.total_amount) }}
+                            · {{ item.vendor?.name ?? (item.supplier_name ?? 'No vendor') }}
+                        </p>
+                    </div>
+                    <button @click="openPayModal(item.kind, item)"
+                            class="inline-flex items-center px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium hover:opacity-90 transition-all shrink-0">
+                        Record Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Charts + income breakdown ── -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
 
             <!-- Income vs Expenses -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
+            <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-start justify-between mb-2">
                     <div>
                         <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Income vs Expenses</h2>
@@ -393,12 +426,44 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                 </div>
             </div>
 
+            <!-- Income breakdown (beside the chart so it's visible without scrolling) -->
+            <div v-if="incomeBreakdown.length" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
+                <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Income breakdown</h2>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 mb-4">This period · tap to filter the ledger</p>
+                <div class="space-y-2.5">
+                    <button v-for="row in incomeBreakdown" :key="row.category"
+                            @click="typeFilter = 'income'; catFilter = row.category"
+                            class="w-full text-left group">
+                        <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors truncate">
+                                {{ row.label }}
+                                <span class="text-gray-400 dark:text-gray-500 font-normal">· {{ row.share }}%</span>
+                            </span>
+                            <span class="tabular-nums text-gray-900 dark:text-white shrink-0 ml-2">
+                                {{ financialsVisible ? formatAmount(row.amount) : '₦ ••••' }}
+                            </span>
+                        </div>
+                        <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                            <div class="h-full rounded-full transition-all"
+                                 :class="row.category === 'restaurant' ? 'bg-emerald-500'
+                                     : row.category === 'caution_fee_deduction' ? 'bg-amber-500'
+                                     : row.category === 'booking' ? 'bg-gray-900 dark:bg-white'
+                                     : 'bg-gray-400 dark:bg-gray-600'"
+                                 :style="{ width: Math.max(2, row.share) + '%' }"></div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div v-else class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 flex items-center justify-center">
+                <p class="text-sm text-gray-400 dark:text-gray-500">No income this period</p>
+            </div>
+
             <!-- Net profit trend -->
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
+            <div class="lg:col-span-3 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                 <div class="flex items-start justify-between mb-2">
                     <div>
                         <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Net Profit</h2>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Income − Expenses, monthly</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Income − Expenses · last 12 months</p>
                     </div>
                     <div class="flex items-center gap-1.5">
                         <div class="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0" />
@@ -411,42 +476,6 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
                 <div v-else class="h-[240px] flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
                     Figures hidden
                 </div>
-            </div>
-        </div>
-
-        <!-- ── Income breakdown ── -->
-        <div v-if="incomeBreakdown.length" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Income breakdown</h2>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">By category for this period · tap a row to filter the ledger</p>
-                </div>
-                <span class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
-                    {{ financialsVisible ? formatAmount(summary.total_income) : '₦ ••••••' }}
-                </span>
-            </div>
-            <div class="space-y-2.5">
-                <button v-for="row in incomeBreakdown" :key="row.category"
-                        @click="typeFilter = 'income'; catFilter = row.category"
-                        class="w-full text-left group">
-                    <div class="flex items-center justify-between text-xs mb-1">
-                        <span class="font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                            {{ row.label }}
-                            <span class="text-gray-400 dark:text-gray-500 font-normal">· {{ row.share }}%</span>
-                        </span>
-                        <span class="tabular-nums text-gray-900 dark:text-white">
-                            {{ financialsVisible ? formatAmount(row.amount) : '₦ ••••' }}
-                        </span>
-                    </div>
-                    <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                        <div class="h-full rounded-full transition-all"
-                             :class="row.category === 'restaurant' ? 'bg-emerald-500'
-                                 : row.category === 'caution_fee_deduction' ? 'bg-amber-500'
-                                 : row.category === 'booking' ? 'bg-gray-900 dark:bg-white'
-                                 : 'bg-gray-400 dark:bg-gray-600'"
-                             :style="{ width: Math.max(2, row.share) + '%' }"></div>
-                    </div>
-                </button>
             </div>
         </div>
 
