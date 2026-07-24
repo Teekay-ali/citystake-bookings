@@ -494,7 +494,7 @@ function formatDate(d) {
                         </div>
                         <div v-else class="flex-1 flex flex-col items-center justify-center py-10 text-center">
                             <CheckCircle2 class="w-8 h-8 text-emerald-400 mb-2" />
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Nothing to review — all caught up.</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Nothing to review - all caught up.</p>
                         </div>
                     </div>
 

@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
+import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import { ArrowLeft, Building2, CheckCircle, AlertTriangle, ClipboardCheck, ArrowRight, User, Clock, BedDouble, Wrench } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -41,10 +42,13 @@ function onUnitClick(unit) {
 function completeRound() {
     router.post(route('manage.inspections.round.complete', props.round.id))
 }
+const showDiscard = ref(false)
+const discarding  = ref(false)
 function cancelRound() {
-    if (confirm('Discard this round? Nothing will be reported and it won\'t count.')) {
-        router.post(route('manage.inspections.round.cancel', props.round.id))
-    }
+    discarding.value = true
+    router.post(route('manage.inspections.round.cancel', props.round.id), {}, {
+        onFinish: () => { discarding.value = false; showDiscard.value = false },
+    })
 }
 
 function fmtDate(d) {
@@ -139,7 +143,7 @@ function fmtDate(d) {
         <!-- Sticky actions (active rounds only) -->
         <div v-if="isActive"
              class="sticky bottom-0 z-30 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 bg-white/90 dark:bg-gray-950/90 backdrop-blur border-t border-gray-200 dark:border-gray-800 flex items-center gap-2">
-            <button @click="cancelRound"
+            <button @click="showDiscard = true"
                     class="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
                 Discard
             </button>
@@ -149,5 +153,17 @@ function fmtDate(d) {
                 {{ canComplete ? 'Complete round' : `${counts.pending} unit${counts.pending !== 1 ? 's' : ''} left` }}
             </button>
         </div>
+
+        <!-- Discard confirmation -->
+        <ConfirmationModal
+            :show="showDiscard"
+            :processing="discarding"
+            title="Discard this round?"
+            message="Nothing will be reported and it won't count. Any units already inspected in this round will be discarded too."
+            confirm-text="Discard round"
+            cancel-text="Keep round"
+            variant="danger"
+            @confirm="cancelRound"
+            @close="showDiscard = false" />
     </div>
 </template>

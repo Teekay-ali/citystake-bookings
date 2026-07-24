@@ -82,7 +82,7 @@ defineExpose({ openPicker })
             </div>
 
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                Browse the app exactly as another role sees it. Preview is read-only — you can look, but not change anything.
+                Browse the app exactly as another role sees it. Preview is read-only - you can look, but not change anything.
             </p>
 
             <div class="space-y-3">
