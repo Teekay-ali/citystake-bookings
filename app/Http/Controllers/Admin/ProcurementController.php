@@ -145,8 +145,8 @@ class ProcurementController extends Controller
         $this->notifyProcurement(
             $pr,
             'New Procurement Request',
-            "\"{$pr->title}\" has been submitted and needs accountant approval.",
-            ['accountant'],
+            "\"{$pr->title}\" has been submitted and needs the Procurement Officer's review.",
+            ['head-of-procurement'],
         );
 
         return redirect()->route('manage.procurement.index')
@@ -161,7 +161,7 @@ class ProcurementController extends Controller
 
         $procurement->load([
             'building', 'vendor', 'items',
-            'submittedBy', 'accountantApprovedBy',
+            'submittedBy', 'officerApprovedBy', 'accountantApprovedBy',
             'ceoApprovedBy', 'purchasedBy', 'receiptConfirmedBy',
         ]);
 
@@ -169,6 +169,7 @@ class ProcurementController extends Controller
             'procurement' => array_merge($procurement->toArray(), [
                 'submitted_by_id' => $procurement->submitted_by,
                 'status_label'            => $procurement->statusLabel(),
+                'can_officer_approve'     => $procurement->canOfficerApprove(),
                 'can_accountant_approve'  => $procurement->canAccountantApprove(),
                 'can_ceo_approve'         => $procurement->canCeoApprove(),
                 'can_mark_purchased'      => $procurement->canMarkPurchased(),
@@ -208,7 +209,21 @@ class ProcurementController extends Controller
             return back()->with('success', 'Request rejected.');
         }
 
-        if ($procurement->canAccountantApprove() && $user->can('approve-procurement-accountant')) {
+        if ($procurement->canOfficerApprove() && $user->can('approve-procurement-officer')) {
+            $procurement->update([
+                'status'              => 'officer_approved',
+                'officer_approved_by' => $user->id,
+                'officer_approved_at' => now(),
+            ]);
+
+            $this->notifyProcurement(
+                $procurement,
+                'Procurement Awaiting Accountant Approval',
+                "Procurement request \"{$procurement->title}\" has been reviewed by the Procurement Officer and needs the accountant's approval.",
+                ['accountant'],
+            );
+
+        } elseif ($procurement->canAccountantApprove() && $user->can('approve-procurement-accountant')) {
             $procurement->update([
                 'status'                 => 'accountant_approved',
                 'accountant_approved_by' => $user->id,

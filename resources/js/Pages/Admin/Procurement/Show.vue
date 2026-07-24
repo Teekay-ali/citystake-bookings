@@ -24,7 +24,8 @@ function submitApproval(action) {
 }
 
 const statusConfig = {
-    pending:             { label: 'Awaiting Accountant', class: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400' },
+    pending:             { label: 'Awaiting Procurement Officer', class: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400' },
+    officer_approved:    { label: 'Awaiting Accountant', class: 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400' },
     accountant_approved: { label: 'Awaiting CEO',        class: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
     ceo_approved:        { label: 'Awaiting Purchase',   class: 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' },
     purchased:           { label: 'Awaiting Receipt',    class: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' },
@@ -35,6 +36,8 @@ const statusConfig = {
 const actionLabel = computed(() => {
     const roles = user.value?.roles ?? []
     const permissions = user.value?.permissions ?? []
+    if (props.procurement.can_officer_approve && (permissions.includes('approve-procurement-officer') || roles.includes('super-admin')))
+        return 'Procurement Officer Review'
     if (props.procurement.can_accountant_approve && (roles.includes('accountant') || roles.includes('super-admin')))
         return 'Accountant Approval'
     if (props.procurement.can_ceo_approve && (roles.includes('ceo') || roles.includes('super-admin')))
@@ -61,6 +64,7 @@ function formatDateTime(d) {
 
 const timelineSteps = computed(() => [
     { label: 'Submitted',           by: props.procurement.submitted_by?.name,           at: props.procurement.created_at,            done: true },
+    { label: 'Procurement Officer',  by: props.procurement.officer_approved_by?.name,    at: props.procurement.officer_approved_at,    done: !!props.procurement.officer_approved_at },
     { label: 'Accountant Approved', by: props.procurement.accountant_approved_by?.name, at: props.procurement.accountant_approved_at, done: !!props.procurement.accountant_approved_at },
     { label: 'CEO Approved',        by: props.procurement.ceo_approved_by?.name,        at: props.procurement.ceo_approved_at,        done: !!props.procurement.ceo_approved_at },
     { label: 'Items Purchased',     by: props.procurement.purchased_by?.name,           at: props.procurement.purchased_at,           done: !!props.procurement.purchased_at },

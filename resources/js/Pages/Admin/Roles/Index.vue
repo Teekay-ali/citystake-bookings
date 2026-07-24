@@ -120,7 +120,7 @@ const filteredGroups = computed(() => {
 const protectedRoles = ['super-admin', 'manager', 'accountant', 'ceo', 'head-of-procurement', 'receptionist', 'staff']
 const roleLabels = {
     'super-admin': 'Super Admin', 'manager': 'Manager', 'accountant': 'Accountant',
-    'ceo': 'CEO', 'head-of-procurement': 'Head of Procurement', 'receptionist': 'Receptionist', 'staff': 'Staff',
+    'ceo': 'CEO', 'head-of-procurement': 'Procurement Officer', 'receptionist': 'Receptionist', 'staff': 'Staff',
 }
 const roleDot = {
     'super-admin': 'bg-red-500', 'manager': 'bg-blue-500', 'accountant': 'bg-emerald-500',

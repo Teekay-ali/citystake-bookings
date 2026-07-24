@@ -437,7 +437,7 @@ const roleLabels = {
     'manager':             'Manager',
     'accountant':          'Accountant',
     'ceo':                 'CEO',
-    'head-of-procurement': 'Head of Procurement',
+    'head-of-procurement': 'Procurement Officer',
     'receptionist':        'Receptionist',
     'staff':               'Staff',
 }

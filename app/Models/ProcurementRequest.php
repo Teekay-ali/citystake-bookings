@@ -18,6 +18,7 @@ class ProcurementRequest extends Model
         'supplier_bank_name',
         'supplier_account_number',
         'supplier_account_name',
+        'officer_approved_by', 'officer_approved_at',
         'accountant_approved_by', 'accountant_approved_at',
         'ceo_approved_by', 'ceo_approved_at',
         'purchased_by', 'purchased_at',
@@ -28,6 +29,7 @@ class ProcurementRequest extends Model
 
     protected $casts = [
         'total_amount'           => 'decimal:2',
+        'officer_approved_at'    => 'datetime',
         'accountant_approved_at' => 'datetime',
         'ceo_approved_at'        => 'datetime',
         'purchased_at'           => 'datetime',
@@ -49,6 +51,11 @@ class ProcurementRequest extends Model
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function officerApprovedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'officer_approved_by');
     }
 
     public function accountantApprovedBy(): BelongsTo
@@ -83,9 +90,14 @@ class ProcurementRequest extends Model
         return 'PR-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
     }
 
-    public function canAccountantApprove(): bool
+    public function canOfficerApprove(): bool
     {
         return $this->status === 'pending';
+    }
+
+    public function canAccountantApprove(): bool
+    {
+        return $this->status === 'officer_approved';
     }
 
     public function canCeoApprove(): bool
@@ -106,7 +118,8 @@ class ProcurementRequest extends Model
     public function statusLabel(): string
     {
         return match($this->status) {
-            'pending'             => 'Awaiting Accountant',
+            'pending'             => 'Awaiting Procurement Officer',
+            'officer_approved'    => 'Awaiting Accountant',
             'accountant_approved' => 'Awaiting CEO',
             'ceo_approved'        => 'Awaiting Purchase',
             'purchased'           => 'Awaiting Receipt',

@@ -21,19 +21,21 @@ const status     = ref(props.filters.status || '')
 const search     = ref(props.filters.search || '')
 
 const statusConfig = {
-    pending:             { label: 'Awaiting Accountant', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },
-    accountant_approved: { label: 'Awaiting CEO',        cls: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' },
-    ceo_approved:        { label: 'Awaiting Purchase',   cls: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400' },
-    purchased:           { label: 'Awaiting Receipt',    cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
-    completed:           { label: 'Completed',           cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
-    rejected:            { label: 'Rejected',            cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400' },
+    pending:             { label: 'Awaiting Proc. Officer', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },
+    officer_approved:    { label: 'Awaiting Accountant',    cls: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400' },
+    accountant_approved: { label: 'Awaiting CEO',           cls: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' },
+    ceo_approved:        { label: 'Awaiting Purchase',      cls: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400' },
+    purchased:           { label: 'Awaiting Receipt',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
+    completed:           { label: 'Completed',              cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
+    rejected:            { label: 'Rejected',               cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400' },
 }
 
 const pipeline = [
-    { key: 'pending',             label: 'Awaiting Accountant', labelCls: 'text-gray-500' },
-    { key: 'accountant_approved', label: 'Awaiting CEO',        labelCls: 'text-blue-500' },
-    { key: 'ceo_approved',        label: 'Awaiting Purchase',   labelCls: 'text-violet-500' },
-    { key: 'purchased',           label: 'Awaiting Receipt',    labelCls: 'text-amber-500' },
+    { key: 'pending',             label: 'Awaiting Proc. Officer', labelCls: 'text-gray-500' },
+    { key: 'officer_approved',    label: 'Awaiting Accountant',    labelCls: 'text-sky-500' },
+    { key: 'accountant_approved', label: 'Awaiting CEO',           labelCls: 'text-blue-500' },
+    { key: 'ceo_approved',        label: 'Awaiting Purchase',      labelCls: 'text-violet-500' },
+    { key: 'purchased',           label: 'Awaiting Receipt',       labelCls: 'text-amber-500' },
 ]
 
 // Terminal states read as "done" - dim the row
@@ -98,7 +100,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
         </div>
 
         <!-- ── Pipeline cards ── -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
             <button
                 v-for="item in pipeline"
                 :key="item.key"
