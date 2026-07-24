@@ -191,13 +191,40 @@ class HomeController extends Controller
                 ->sum('amount');
         }
 
-        // ── Head of Procurement data ──────────────────────────
-        if ($user->can('purchase-procurement')) {
-            $data['pendingPurchases'] = ProcurementRequest::whereIn('building_id', $buildingIds)
-                ->where('status', 'ceo_approved')
-                ->with(['building', 'submittedBy'])
-                ->latest()->limit(5)
-                ->get(['id', 'reference', 'title', 'total_amount', 'building_id', 'submitted_by']);
+        // ── Procurement Officer dashboard ─────────────────────
+        if ($user->can('approve-procurement-officer')) {
+            $counts = ProcurementRequest::whereIn('building_id', $buildingIds)
+                ->selectRaw('status, COUNT(*) c, SUM(total_amount) s')
+                ->groupBy('status')->get()->keyBy('status');
+
+            $listCols = ['id', 'reference', 'title', 'total_amount', 'building_id', 'submitted_by', 'created_at'];
+
+            $data['procurement'] = [
+                // The two points where the officer personally acts
+                'to_review'   => (int) ($counts['pending']->c ?? 0),
+                'to_purchase' => (int) ($counts['ceo_approved']->c ?? 0),
+                // Sitting with accountant/CEO — awareness, not action
+                'in_approval' => (int) (($counts['officer_approved']->c ?? 0) + ($counts['accountant_approved']->c ?? 0)),
+                // Value moving through the pipeline right now (non-terminal, non-rejected)
+                'open_value'  => (float) (
+                    ($counts['pending']->s ?? 0) + ($counts['officer_approved']->s ?? 0)
+                    + ($counts['accountant_approved']->s ?? 0) + ($counts['ceo_approved']->s ?? 0)
+                ),
+                'completed_month' => ProcurementRequest::whereIn('building_id', $buildingIds)
+                    ->where('status', 'completed')
+                    ->whereMonth('updated_at', $today->month)->whereYear('updated_at', $today->year)
+                    ->count(),
+
+                'reviewQueue' => ProcurementRequest::whereIn('building_id', $buildingIds)
+                    ->where('status', 'pending')
+                    ->with(['building', 'submittedBy'])
+                    ->latest()->limit(6)->get($listCols),
+
+                'purchaseQueue' => ProcurementRequest::whereIn('building_id', $buildingIds)
+                    ->where('status', 'ceo_approved')
+                    ->with(['building', 'submittedBy'])
+                    ->latest()->limit(6)->get($listCols),
+            ];
         }
 
         return Inertia::render('Admin/Home', $data);

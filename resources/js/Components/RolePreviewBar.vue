@@ -36,7 +36,18 @@ function exit() {
     router.post(route('manage.preview.exit'))
 }
 
-const cap = (s) => (s ?? '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+// Friendly display names for known role slugs; fall back to title-casing.
+const roleLabels = {
+    'super-admin':         'Super Admin',
+    'ceo':                 'CEO',
+    'manager':             'Manager',
+    'accountant':          'Accountant',
+    'head-of-procurement': 'Procurement Officer',
+    'quality-control':     'Quality Control',
+    'receptionist':        'Receptionist',
+    'staff':               'Staff',
+}
+const cap = (s) => roleLabels[s] ?? (s ?? '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 
 defineExpose({ openPicker })
 </script>
