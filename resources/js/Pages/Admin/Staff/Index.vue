@@ -216,11 +216,11 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                         <input v-model="staffForm.email" type="email" :class="fieldCls" />
                         <p v-if="staffForm.errors.email" class="mt-1 text-xs text-red-600">{{ staffForm.errors.email }}</p>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div v-if="isEdit" class="grid grid-cols-2 gap-4">
                         <div>
                             <label :class="fieldLabel">
-                                {{ isEdit ? 'New Password' : 'Password *' }}
-                                <span v-if="isEdit" class="text-gray-400 font-normal">(leave blank to keep)</span>
+                                New Password
+                                <span class="text-gray-400 font-normal">(leave blank to keep)</span>
                             </label>
                             <input v-model="staffForm.password" type="password" :class="fieldCls" />
                             <p v-if="staffForm.errors.password" class="mt-1 text-xs text-red-600">{{ staffForm.errors.password }}</p>
@@ -229,6 +229,12 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                             <label :class="fieldLabel">Confirm Password</label>
                             <input v-model="staffForm.password_confirmation" type="password" :class="fieldCls" />
                         </div>
+                    </div>
+                    <div v-else class="flex items-start gap-2.5 p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-300">
+                        <Mail class="w-4 h-4 mt-0.5 shrink-0" />
+                        <p class="text-xs leading-relaxed">
+                            No password needed. We'll email an invite link so the staff member can set their own password.
+                        </p>
                     </div>
                     <div>
                         <label :class="fieldLabel">Role *</label>

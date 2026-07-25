@@ -12,6 +12,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
@@ -42,7 +44,6 @@ class StaffController extends Controller
             'name'         => 'required|string|max:255',
             'email'        => 'required|email|unique:users,email',
             'phone'        => 'nullable|string|max:20',
-            'password'     => 'required|string|min:8|confirmed',
             'role'         => 'required|exists:roles,name',
             'building_ids' => 'required|array|min:1',
             'building_ids.*' => 'exists:buildings,id',
@@ -53,7 +54,9 @@ class StaffController extends Controller
                 'name'     => $validated['name'],
                 'email'    => $validated['email'],
                 'phone'    => $validated['phone'] ?? null,
-                'password' => Hash::make($validated['password']),
+                // Placeholder secret — the staffer sets their own password via
+                // the invite link below; this value is never shared with anyone.
+                'password' => Hash::make(Str::random(40)),
                 'is_staff' => true,
                 'is_active' => true,
                 'email_verified_at' => now(), // Staff don't need email verification
@@ -67,8 +70,13 @@ class StaffController extends Controller
             return $user;
         });
 
+        // Send a tokenised "set your password" link instead of a cleartext
+        // password. The token uses the standard password-reset broker.
         try {
-            Mail::to($user->email)->send(new StaffWelcome($user, $validated['password'], $validated['role']));
+            $token = Password::createToken($user);
+            $resetUrl = route('password.reset', ['token' => $token, 'email' => $user->email]);
+
+            Mail::to($user->email)->send(new StaffWelcome($user, $resetUrl, $validated['role']));
             $user->update(['welcome_sent_at' => now()]);
         } catch (\Exception $e) {
             \Log::error('Failed to send staff welcome email', ['error' => $e->getMessage(), 'user_id' => $user->id]);

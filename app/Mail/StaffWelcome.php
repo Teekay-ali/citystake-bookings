@@ -15,7 +15,7 @@ class StaffWelcome extends Mailable
 
     public function __construct(
         public User $staff,
-        public string $plainPassword,
+        public string $resetUrl,
         public string $role,
     ) {}
 
