@@ -19,7 +19,7 @@ class AdminUserController extends Controller
         abort_unless(auth()->user()->hasRole('super-admin'), 403);
 
         $admins = User::where('is_admin', true)
-            ->orWhereHas('roles', fn($q) => $q->whereIn('name', ['super-admin', 'ceo', 'manager']))
+            ->orWhereHas('roles', fn($q) => $q->whereIn('name', ['super-admin', 'ceo']))
             ->with('roles')
             ->withCount('bookings')
             ->latest()

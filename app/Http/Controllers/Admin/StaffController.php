@@ -19,20 +19,37 @@ use Spatie\Permission\Models\Role;
 
 class StaffController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         abort_unless(auth()->user()->can('manage-staff'), 403);
 
+        $filters = [
+            'search'   => trim((string) $request->input('search')) ?: null,
+            'role'     => $request->input('role') ?: null,
+            'building' => $request->input('building') ?: null,
+            'status'   => $request->input('status') ?: null, // active | inactive
+        ];
+
         $staff = User::with(['roles', 'buildings'])
             ->where('is_staff', true)
+            ->when($filters['search'], fn ($q, $s) => $q->where(fn ($q) => $q
+                ->where('name', 'like', "%{$s}%")
+                ->orWhere('email', 'like', "%{$s}%")
+                ->orWhere('phone', 'like', "%{$s}%")))
+            ->when($filters['role'], fn ($q, $r) => $q->whereHas('roles', fn ($q) => $q->where('name', $r)))
+            ->when($filters['building'], fn ($q, $b) => $q->whereHas('buildings', fn ($q) => $q->where('buildings.id', $b)))
+            ->when($filters['status'] === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($filters['status'] === 'inactive', fn ($q) => $q->where('is_active', false))
             ->select(['id', 'name', 'email', 'phone', 'is_staff', 'is_active', 'welcome_sent_at', 'created_at', 'updated_at'])
             ->latest()
-            ->paginate(20);
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('Admin/Staff/Index', [
             'staff'     => $staff,
             'roles'     => Role::orderBy('name')->get(['id', 'name']),
             'buildings' => Building::where('is_active', true)->get(['id', 'name']),
+            'filters'   => $filters,
         ]);
     }
 

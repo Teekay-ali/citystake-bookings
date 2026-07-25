@@ -1,9 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
-import { Plus, Pencil, CheckCircle2, XCircle, Mail, Building2, ShieldCheck, Users, X } from 'lucide-vue-next'
+import { Plus, Pencil, CheckCircle2, XCircle, Mail, Building2, ShieldCheck, Users, X, Search, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -11,7 +11,36 @@ const props = defineProps({
     staff:     Object,
     roles:     Array,
     buildings: Array,
+    filters:   { type: Object, default: () => ({}) },
 })
+
+// ── Filters (server-side, mirrors the Bookings index pattern) ──
+const search   = ref(props.filters.search   || '')
+const role     = ref(props.filters.role     || '')
+const building = ref(props.filters.building || '')
+const status   = ref(props.filters.status   || '')
+
+const hasFilters = computed(() => !!(search.value || role.value || building.value || status.value))
+
+let searchTimeout = null
+watch(search, () => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(applyFilters, 400)
+})
+watch([role, building, status], applyFilters)
+
+function applyFilters() {
+    router.get(route('manage.staff.index'), {
+        search:   search.value   || undefined,
+        role:     role.value     || undefined,
+        building: building.value || undefined,
+        status:   status.value   || undefined,
+    }, { preserveState: true, preserveScroll: true, replace: true })
+}
+
+function clearFilters() {
+    search.value = ''; role.value = ''; building.value = ''; status.value = ''
+}
 
 const roleLabels = {
     'super-admin':         'Super Admin',
@@ -82,6 +111,7 @@ function submitStaff() {
     else staffForm.post(route('manage.staff.store'), opts)
 }
 
+const filterSelectCls = 'px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white'
 const fieldCls = 'w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white'
 const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5'
 </script>
@@ -104,6 +134,40 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                 <Plus class="w-3.5 h-3.5" />
                 Add Staff
             </button>
+        </div>
+
+        <!-- ── Filter bar ── -->
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[200px]">
+                <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input v-model="search" type="text" placeholder="Search name, email or phone…"
+                       class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+            </div>
+
+            <select v-model="role" :class="filterSelectCls" style="width: auto">
+                <option value="">All roles</option>
+                <option v-for="r in roles" :key="r.id" :value="r.name">{{ roleLabels[r.name] ?? r.name }}</option>
+            </select>
+
+            <select v-model="building" :class="filterSelectCls" style="width: auto">
+                <option value="">All buildings</option>
+                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+
+            <select v-model="status" :class="filterSelectCls" style="width: auto">
+                <option value="">Any status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+
+            <button v-if="hasFilters" @click="clearFilters"
+                    class="inline-flex items-center gap-1 px-2.5 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <X class="w-3.5 h-3.5" /> Clear
+            </button>
+
+            <span class="ml-auto text-xs text-gray-400 dark:text-gray-500">
+                {{ staff.total }} {{ staff.total === 1 ? 'member' : 'members' }}<span v-if="hasFilters"> found</span>
+            </span>
         </div>
 
         <!-- ── Staff list ── -->
@@ -177,8 +241,22 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                 </div>
             </div>
 
-            <!-- Empty state -->
-            <div v-if="staff.data.length === 0" class="text-center py-20">
+            <!-- Empty state: no matches for active filters -->
+            <div v-if="staff.data.length === 0 && hasFilters" class="text-center py-16">
+                <div class="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-auto mb-4">
+                    <Search class="w-6 h-6 text-gray-400" />
+                </div>
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">No staff match your filters</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Try a different search or clear the filters.</p>
+                <button @click="clearFilters"
+                      class="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                    <X class="w-3.5 h-3.5" />
+                    Clear filters
+                </button>
+            </div>
+
+            <!-- Empty state: no staff at all -->
+            <div v-else-if="staff.data.length === 0" class="text-center py-20">
                 <div class="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-900 flex items-center justify-center mx-auto mb-4">
                     <Users class="w-6 h-6 text-gray-400" />
                 </div>
@@ -190,6 +268,39 @@ const fieldLabel = 'block text-sm font-medium text-gray-700 dark:text-gray-300 m
                     Add First Staff Member
                 </button>
             </div>
+        </div>
+
+        <!-- ── Pagination ── -->
+        <div v-if="staff.last_page > 1" class="flex justify-center items-center gap-1 mt-6">
+            <button
+                @click="staff.prev_page_url && router.visit(staff.prev_page_url, { preserveScroll: true })"
+                :disabled="!staff.prev_page_url"
+                class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                <ChevronLeft class="w-3.5 h-3.5" />
+            </button>
+
+            <template v-for="link in staff.links.slice(1, -1)" :key="link.label">
+                <button
+                    v-if="link.label !== '...'"
+                    @click="link.url && router.visit(link.url, { preserveScroll: true })"
+                    :disabled="!link.url"
+                    :class="[
+                        'w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-all',
+                        link.active
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                            : 'border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
+                    ]">
+                    {{ link.label }}
+                </button>
+                <span v-else class="w-8 h-8 flex items-center justify-center text-sm text-gray-400">…</span>
+            </template>
+
+            <button
+                @click="staff.next_page_url && router.visit(staff.next_page_url, { preserveScroll: true })"
+                :disabled="!staff.next_page_url"
+                class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                <ChevronRight class="w-3.5 h-3.5" />
+            </button>
         </div>
 
         <!-- ── Create / Edit modal ── -->
