@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Models\Building;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
@@ -47,20 +48,24 @@ class StaffController extends Controller
             'building_ids.*' => 'exists:buildings,id',
         ]);
 
-        $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'phone'    => $validated['phone'] ?? null,
-            'password' => Hash::make($validated['password']),
-            'is_staff' => true,
-            'is_active' => true,
-            'email_verified_at' => now(), // Staff don't need email verification
-        ]);
+        $user = DB::transaction(function () use ($validated) {
+            $user = User::create([
+                'name'     => $validated['name'],
+                'email'    => $validated['email'],
+                'phone'    => $validated['phone'] ?? null,
+                'password' => Hash::make($validated['password']),
+                'is_staff' => true,
+                'is_active' => true,
+                'email_verified_at' => now(), // Staff don't need email verification
+            ]);
 
-        $user->assignRole($validated['role']);
-        $user->buildings()->sync($validated['building_ids']);
+            $user->assignRole($validated['role']);
+            $user->buildings()->sync($validated['building_ids']);
 
-        AuditLog::log('staff.created', $user, null, ['name' => $user->name, 'email' => $user->email, 'role' => $validated['role']]);
+            AuditLog::log('staff.created', $user, null, ['name' => $user->name, 'email' => $user->email, 'role' => $validated['role']]);
+
+            return $user;
+        });
 
         try {
             Mail::to($user->email)->send(new StaffWelcome($user, $validated['password'], $validated['role']));
@@ -75,8 +80,10 @@ class StaffController extends Controller
 
     public function edit(User $staff)
     {
-        if ($staff->is_admin) {
-            abort(403, 'Admin accounts cannot be edited here.');
+        abort_unless(auth()->user()->can('manage-staff'), 403);
+
+        if ($staff->is_admin || ! $staff->is_staff) {
+            abort(403, 'This account cannot be edited here.');
         }
 
         $staff->load(['roles', 'buildings']);
@@ -95,8 +102,8 @@ class StaffController extends Controller
     {
         abort_unless(auth()->user()->can('manage-staff'), 403);
 
-        if ($staff->is_admin) {
-            abort(403, 'Admin accounts cannot be edited here.');
+        if ($staff->is_admin || ! $staff->is_staff) {
+            abort(403, 'This account cannot be edited here.');
         }
 
         $validated = $request->validate([
@@ -130,6 +137,11 @@ class StaffController extends Controller
     public function toggleActive(User $staff)
     {
         abort_unless(auth()->user()->can('manage-staff'), 403);
+
+        // Only staff accounts are managed here — not admins, guests or customers.
+        if ($staff->is_admin || ! $staff->is_staff) {
+            abort(403, 'This account cannot be managed here.');
+        }
 
         // Prevent deactivating yourself
         if ($staff->id === auth()->id()) {
