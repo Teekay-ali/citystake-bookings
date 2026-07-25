@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
@@ -87,6 +87,11 @@ function openCreate() {
     staffForm.reset(); staffForm.clearErrors()
     showModal.value = true
 }
+
+// Let the layout's floating action button open the create modal.
+onMounted(() => window.addEventListener('fab:create', openCreate))
+onUnmounted(() => window.removeEventListener('fab:create', openCreate))
+
 function openEdit(member) {
     editing.value = member
     staffForm.clearErrors()

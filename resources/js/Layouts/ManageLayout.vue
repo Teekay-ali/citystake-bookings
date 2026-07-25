@@ -17,6 +17,7 @@ import {
 import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
 import RolePreviewBar from '@/Components/RolePreviewBar.vue'
+import FloatingAction from '@/Components/FloatingAction.vue'
 import { useDarkMode } from '@/Composables/useDarkMode'
 import { useFloating, offset, shift, flip } from '@floating-ui/vue'
 
@@ -817,6 +818,9 @@ function canSeeItem(item) {
                 <slot />
             </main>
         </div>
+
+        <!-- Context-aware floating action (mobile / tablet only) -->
+        <FloatingAction />
 
         <!-- Mobile search overlay -->
         <Teleport to="body">
