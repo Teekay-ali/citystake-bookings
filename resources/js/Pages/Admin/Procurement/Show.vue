@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { ArrowLeft, Phone, Mail } from 'lucide-vue-next'
+import { ArrowLeft, Phone, Mail, CheckCircle2, Clock, XCircle } from 'lucide-vue-next'
 import { usePage } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
@@ -62,14 +62,35 @@ function formatDateTime(d) {
     }) : '-'
 }
 
-const timelineSteps = computed(() => [
-    { label: 'Submitted',           by: props.procurement.submitted_by?.name,           at: props.procurement.created_at,            done: true },
-    { label: 'Procurement Officer',  by: props.procurement.officer_approved_by?.name,    at: props.procurement.officer_approved_at,    done: !!props.procurement.officer_approved_at },
-    { label: 'Accountant Approved', by: props.procurement.accountant_approved_by?.name, at: props.procurement.accountant_approved_at, done: !!props.procurement.accountant_approved_at },
-    { label: 'CEO Approved',        by: props.procurement.ceo_approved_by?.name,        at: props.procurement.ceo_approved_at,        done: !!props.procurement.ceo_approved_at },
-    { label: 'Items Purchased',     by: props.procurement.purchased_by?.name,           at: props.procurement.purchased_at,           done: !!props.procurement.purchased_at },
-    { label: 'Receipt Confirmed',   by: props.procurement.receipt_confirmed_by?.name,   at: props.procurement.receipt_confirmed_at,   done: !!props.procurement.receipt_confirmed_at },
-])
+const timelineSteps = computed(() => {
+    const p = props.procurement
+    const s = p.status
+    const steps = [
+        { label: 'Submitted',           hint: null,                            by: p.submitted_by?.name,           at: p.created_at,            done: true,                          active: false },
+        { label: 'Procurement Officer', hint: 'Awaiting procurement officer',  by: p.officer_approved_by?.name,    at: p.officer_approved_at,    done: !!p.officer_approved_at,       active: s === 'pending' },
+        { label: 'Accountant Approval', hint: 'Awaiting accountant',           by: p.accountant_approved_by?.name, at: p.accountant_approved_at, done: !!p.accountant_approved_at,     active: s === 'officer_approved' },
+        { label: 'CEO Approval',        hint: 'Awaiting CEO',                  by: p.ceo_approved_by?.name,        at: p.ceo_approved_at,        done: !!p.ceo_approved_at,           active: s === 'accountant_approved' },
+        { label: 'Items Purchased',     hint: 'Awaiting purchase',             by: p.purchased_by?.name,           at: p.purchased_at,           done: !!p.purchased_at,              active: s === 'ceo_approved' },
+        { label: 'Receipt Confirmed',   hint: 'Awaiting receipt confirmation', by: p.receipt_confirmed_by?.name,   at: p.receipt_confirmed_at,   done: !!p.receipt_confirmed_at,      active: s === 'purchased' },
+    ]
+
+    // A rejection lands on the stage that was awaiting action — surface it there
+    // with the reason, rather than as a trailing note.
+    if (s === 'rejected') {
+        const idx = steps.findIndex(st => !st.done)
+        if (idx !== -1) {
+            steps[idx] = {
+                ...steps[idx],
+                active: false,
+                declined: true,
+                by: p.rejected_by_role ? `Declined by ${p.rejected_by_role.replace(/-/g, ' ')}` : 'Declined',
+                at: p.updated_at,
+                reason: p.rejection_reason,
+            }
+        }
+    }
+    return steps
+})
 </script>
 
 <template>
@@ -241,42 +262,43 @@ const timelineSteps = computed(() => [
                     <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-5">Approval Timeline</p>
                         <div>
-                            <div v-for="(step, i) in timelineSteps" :key="step.label" class="flex gap-3.5">
-                                <!-- Track -->
-                                <div class="flex flex-col items-center w-5 shrink-0">
+                            <div v-for="(step, i) in timelineSteps" :key="step.label" class="flex gap-3">
+                                <!-- Track: node + connector -->
+                                <div class="flex flex-col items-center">
                                     <div :class="[
-                                        'w-2.5 h-2.5 rounded-full shrink-0 z-10 mt-0.5 transition-all',
-                                        step.done
-                                            ? 'bg-gray-900 dark:bg-white ring-4 ring-gray-900/10 dark:ring-white/10'
-                                            : 'bg-gray-200 dark:bg-gray-700'
-                                    ]" />
+                                        'w-7 h-7 rounded-full flex items-center justify-center border-2 shrink-0 transition-all',
+                                        step.declined ? 'bg-red-100 dark:bg-red-900/30 border-red-400' :
+                                        step.done     ? 'bg-gray-900 dark:bg-white border-gray-900 dark:border-white' :
+                                        step.active   ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 animate-pulse' :
+                                        'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                                    ]">
+                                        <XCircle      v-if="step.declined" class="w-3.5 h-3.5 text-red-500" />
+                                        <CheckCircle2 v-else-if="step.done" class="w-3.5 h-3.5 text-white dark:text-gray-900" />
+                                        <Clock        v-else-if="step.active" class="w-3 h-3 text-amber-500" />
+                                        <div v-else class="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+                                    </div>
                                     <div v-if="i < timelineSteps.length - 1"
-                                         class="w-px flex-1 my-1.5 min-h-3 bg-gray-100 dark:bg-gray-800" />
+                                         :class="step.done ? 'bg-gray-900 dark:bg-white' : 'bg-gray-200 dark:bg-gray-800'"
+                                         class="w-0.5 flex-1 min-h-[20px] my-1 transition-all" />
                                 </div>
-                                <!-- Content -->
-                                <div :class="['flex-1', i < timelineSteps.length - 1 ? 'pb-5' : 'pb-0']">
-                                    <p :class="[
-                                        'text-sm leading-none',
-                                        step.done
-                                            ? 'font-semibold text-gray-900 dark:text-white'
-                                            : 'font-medium text-gray-300 dark:text-gray-600'
-                                    ]">{{ step.label }}</p>
-                                    <p v-if="step.done && step.by" class="text-[11px] text-gray-400 mt-1.5 leading-none">
-                                        {{ step.by }}
-                                        <span class="mx-1 text-gray-200 dark:text-gray-700">·</span>
-                                        {{ formatDateTime(step.at) }}
-                                    </p>
-                                </div>
-                            </div>
 
-                            <!-- Rejected -->
-                            <div v-if="procurement.status === 'rejected'" class="flex gap-3.5 mt-1">
-                                <div class="w-5 shrink-0 flex justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-red-500/15 mt-0.5" />
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-semibold text-red-500 leading-none">Rejected</p>
-                                    <p v-if="procurement.rejection_reason" class="text-[11px] text-gray-400 mt-1.5">{{ procurement.rejection_reason }}</p>
+                                <!-- Content -->
+                                <div class="pb-4 flex-1 min-w-0">
+                                    <p :class="[
+                                        'text-sm font-medium',
+                                        step.declined ? 'text-red-600 dark:text-red-400' :
+                                        step.done || step.active ? 'text-gray-900 dark:text-white' :
+                                        'text-gray-400 dark:text-gray-600'
+                                    ]">
+                                        {{ step.label }}
+                                        <span v-if="step.declined" class="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 align-middle">Rejected</span>
+                                    </p>
+                                    <p v-if="step.by" class="text-xs text-gray-500 mt-0.5">{{ step.by }}</p>
+                                    <p v-if="step.at" class="text-xs text-gray-400 mt-0.5">{{ formatDateTime(step.at) }}</p>
+                                    <p v-if="step.active && !step.done && !step.declined" class="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                                        {{ step.hint || 'Awaiting action' }}
+                                    </p>
+                                    <p v-if="step.declined && step.reason" class="text-xs text-gray-500 dark:text-gray-400 mt-1 rounded-lg bg-red-50 dark:bg-red-900/15 px-2.5 py-1.5">{{ step.reason }}</p>
                                 </div>
                             </div>
                         </div>
