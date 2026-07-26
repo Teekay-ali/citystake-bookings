@@ -40,7 +40,7 @@ function ctaLabel(card) {
 }
 
 function formatDate(d) {
-    return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+    return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
 }
 const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -170,7 +170,7 @@ const statCards = [
                                     <CheckCircle class="w-3 h-3" /> All clear
                                 </span>
                             </td>
-                            <td class="px-4 py-2.5 text-gray-400 text-xs">{{ r.completed_by ?? '—' }}</td>
+                            <td class="px-4 py-2.5 text-gray-400 text-xs">{{ r.completed_by ?? '-' }}</td>
                             <td class="px-4 py-2.5 text-right">
                                 <ArrowRight class="inline w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-all" />
                             </td>
@@ -191,7 +191,7 @@ const statCards = [
                                     <CheckCircle class="w-3 h-3" /> OK
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">{{ formatDate(r.round_date) }} · {{ r.inspected }} inspected · {{ r.completed_by ?? '—' }}</p>
+                            <p class="text-xs text-gray-400 mt-1">{{ formatDate(r.round_date) }} · {{ r.inspected }} inspected · {{ r.completed_by ?? '-' }}</p>
                         </Link>
                     </div>
                 </template>

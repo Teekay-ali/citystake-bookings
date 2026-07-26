@@ -71,7 +71,7 @@ class StaffController extends Controller
                 'name'     => $validated['name'],
                 'email'    => $validated['email'],
                 'phone'    => $validated['phone'] ?? null,
-                // Placeholder secret — the staffer sets their own password via
+                // Placeholder secret - the staffer sets their own password via
                 // the invite link below; this value is never shared with anyone.
                 'password' => Hash::make(Str::random(40)),
                 'is_staff' => true,
@@ -163,7 +163,7 @@ class StaffController extends Controller
     {
         abort_unless(auth()->user()->can('manage-staff'), 403);
 
-        // Only staff accounts are managed here — not admins, guests or customers.
+        // Only staff accounts are managed here - not admins, guests or customers.
         if ($staff->is_admin || ! $staff->is_staff) {
             abort(403, 'This account cannot be managed here.');
         }

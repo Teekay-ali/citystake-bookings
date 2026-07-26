@@ -30,7 +30,7 @@ class InspectionRoundCompletedNotification extends Notification
             'title'   => $this->concerns > 0
                 ? 'Inspection round completed with concerns'
                 : 'Inspection round completed',
-            'message' => "{$building} · {$date} — {$this->unitsInspected} unit"
+            'message' => "{$building} · {$date} - {$this->unitsInspected} unit"
                 . ($this->unitsInspected !== 1 ? 's' : '') . ' inspected'
                 . ($this->concerns > 0
                     ? ", {$this->concerns} concern" . ($this->concerns !== 1 ? 's' : '') . ' reported.'

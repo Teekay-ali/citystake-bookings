@@ -204,7 +204,7 @@ class Booking extends Model
             return 0.0;
         }
 
-        // Otherwise the balance is whatever hasn't been collected yet — this is
+        // Otherwise the balance is whatever hasn't been collected yet - this is
         // what makes deposits and pay-at-check-in bookings track correctly.
         return max(0, (float) $this->total_amount - (float) $this->amount_received);
     }

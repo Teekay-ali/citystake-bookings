@@ -52,7 +52,7 @@ function cancelRound() {
 }
 
 function fmtDate(d) {
-    return d ? new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+    return d ? new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '-'
 }
 </script>
 

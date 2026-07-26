@@ -62,7 +62,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
 
-            // "View as role" preview — banner state + who may start one
+            // "View as role" preview - banner state + who may start one
             'preview' => \App\Support\RolePreview::share(),
             'canPreviewRoles' => $isManageRoute && \App\Support\RolePreview::canPreview($user),
             'previewBuildings' => fn () => ($isManageRoute && \App\Support\RolePreview::canPreview($user))

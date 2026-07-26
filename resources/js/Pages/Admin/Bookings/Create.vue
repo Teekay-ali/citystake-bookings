@@ -451,7 +451,7 @@ const inputCls = (hasError) => [
                             <!-- Unit Selection -->
                             <div v-if="form.unit_type_id && form.check_in && form.check_out" class="mt-4 space-y-3">
 
-                                <!-- Overflow (upgrade) — decided before picking a unit -->
+                                <!-- Overflow (upgrade) - decided before picking a unit -->
                                 <div>
                                     <label class="flex items-start gap-2 cursor-pointer select-none">
                                         <input type="checkbox" v-model="form.cross_grade" :disabled="overflowTypes.length === 0"
@@ -464,14 +464,14 @@ const inputCls = (hasError) => [
 
                                     <!-- Nudge when the requested type is fully booked -->
                                     <p v-if="requestedTypeSoldOut && overflowTypes.length > 0" class="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
-                                        All {{ selectedUnitType?.name }} units are booked for these dates — enable overflow to assign an upgraded apartment at the same rate.
+                                        All {{ selectedUnitType?.name }} units are booked for these dates - enable overflow to assign an upgraded apartment at the same rate.
                                     </p>
                                     <p v-else-if="requestedTypeSoldOut" class="mt-1.5 text-[11px] text-red-500">
                                         All {{ selectedUnitType?.name }} units are booked and no upgraded apartment type is available to overflow into.
                                     </p>
                                 </div>
 
-                                <!-- Physical apartment type (only when overflowing) — chosen before the unit -->
+                                <!-- Physical apartment type (only when overflowing) - chosen before the unit -->
                                 <div v-if="form.cross_grade">
                                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Physical apartment type <span class="text-red-500">*</span></label>
                                     <select v-model="crossGradeTypeId" :class="inputCls(false)">
@@ -482,7 +482,7 @@ const inputCls = (hasError) => [
                                     </select>
                                 </div>
 
-                                <!-- Unit dropdown — reflects the effective (billed or overflow) type -->
+                                <!-- Unit dropdown - reflects the effective (billed or overflow) type -->
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
                                         Unit

@@ -203,7 +203,7 @@ class HomeController extends Controller
                 // The two points where the officer personally acts
                 'to_review'   => (int) ($counts['pending']->c ?? 0),
                 'to_purchase' => (int) ($counts['ceo_approved']->c ?? 0),
-                // Sitting with accountant/CEO — awareness, not action
+                // Sitting with accountant/CEO - awareness, not action
                 'in_approval' => (int) (($counts['officer_approved']->c ?? 0) + ($counts['accountant_approved']->c ?? 0)),
                 // Value moving through the pipeline right now (non-terminal, non-rejected)
                 'open_value'  => (float) (

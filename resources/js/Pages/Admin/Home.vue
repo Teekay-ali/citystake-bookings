@@ -42,7 +42,7 @@ const page = usePage()
 const permissions = computed(() => page.props.auth.user?.permissions ?? [])
 const { isDark } = useDarkMode()
 
-// ── Operational charts (manager) — all non-financial ──
+// ── Operational charts (manager) - all non-financial ──
 const axisColor = '#9ca3af'
 
 const occupancySeries = computed(() => [{

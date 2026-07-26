@@ -309,7 +309,7 @@ const inputClass  = "w-full pl-3 pr-3 py-2 border border-gray-200 dark:border-gr
         <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 sm:p-6 mb-3">
             <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
 
-                <!-- Net profit — the headline -->
+                <!-- Net profit - the headline -->
                 <div class="min-w-0">
                     <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Net profit</p>
                     <p class="text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight"

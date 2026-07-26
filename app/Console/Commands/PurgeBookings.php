@@ -51,7 +51,7 @@ class PurgeBookings extends Command
 
         if (! $this->option('force')) {
             $this->newLine();
-            $this->comment('Dry run — nothing deleted. Re-run with --force to execute.');
+            $this->comment('Dry run - nothing deleted. Re-run with --force to execute.');
             return self::SUCCESS;
         }
 

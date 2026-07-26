@@ -7,7 +7,7 @@
 
     <p class="email-text">
         Your staff account has been created. To finish setting up, choose your own
-        password using the button below — then you can sign in to the management portal.
+        password using the button below - then you can sign in to the management portal.
     </p>
 
     <div class="booking-card">

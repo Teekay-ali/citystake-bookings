@@ -10,7 +10,7 @@ use Spatie\Permission\Models\Role;
  *
  * Lets a super-admin browse the app exactly as another role sees it, without
  * creating throwaway accounts. Preview is always an INTERSECTION with the
- * viewer's real permissions, so it can only ever subtract — never escalate.
+ * viewer's real permissions, so it can only ever subtract - never escalate.
  * Writes are blocked while previewing (see BlockWritesWhilePreviewing).
  */
 class RolePreview

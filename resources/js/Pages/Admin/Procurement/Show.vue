@@ -74,7 +74,7 @@ const timelineSteps = computed(() => {
         { label: 'Receipt Confirmed',   hint: 'Awaiting receipt confirmation', by: p.receipt_confirmed_by?.name,   at: p.receipt_confirmed_at,   done: !!p.receipt_confirmed_at,      active: s === 'purchased' },
     ]
 
-    // A rejection lands on the stage that was awaiting action — surface it there
+    // A rejection lands on the stage that was awaiting action - surface it there
     // with the reason, rather than as a trailing note.
     if (s === 'rejected') {
         const idx = steps.findIndex(st => !st.done)

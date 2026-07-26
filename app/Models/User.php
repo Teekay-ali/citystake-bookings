@@ -95,7 +95,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     /**
      * True when this user is previewing the app as another role.
-     * Only applies to the currently authenticated user — never to other records.
+     * Only applies to the currently authenticated user - never to other records.
      */
     protected function isPreviewing(): bool
     {
@@ -105,7 +105,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Audit-log access is granted by identity (a configured owner email), not by
-     * a permission — so it must be suppressed during a role preview, otherwise
+     * a permission - so it must be suppressed during a role preview, otherwise
      * every previewed role would still see the audit logs.
      */
     public function isAuditOwner(): bool
@@ -121,7 +121,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $real = $this->hasRole(['super-admin', 'ceo']);
 
-        // While previewing, global access follows the previewed role — and a
+        // While previewing, global access follows the previewed role - and a
         // simulated building always means scoped, never global.
         if ($this->isPreviewing()) {
             return $real

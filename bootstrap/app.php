@@ -34,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-            // Role preview is read-only — refuse writes anywhere while it's active
+            // Role preview is read-only - refuse writes anywhere while it's active
             \App\Http\Middleware\BlockWritesWhilePreviewing::class,
         ]);
 

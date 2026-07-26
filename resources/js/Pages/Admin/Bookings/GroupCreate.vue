@@ -79,7 +79,7 @@ function removeMember(i) {
     if (form.members.length > 2) form.members.splice(i, 1)
 }
 
-// ── Pricing (NGN, per unit) — mirrors the server ──
+// ── Pricing (NGN, per unit) - mirrors the server ──
 // The auto multi-room rate: 5%, or 10% at 7+ nights (a group is always 2+ rooms).
 const autoRate = computed(() => nights.value >= 7 ? 10 : 5)
 
