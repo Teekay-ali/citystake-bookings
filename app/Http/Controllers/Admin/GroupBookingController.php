@@ -53,6 +53,9 @@ class GroupBookingController extends Controller
             'lead_phone'           => 'nullable|string|max:30',
             'payment_method'       => 'required|in:pos,bank_transfer',
             'payment_reference'    => 'nullable|string|max:255',
+            'discount_mode'        => 'required|in:auto,manual,none',
+            'manual_discount'      => 'nullable|numeric|min:0|required_if:discount_mode,manual',
+            'discount_reason'      => 'nullable|string|max:255|required_if:discount_mode,manual',
             'members'                    => 'required|array|min:2',
             'members.*.unit_id'          => 'required|distinct|exists:units,id',
             'members.*.guest_name'       => 'required|string|max:255',
@@ -86,8 +89,30 @@ class GroupBookingController extends Controller
             }
         }
 
+        // A whole-group manual discount is a single ₦ figure spread across the
+        // per-unit bookings in proportion to each unit's room subtotal, so the
+        // per-unit financial records add up to exactly the discount entered.
+        $nights   = (int) $checkIn->diffInDays($checkOut);
+        $discountAlloc = [];
+        if ($validated['discount_mode'] === 'manual') {
+            $subtotals = [];
+            foreach ($validated['members'] as $i => $m) {
+                $subtotals[$i] = $nights * (float) $units->get($m['unit_id'])->unitType->base_price_per_night;
+            }
+            $totalSub    = array_sum($subtotals) ?: 1;
+            $manualTotal = min((float) $validated['manual_discount'], array_sum($subtotals));
+            $running     = 0.0;
+            $lastKey     = array_key_last($subtotals);
+            foreach ($subtotals as $i => $sub) {
+                $discountAlloc[$i] = $i === $lastKey
+                    ? round($manualTotal - $running, 2)                       // absorb rounding drift
+                    : round($manualTotal * ($sub / $totalSub), 2);
+                $running += $discountAlloc[$i];
+            }
+        }
+
         $group = null;
-        DB::transaction(function () use (&$group, $validated, $building, $units, $checkIn, $checkOut) {
+        DB::transaction(function () use (&$group, $validated, $building, $units, $checkIn, $checkOut, $discountAlloc) {
             $group = BookingGroup::create([
                 'reference'       => BookingGroup::generateReference(),
                 'building_id'     => $building->id,
@@ -98,14 +123,24 @@ class GroupBookingController extends Controller
                 'created_by'      => auth()->id(),
             ]);
 
-            foreach ($validated['members'] as $m) {
+            foreach ($validated['members'] as $i => $m) {
                 $unit     = $units->get($m['unit_id']);
                 $unitType = $unit->unitType;
 
+                // Discount applies to the whole group: automatic multi-room rate,
+                // no discount, or a manual figure allocated to this unit's share.
+                $opts = match ($validated['discount_mode']) {
+                    'manual' => [
+                        'discount_mode'   => 'manual',
+                        'manual_discount' => $discountAlloc[$i] ?? 0,
+                        'discount_reason' => $validated['discount_reason'] ?? null,
+                    ],
+                    'none'   => ['discount_mode' => 'none'],
+                    default  => ['unit_count' => count($validated['members'])],
+                };
+
                 $model = new Booking(['check_in' => $checkIn->toDateString(), 'check_out' => $checkOut->toDateString()]);
-                // Whole group is one payer booking multiple rooms, so every member is priced
-                // with the group's room count for the multi-room auto-discount.
-                $model->calculateTotal($unitType, ['unit_count' => count($validated['members'])]);
+                $model->calculateTotal($unitType, $opts);
 
                 $booking = Booking::create([
                     'booking_reference'   => Booking::generateReference(),
@@ -128,6 +163,7 @@ class GroupBookingController extends Controller
                     'discount_type'       => $model->discount_type,
                     'discount_percent'    => $model->discount_percent,
                     'discount_amount'     => $model->discount_amount,
+                    'discount_reason'     => $model->discount_reason,
                     'caution_fee'         => $model->caution_fee,
                     'policy_version'      => $building->currentPolicy?->version,
                     'status'              => 'confirmed',

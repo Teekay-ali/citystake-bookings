@@ -3,7 +3,7 @@ import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAppToast } from '@/Composables/useAppToast'
-import { ArrowLeft, Users, Plus, Trash2, Briefcase, CreditCard, Layers } from 'lucide-vue-next'
+import { ArrowLeft, Users, Plus, Trash2, Briefcase, CreditCard, Layers, Percent } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -20,6 +20,9 @@ const form = useForm({
     lead_phone: '',
     payment_method: 'pos',
     payment_reference: '',
+    discount_mode: 'auto',        // 'auto' | 'manual' | 'none'
+    manual_discount: '',          // whole-group flat ₦, split across units
+    discount_reason: '',
     members: [
         { unit_type_id: '', unit_id: '', guest_name: '', guest_email: '', guest_phone: '', guests: 1 },
         { unit_type_id: '', unit_id: '', guest_name: '', guest_email: '', guest_phone: '', guests: 1 },
@@ -74,44 +77,48 @@ function removeMember(i) {
     if (form.members.length > 2) form.members.splice(i, 1)
 }
 
-// ── Pricing (NGN, per unit) ──
-function memberPrice(m) {
-    const ut = unitTypes.value.find(t => t.id == m.unit_type_id)
-    if (!ut || nights.value === 0) return 0
-    const price = parseFloat(ut.base_price_per_night) || 0
-    const subtotal = price * nights.value
-    const oneNightAtRate = (selectedBuilding.value?.one_night_caution_uses_rate ?? true) && nights.value === 1
-    const caution = oneNightAtRate ? price : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000)
-    // A group is always 2+ rooms by one payer, so multi-room applies: 5%, or 10% at 7+ nights.
-    const rate = nights.value >= 7 ? 0.10 : 0.05
-    const discount = Math.round(subtotal * rate)
-    return (subtotal - discount) + caution
-}
-const grandTotal = computed(() => form.members.reduce((s, m) => s + memberPrice(m), 0))
+// ── Pricing (NGN, per unit) — mirrors the server ──
+// The auto multi-room rate: 5%, or 10% at 7+ nights (a group is always 2+ rooms).
+const autoRate = computed(() => nights.value >= 7 ? 10 : 5)
 
-// Per-unit breakdown (mirrors memberPrice / the server).
-function memberSummary(m) {
-    const ut = unitTypes.value.find(t => t.id == m.unit_type_id)
-    if (!ut || nights.value === 0) return null
-    const price = parseFloat(ut.base_price_per_night) || 0
-    const subtotal = price * nights.value
-    const oneNightAtRate = (selectedBuilding.value?.one_night_caution_uses_rate ?? true) && nights.value === 1
-    const rate = nights.value >= 7 ? 10 : 5
-    const discount = Math.round(subtotal * (rate / 100))
-    const caution = oneNightAtRate ? price : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000)
-    const unit = ut.units?.find(u => u.id == m.unit_id)
-    return {
-        label: unit ? `Unit ${unit.unit_number}` : ut.name,
-        typeName: ut.name,
-        subtotal, discount, caution, rate,
-        total: subtotal - discount + caution,
-    }
-}
+// One pass over the members so a whole-group manual discount can be split
+// across units in proportion to each unit's room subtotal (matches the server).
+const lineItems = computed(() => {
+    const rows = form.members.map((m) => {
+        const ut = unitTypes.value.find(t => t.id == m.unit_type_id)
+        if (!ut || nights.value === 0) return null
+        const price = parseFloat(ut.base_price_per_night) || 0
+        const subtotal = price * nights.value
+        const oneNightAtRate = (selectedBuilding.value?.one_night_caution_uses_rate ?? true) && nights.value === 1
+        const caution = oneNightAtRate ? price : parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000)
+        const unit = ut.units?.find(u => u.id == m.unit_id)
+        return { label: unit ? `Unit ${unit.unit_number}` : ut.name, typeName: ut.name, subtotal, caution }
+    }).filter(Boolean)
 
-// Rows for units that have a type selected, in member order.
-const lineItems = computed(() =>
-    form.members.map(m => memberSummary(m)).filter(Boolean)
-)
+    const mode = form.discount_mode
+    const totalSub = rows.reduce((s, r) => s + r.subtotal, 0)
+    const manualTotal = Math.min(parseFloat(form.manual_discount) || 0, totalSub)
+    let running = 0
+
+    return rows.map((r, i) => {
+        let discount = 0, rate = 0, type = null
+        if (mode === 'auto') {
+            rate = autoRate.value
+            discount = Math.round(r.subtotal * (rate / 100))
+            type = 'auto'
+        } else if (mode === 'manual' && totalSub > 0) {
+            discount = i === rows.length - 1
+                ? Math.round(manualTotal - running)                    // absorb rounding drift
+                : Math.round(manualTotal * (r.subtotal / totalSub))
+            running += discount
+            type = discount > 0 ? 'manual' : null
+        }
+        return { ...r, rate, type, discount, total: r.subtotal - discount + r.caution }
+    })
+})
+
+const grandTotal = computed(() => lineItems.value.reduce((s, r) => s + r.total, 0))
+const memberTotal = (i) => lineItems.value[i]?.total ?? 0
 
 // ── Organizations ──
 const orgs = ref([])
@@ -124,7 +131,13 @@ const fmt = (v) => '₦' + Number(v || 0).toLocaleString('en-NG')
 const inputCls = "w-full px-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all"
 
 function submit() {
-    form.transform(d => ({ ...d, organization_id: d.organization_id || null }))
+    form.transform(d => ({
+        ...d,
+        organization_id: d.organization_id || null,
+        // Only send discount inputs relevant to the chosen mode.
+        manual_discount: d.discount_mode === 'manual' ? d.manual_discount : null,
+        discount_reason: d.discount_mode === 'manual' ? d.discount_reason : null,
+    }))
         .post(route('manage.bookings.group.store'), {
             onError: () => toast.error('Please check the form for errors.'),
         })
@@ -197,6 +210,33 @@ function submit() {
                             <option v-for="o in orgs" :key="o.id" :value="o.id">{{ o.name }}</option>
                         </select>
                     </div>
+
+                    <!-- Discount (applies to the whole group) -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5 flex items-center gap-1.5"><Percent class="w-3.5 h-3.5" /> Discount</label>
+                        <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                            <button v-for="dm in [['auto','Auto'],['manual','Manual'],['none','None']]" :key="dm[0]" type="button" @click="form.discount_mode = dm[0]"
+                                    :class="form.discount_mode === dm[0] ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                    class="flex-1 py-1.5 rounded-md text-xs font-medium transition-all">{{ dm[1] }}</button>
+                        </div>
+                        <p v-if="form.discount_mode === 'auto'" class="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+                            Automatic multi-room rate: {{ autoRate }}% off each room{{ nights >= 7 ? ' (7+ nights)' : '' }}.
+                        </p>
+                        <p v-else-if="form.discount_mode === 'none'" class="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+                            No discount applied to any unit.
+                        </p>
+                        <div v-else class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <input v-model.number="form.manual_discount" type="number" min="0" step="1000" placeholder="Total discount ₦" :class="inputCls" />
+                                <p v-if="form.errors.manual_discount" class="mt-1 text-xs text-red-600">{{ form.errors.manual_discount }}</p>
+                            </div>
+                            <div>
+                                <input v-model="form.discount_reason" type="text" placeholder="Reason (required)" :class="inputCls" />
+                                <p v-if="form.errors.discount_reason" class="mt-1 text-xs text-red-600">{{ form.errors.discount_reason }}</p>
+                            </div>
+                            <p class="sm:col-span-2 text-[11px] text-gray-400 dark:text-gray-500">Split across all units in proportion to each room's price.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Members -->
@@ -228,7 +268,7 @@ function submit() {
                                 <input v-model="m.guest_email" type="email" placeholder="Guest email (optional)" :class="inputCls" />
                                 <input v-model="m.guest_phone" type="text" placeholder="Guest phone (optional)" :class="inputCls" />
                             </div>
-                            <p class="text-right text-[11px] text-gray-400 mt-1.5">{{ fmt(memberPrice(m)) }}</p>
+                            <p class="text-right text-[11px] text-gray-400 mt-1.5">{{ fmt(memberTotal(i)) }}</p>
                         </div>
                     </div>
                     <p v-if="form.errors.members" class="mt-2 text-xs text-red-600">{{ form.errors.members }}</p>
@@ -266,7 +306,7 @@ function submit() {
                                     <span class="text-gray-700 dark:text-gray-300 tabular-nums">{{ fmt(li.subtotal) }}</span>
                                 </div>
                                 <div v-if="li.discount > 0" class="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
-                                    <span>Discount ({{ li.rate }}%)</span>
+                                    <span>Discount<template v-if="li.type === 'auto'"> ({{ li.rate }}%)</template><template v-else> (share)</template></span>
                                     <span class="tabular-nums">− {{ fmt(li.discount) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between">
