@@ -11,7 +11,7 @@ import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
     Clock, CheckCircle, ChevronRight,
-    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft, Pencil,
+    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft, Pencil, CreditCard,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -30,11 +30,29 @@ const lateCheckoutHours = ref(null)
 
 // ── Check-in ───────────────────────────────────────────────────
 const checkInForm = useForm({
-    // Payment is settled before check-in - check-in is arrival confirmation only.
     checkin_notes: '',
+    // Optionally settle the outstanding balance while checking in.
+    collect_payment: false,
+    payment_method: 'pos',
+    payment_reference: '',
 })
 function submitCheckIn() {
     checkInForm.post(route('manage.bookings.check-in', props.booking.booking_reference), { preserveScroll: true })
+}
+
+// ── Record payment (non-weekly balance) ────────────────────────
+const showRecordPayment = ref(false)
+const recordForm = useForm({ amount: 0, payment_method: 'pos', payment_reference: '' })
+function openRecordPayment() {
+    recordForm.reset()
+    recordForm.amount = Number(props.booking.balance_due ?? 0)
+    showRecordPayment.value = true
+}
+function submitRecordPayment() {
+    recordForm.post(route('manage.bookings.record-payment', props.booking.booking_reference), {
+        preserveScroll: true,
+        onSuccess: () => { showRecordPayment.value = false },
+    })
 }
 
 // ── Check-out ──────────────────────────────────────────────────
@@ -264,11 +282,21 @@ const modifyUnits        = ref([])
 const loadingModifyUnits = ref(false)
 let modifyFetchController = null
 
-watch([() => modifyForm.check_in, () => modifyForm.check_out], async ([checkIn, checkOut]) => {
+// The current unit is rendered as its own "(current)" option, so exclude it
+// from the fetched list to avoid showing it twice.
+const otherModifyUnits = computed(() =>
+    modifyUnits.value.filter(u => u.id !== props.booking.unit_id)
+)
+
+// Load every available unit within this booking's unit type for the given
+// dates. `keepSelection` preserves the current unit (used when opening the
+// form without changing dates); a date change clears it since availability
+// may have shifted.
+async function loadModifyUnits(checkIn, checkOut, { keepSelection = false } = {}) {
     if (!checkIn || !checkOut) return
     if (modifyFetchController) modifyFetchController.abort()
     modifyFetchController = new AbortController()
-    modifyForm.unit_id = ''
+    if (!keepSelection) modifyForm.unit_id = ''
     modifyUnits.value  = []
     loadingModifyUnits.value = true
     try {
@@ -283,6 +311,17 @@ watch([() => modifyForm.check_in, () => modifyForm.check_out], async ([checkIn, 
     } finally {
         loadingModifyUnits.value = false
     }
+}
+
+// Refetch (and clear the selection) whenever the dates change.
+watch([() => modifyForm.check_in, () => modifyForm.check_out], ([checkIn, checkOut]) => {
+    loadModifyUnits(checkIn, checkOut)
+})
+
+// Populate the unit list as soon as the form opens, keeping the current unit,
+// so a guest can be moved to any other available unit of the same type.
+watch(showModifyForm, (open) => {
+    if (open) loadModifyUnits(modifyForm.check_in, modifyForm.check_out, { keepSelection: true })
 })
 
 // Keep modifyForm in sync if Inertia refreshes the booking prop
@@ -400,6 +439,13 @@ const weeklyProgress = computed(() => {
     return { paid, total: ins.length, pct: Math.round((paid / ins.length) * 100) }
 })
 const balanceDue = computed(() => Number(props.booking.balance_due ?? 0))
+// Check-in is only valid once the check-in date has arrived; before then an
+// outstanding balance is collected via "Record payment" rather than at check-in.
+const checkInDateReached = computed(() => {
+    const ci = new Date(props.booking.check_in)
+    const end = new Date(); end.setHours(23, 59, 59, 999)
+    return ci <= end
+})
 
 // ── Mobile primary action (sticky bar) ─────────────────────────
 const primaryAction = computed(() => {
@@ -660,13 +706,28 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                             <div class="flex justify-between text-xs pt-1">
                                 <span class="text-gray-400">Payment</span>
                                 <span :class="booking.payment_status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" class="font-medium capitalize">
-                                    {{ booking.payment_status === 'paid' ? `Paid · ${booking.payment_method?.replace('_', ' ')}` : 'Pending' }}
+                                    {{ booking.payment_status === 'paid' ? `Paid · ${booking.payment_method?.replace('_', ' ')}`
+                                       : booking.payment_status === 'partial' ? 'Partial' : 'Pending' }}
                                 </span>
+                            </div>
+                            <div v-if="booking.payment_plan !== 'weekly' && booking.payment_status !== 'paid'" class="flex justify-between text-xs">
+                                <span class="text-gray-400">Received</span>
+                                <span class="text-gray-600 dark:text-gray-400 tabular-nums">{{ fmt(booking.amount_received) }}</span>
+                            </div>
+                            <div v-if="booking.payment_plan !== 'weekly' && balanceDue > 0" class="flex justify-between text-xs">
+                                <span class="text-gray-400">Balance due</span>
+                                <span class="text-amber-600 dark:text-amber-400 font-medium tabular-nums">{{ fmt(balanceDue) }}</span>
                             </div>
                             <div v-if="booking.payment_reference" class="flex justify-between text-xs">
                                 <span class="text-gray-400">Reference</span>
                                 <span class="text-gray-600 dark:text-gray-400 font-mono text-[11px]">{{ booking.payment_reference }}</span>
                             </div>
+
+                            <button v-if="booking.payment_plan !== 'weekly' && balanceDue > 0 && can('manage-bookings') && booking.status !== 'cancelled'"
+                                    @click="openRecordPayment"
+                                    class="mt-1 w-full py-2 text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-1.5">
+                                <CreditCard class="w-3.5 h-3.5" /> Record payment
+                            </button>
                         </div>
 
                         <button v-if="booking.adjustments?.length || can('manage-bookings')"
@@ -794,6 +855,35 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                 <div class="space-y-3 mt-4 lg:mt-0 lg:sticky lg:top-20">
 
                     <p v-if="!isCancelled" :class="sectionLabel" class="px-1"><Layers class="w-3.5 h-3.5" /> Actions</p>
+
+                    <!-- Outstanding balance: collect payment, then check in -->
+                    <div v-if="booking.status === 'confirmed' && !paidEnoughToCheckIn && checkInDateReached && booking.payment_plan !== 'weekly' && balanceDue > 0 && can('confirm-checkin')" :class="card" class="p-4">
+                        <p class="text-xs font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1.5"><CreditCard class="w-3.5 h-3.5 text-amber-500" /> Payment Required to Check In</p>
+                        <p class="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded-lg px-3 py-2 mb-3">
+                            <span class="font-semibold tabular-nums">{{ fmt(balanceDue) }}</span> must be collected before the guest can check in.
+                        </p>
+                        <form @submit.prevent="submitCheckIn" class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Payment method</label>
+                                <select v-model="checkInForm.payment_method" :class="inputCls()">
+                                    <option value="pos">POS</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Reference <span class="text-gray-400">(optional)</span></label>
+                                <input v-model="checkInForm.payment_reference" type="text" :class="inputCls()" placeholder="Transaction reference" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Check-in notes <span class="text-gray-400">(optional)</span></label>
+                                <textarea v-model="checkInForm.checkin_notes" rows="2" :class="[...inputCls(false), 'resize-none']" />
+                            </div>
+                            <button type="submit" :disabled="checkInForm.processing" @click="checkInForm.collect_payment = true"
+                                    class="w-full py-2.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg disabled:opacity-50 transition-all flex items-center justify-center gap-1.5">
+                                <LogIn class="w-3.5 h-3.5" /> Collect {{ fmt(balanceDue) }} &amp; Check In
+                            </button>
+                        </form>
+                    </div>
 
                     <!-- Check-in panel -->
                     <div v-if="booking.status === 'confirmed' && paidEnoughToCheckIn && can('confirm-checkin')" :class="card" class="p-4">
@@ -1065,6 +1155,39 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
 
         <CautionChargesModal :show="showCautionModal" :booking="booking" @close="showCautionModal = false" />
 
+        <!-- Record payment modal -->
+        <Modal :show="showRecordPayment" max-width="sm" @close="showRecordPayment = false">
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2"><CreditCard class="w-4 h-4 text-gray-400" /> Record payment</h3>
+                    <button @click="showRecordPayment = false" class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><XCircle class="w-4 h-4" /></button>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Balance due <span class="font-semibold text-amber-600 dark:text-amber-400 tabular-nums">{{ fmt(balanceDue) }}</span>. Payments over the balance are capped automatically.</p>
+                <form @submit.prevent="submitRecordPayment" class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Amount ₦</label>
+                        <input v-model.number="recordForm.amount" type="number" min="1" :max="balanceDue" step="1000" :class="inputCls()" />
+                        <p v-if="recordForm.errors.amount" class="mt-1 text-xs text-red-600">{{ recordForm.errors.amount }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Payment method</label>
+                        <select v-model="recordForm.payment_method" :class="inputCls()">
+                            <option value="pos">POS</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Reference <span class="text-gray-400">(optional)</span></label>
+                        <input v-model="recordForm.payment_reference" type="text" :class="inputCls()" placeholder="Transaction reference" />
+                    </div>
+                    <button type="submit" :disabled="recordForm.processing || !(recordForm.amount > 0)"
+                            class="w-full py-2.5 text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 transition-all">
+                        {{ recordForm.processing ? 'Recording…' : 'Record payment' }}
+                    </button>
+                </form>
+            </div>
+        </Modal>
+
         <!-- Adjustments modal -->
         <Modal :show="showAdjModal" max-width="md" @close="showAdjModal = false; showAdjForm = false">
             <div class="p-5">
@@ -1172,7 +1295,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                         </div>
                         <select v-else v-model="modifyForm.unit_id" :class="inputCls(false)">
                             <option :value="booking.unit_id">Unit {{ booking.unit?.unit_number }} (current)</option>
-                            <option v-for="u in modifyUnits" :key="u.id" :value="u.id">{{ u.label }}</option>
+                            <option v-for="u in otherModifyUnits" :key="u.id" :value="u.id">{{ u.label }}</option>
                         </select>
                     </div>
                     <div><label class="block text-xs text-gray-500 mb-1">Guests</label><input v-model.number="modifyForm.guests" type="number" min="1" :class="inputCls(false)" /></div>

@@ -193,18 +193,65 @@ class Booking extends Model
 
     public function getBalanceDueAttribute(): float
     {
-        // Non-weekly bookings are settled in full up front; only weekly plans
-        // carry a running balance across installments.
-        if (! $this->isWeekly()) {
-            return $this->payment_status === 'paid' ? 0.0 : (float) $this->total_amount;
+        // Weekly plans carry a running balance across installments.
+        if ($this->isWeekly()) {
+            return max(0, (float) $this->total_amount - $this->installments_paid);
         }
 
-        return max(0, (float) $this->total_amount - $this->installments_paid);
+        // Legacy paid bookings predate amount_received tracking (it stayed 0),
+        // so treat an explicit 'paid' status as settled regardless.
+        if ($this->payment_status === 'paid') {
+            return 0.0;
+        }
+
+        // Otherwise the balance is whatever hasn't been collected yet — this is
+        // what makes deposits and pay-at-check-in bookings track correctly.
+        return max(0, (float) $this->total_amount - (float) $this->amount_received);
     }
 
     public function hasOverdueInstallment(): bool
     {
         return $this->installments->contains(fn ($i) => $i->paid_at === null && $i->due_date->isPast());
+    }
+
+    /**
+     * Record a payment against this (non-weekly) booking: books the income,
+     * increases amount_received, and rolls payment_status forward to
+     * partial/paid. Never overpays; returns the amount actually applied.
+     */
+    public function recordPayment(float $amount, string $method, ?string $reference, string $description): float
+    {
+        $amount = round(min($amount, max(0, (float) $this->total_amount - (float) $this->amount_received)), 2);
+        if ($amount <= 0) {
+            return 0.0;
+        }
+
+        FinancialTransaction::create([
+            'building_id'      => $this->building_id,
+            'recorded_by'      => auth()->id(),
+            'type'             => 'income',
+            'category'         => 'booking',
+            'reference_type'   => self::class,
+            'reference_id'     => $this->id,
+            'description'      => $description,
+            'amount'           => $amount,
+            'payment_method'   => $method,
+            'payment_reference'=> $reference,
+            'transaction_date' => now()->toDateString(),
+        ]);
+
+        $received  = round((float) $this->amount_received + $amount, 2);
+        $fullyPaid = $received >= (float) $this->total_amount - 0.01;
+
+        $this->update([
+            'amount_received'    => $received,
+            'payment_status'     => $fullyPaid ? 'paid' : 'partial',
+            'paid_at'            => $fullyPaid ? ($this->paid_at ?? now()) : $this->paid_at,
+            'payment_method'     => $this->payment_method ?? $method,
+            'paystack_reference' => $this->paystack_reference ?? $reference,
+        ]);
+
+        return $amount;
     }
 
 

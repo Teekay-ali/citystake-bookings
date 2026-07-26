@@ -30,6 +30,8 @@
 
         .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
         .status-paid { background: #dcfce7; color: #166534; }
+        .status-partial { background: #fef3c7; color: #92400e; }
+        .status-pending { background: #fee2e2; color: #991b1b; }
 
         .stay-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 28px 0; }
         .stay-row { display: table; width: 100%; margin-bottom: 10px; }
@@ -64,7 +66,19 @@
 </head>
 <body>
 
-<div class="watermark-paid">PAID</div>
+@php
+    $balance = (float) $booking->balance_due;
+    $paid    = max(0, (float) $booking->total_amount - $balance);
+    // Payment state drives the watermark and status badge.
+    $isPaid    = $balance <= 0;
+    $isPartial = ! $isPaid && $paid > 0;
+    $wmText  = $isPaid ? 'PAID' : ($isPartial ? 'PART-PAID' : 'UNPAID');
+    $wmColor = $isPaid ? 'rgba(22,163,74,0.06)' : ($isPartial ? 'rgba(217,119,6,0.06)' : 'rgba(220,38,38,0.06)');
+    $badgeClass = $isPaid ? 'status-paid' : ($isPartial ? 'status-partial' : 'status-pending');
+    $badgeText  = $isPaid ? 'Paid' : ($isPartial ? 'Part-paid' : 'Unpaid');
+@endphp
+
+<div class="watermark-paid" style="color: {{ $wmColor }};">{{ $wmText }}</div>
 
 <!-- Header -->
 <div class="header">
@@ -82,7 +96,7 @@
         <div class="invoice-ref">{{ $booking->booking_reference }}</div>
         <div class="invoice-date">Issued: {{ $booking->paid_at ? $booking->paid_at->format('d M Y') : now()->format('d M Y') }}</div>
         <div style="margin-top: 10px;">
-            <span class="status-badge status-paid">Paid</span>
+            <span class="status-badge {{ $badgeClass }}">{{ $badgeText }}</span>
         </div>
     </div>
 </div>
@@ -165,9 +179,22 @@
         </tr>
     @endif
     <tr class="total-row">
-        <td>Total Amount Paid{{ $booking->currency === 'USD' ? ' (NGN)' : '' }}</td>
+        <td>Total Amount{{ $booking->currency === 'USD' ? ' (NGN)' : '' }}</td>
         <td class="right">₦{{ number_format($booking->total_amount, 0) }}</td>
     </tr>
+    <tr>
+        <td>Amount Paid</td>
+        <td class="right">₦{{ number_format($paid, 0) }}</td>
+    </tr>
+    @if($balance > 0)
+        <tr>
+            <td>
+                Balance Due
+                <br><span style="font-size:11px;color:#9ca3af;">{{ $booking->payment_plan === 'weekly' ? 'Collected weekly, before each week begins' : 'Payable in full before check-in' }}</span>
+            </td>
+            <td class="right" style="color:#d97706;font-weight:bold;">₦{{ number_format($balance, 0) }}</td>
+        </tr>
+    @endif
     </tbody>
 </table>
 

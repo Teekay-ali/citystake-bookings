@@ -88,8 +88,43 @@
                 <span>Total Amount{{ $booking->currency === 'USD' ? ' (NGN)' : '' }}</span>
                 <span>₦{{ number_format($booking->total_amount, 0) }}</span>
             </div>
+
+            @php
+                $balance = (float) $booking->balance_due;
+                $paid    = max(0, (float) $booking->total_amount - $balance);
+            @endphp
+            <div class="total-row">
+                <span>Amount paid</span>
+                <span>₦{{ number_format($paid, 0) }}</span>
+            </div>
+            @if($balance > 0)
+                <div class="total-row">
+                    <span>Balance due</span>
+                    <span>₦{{ number_format($balance, 0) }}</span>
+                </div>
+            @endif
         </div>
     </div>
+
+    @if($balance > 0)
+        <div class="info-box" style="background-color: #fef3c7; border-color: #f59e0b;">
+            <p class="info-box-title" style="color: #92400e;">💳 Outstanding Balance</p>
+            <p class="info-box-text" style="color: #92400e;">
+                @if($booking->payment_plan === 'weekly')
+                    Your stay is on a weekly plan. The remaining ₦{{ number_format($balance, 0) }} is collected week by week, each week paid before it begins.
+                @else
+                    A balance of ₦{{ number_format($balance, 0) }} is outstanding. Please settle it in full before check-in.
+                @endif
+            </p>
+        </div>
+    @else
+        <div class="info-box" style="background-color: #dcfce7; border-color: #16a34a;">
+            <p class="info-box-title" style="color: #166534;">✅ Payment Received</p>
+            <p class="info-box-text" style="color: #166534;">
+                Your booking is paid in full. Thank you!
+            </p>
+        </div>
+    @endif
 
     <div class="info-box">
         <p class="info-box-title">📍 Property Address</p>

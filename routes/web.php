@@ -193,6 +193,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/bookings/{booking}/caution-fee/request', [AdminBookingController::class, 'requestCautionRefund'])->name('bookings.caution-fee.request');
     Route::post('/bookings/{booking}/caution-fee/refund', [AdminBookingController::class, 'refundCautionFee'])->name('bookings.caution-fee.refund');
     Route::post('/bookings/{booking}/installments/{installment}/pay', [AdminBookingController::class, 'payInstallment'])->name('bookings.installments.pay');
+    Route::post('/bookings/{booking}/record-payment', [AdminBookingController::class, 'recordPayment'])->name('bookings.record-payment');
     Route::post('/bookings/{booking}/caution-fee/charges', [AdminBookingController::class, 'storeCautionCharge'])->name('bookings.caution-charges.store');
     Route::post('/bookings/{booking}/caution-fee/charges/{charge}/void', [AdminBookingController::class, 'voidCautionCharge'])->name('bookings.caution-charges.void');
 

@@ -44,6 +44,9 @@ const form = useForm({
     organization_id: '',
     // Payment plan (weekly prepaid installments)
     payment_plan: 'full',
+    // How much to collect now (non-weekly): 'full' | 'deposit' | 'later'
+    payment_timing: 'full',
+    deposit_amount: '',
     // Backdated booking - allow a past check-in (migration / walk-in already started)
     backdated: false,
 })
@@ -75,6 +78,18 @@ const weeklySchedule = computed(() => {
     }
     return rows
 })
+// Amount collected at booking. Weekly → week 1; otherwise driven by the timing:
+// full total, the entered deposit, or nothing (pay before check-in).
+const collectNow = computed(() => {
+    if (isWeekly.value) return weeklySchedule.value[0]?.amount ?? 0
+    if (form.payment_timing === 'later')   return 0
+    if (form.payment_timing === 'deposit') return Math.min(parseFloat(form.deposit_amount) || 0, pricing.value.total)
+    return pricing.value.total
+})
+const balanceBeforeCheckin = computed(() =>
+    isWeekly.value ? 0 : Math.max(0, pricing.value.total - collectNow.value)
+)
+// Kept for the weekly schedule label.
 const dueNow = computed(() => weeklySchedule.value[0]?.amount ?? 0)
 
 // ── Advanced options modal ──
@@ -627,6 +642,25 @@ const inputCls = (hasError) => [
                                 :class="inputCls(false)"
                             />
                         </div>
+
+                        <!-- Collect at booking (non-weekly only) -->
+                        <div v-if="!isWeekly" class="mt-4">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Collect at booking</label>
+                            <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                                <button v-for="t in [['full','Pay in full'],['deposit','Deposit'],['later','Pay at check-in']]" :key="t[0]"
+                                        type="button" @click="form.payment_timing = t[0]"
+                                        :class="form.payment_timing === t[0] ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                        class="flex-1 py-1.5 rounded-md text-xs font-medium transition-all">{{ t[1] }}</button>
+                            </div>
+                            <div v-if="form.payment_timing === 'deposit'" class="mt-2">
+                                <input v-model.number="form.deposit_amount" type="number" min="1" :max="pricing.total || undefined" step="1000"
+                                       placeholder="Deposit amount ₦" :class="inputCls(false)" />
+                                <p v-if="form.errors.deposit_amount" class="mt-1 text-xs text-red-600">{{ form.errors.deposit_amount }}</p>
+                            </div>
+                            <p v-if="form.payment_timing !== 'full'" class="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                                Balance must be collected before the guest checks in.
+                            </p>
+                        </div>
                     </section>
 
                     <!-- Bottom spacer so last field isn't hugging the edge -->
@@ -754,6 +788,16 @@ const inputCls = (hasError) => [
                             <span class="text-sm font-medium text-emerald-700 dark:text-emerald-400">Collect now (week 1)</span>
                             <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{{ formatPrice(dueNow) }}</span>
                         </div>
+                        <template v-else-if="form.payment_timing !== 'full'">
+                            <div class="flex items-baseline justify-between mt-1">
+                                <span class="text-sm font-medium text-emerald-700 dark:text-emerald-400">Collect now</span>
+                                <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{{ formatPrice(collectNow) }}</span>
+                            </div>
+                            <div class="flex items-baseline justify-between mt-0.5">
+                                <span class="text-xs font-medium text-amber-600 dark:text-amber-400">Balance before check-in</span>
+                                <span class="text-xs font-semibold text-amber-600 dark:text-amber-400">{{ formatPrice(balanceBeforeCheckin) }}</span>
+                            </div>
+                        </template>
 
                         <!-- Payment method badge -->
                         <div v-if="form.payment_method" class="flex items-center justify-between text-xs">

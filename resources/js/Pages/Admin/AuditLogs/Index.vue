@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { ShieldCheck, Search, X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { ShieldCheck, Search, X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-vue-next'
 
 const props = defineProps({
     logs:    Object,
@@ -148,7 +148,13 @@ function actionColor(action) {
                                     </span>
                             </td>
                             <td class="px-5 py-3.5 text-xs text-gray-500 dark:text-gray-400">
-                                    <span v-if="log.model_type">
+                                    <Link v-if="log.model_type && log.resource_url" :href="log.resource_url"
+                                          class="inline-flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:underline">
+                                        {{ log.model_type.split('\\').pop() }}
+                                        <span v-if="log.model_id" class="text-gray-400">#{{ log.model_id }}</span>
+                                        <ExternalLink class="w-3 h-3 text-gray-400" />
+                                    </Link>
+                                    <span v-else-if="log.model_type">
                                         {{ log.model_type.split('\\').pop() }}
                                         <span v-if="log.model_id" class="text-gray-400">#{{ log.model_id }}</span>
                                     </span>

@@ -23,6 +23,8 @@ const form = useForm({
     discount_mode: 'auto',        // 'auto' | 'manual' | 'none'
     manual_discount: '',          // whole-group flat ₦, split across units
     discount_reason: '',
+    payment_timing: 'full',       // 'full' | 'deposit' | 'later'
+    deposit_amount: '',           // whole-group deposit, split across units
     members: [
         { unit_type_id: '', unit_id: '', guest_name: '', guest_email: '', guest_phone: '', guests: 1 },
         { unit_type_id: '', unit_id: '', guest_name: '', guest_email: '', guest_phone: '', guests: 1 },
@@ -120,6 +122,15 @@ const lineItems = computed(() => {
 const grandTotal = computed(() => lineItems.value.reduce((s, r) => s + r.total, 0))
 const memberTotal = (i) => lineItems.value[i]?.total ?? 0
 
+// Amount collected at booking for the whole group, and the balance left to
+// settle per unit before check-in.
+const collectNow = computed(() => {
+    if (form.payment_timing === 'later')   return 0
+    if (form.payment_timing === 'deposit') return Math.min(parseFloat(form.deposit_amount) || 0, grandTotal.value)
+    return grandTotal.value
+})
+const balanceBeforeCheckin = computed(() => Math.max(0, grandTotal.value - collectNow.value))
+
 // ── Organizations ──
 const orgs = ref([])
 onMounted(async () => {
@@ -137,6 +148,8 @@ function submit() {
         // Only send discount inputs relevant to the chosen mode.
         manual_discount: d.discount_mode === 'manual' ? d.manual_discount : null,
         discount_reason: d.discount_mode === 'manual' ? d.discount_reason : null,
+        // Only send the deposit amount when a deposit is being taken.
+        deposit_amount: d.payment_timing === 'deposit' ? d.deposit_amount : null,
     }))
         .post(route('manage.bookings.group.store'), {
             onError: () => toast.error('Please check the form for errors.'),
@@ -286,6 +299,20 @@ function submit() {
                     </div>
                     <input v-model="form.payment_reference" type="text" placeholder="Payment reference (optional)" :class="inputCls" />
 
+                    <!-- Collect at booking -->
+                    <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-3 mb-1.5">Collect at booking</p>
+                    <div class="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800">
+                        <button v-for="t in [['full','Full'],['deposit','Deposit'],['later','At check-in']]" :key="t[0]" type="button" @click="form.payment_timing = t[0]"
+                                :class="form.payment_timing === t[0] ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                class="flex-1 py-1.5 rounded-md text-xs font-medium transition-all">{{ t[1] }}</button>
+                    </div>
+                    <div v-if="form.payment_timing === 'deposit'" class="mt-2">
+                        <input v-model.number="form.deposit_amount" type="number" min="1" :max="grandTotal || undefined" step="1000"
+                               placeholder="Total deposit ₦ (split across units)" :class="inputCls" />
+                        <p v-if="form.errors.deposit_amount" class="mt-1 text-xs text-red-600">{{ form.errors.deposit_amount }}</p>
+                    </div>
+                    <p v-if="form.payment_timing !== 'full'" class="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">Balance is due per unit before check-in.</p>
+
                     <div class="border-t border-gray-100 dark:border-gray-800 my-4" />
 
                     <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Booking Summary</p>
@@ -325,12 +352,24 @@ function submit() {
                         <span class="text-sm font-medium text-gray-900 dark:text-white">Group total</span>
                         <span class="text-xl font-semibold text-gray-900 dark:text-white tabular-nums">{{ fmt(grandTotal) }}</span>
                     </div>
+                    <template v-if="lineItems.length && form.payment_timing !== 'full'">
+                        <div class="flex items-baseline justify-between mt-1">
+                            <span class="text-xs font-medium text-emerald-700 dark:text-emerald-400">Collect now</span>
+                            <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">{{ fmt(collectNow) }}</span>
+                        </div>
+                        <div class="flex items-baseline justify-between mt-0.5">
+                            <span class="text-xs font-medium text-amber-600 dark:text-amber-400">Balance before check-in</span>
+                            <span class="text-xs font-semibold text-amber-600 dark:text-amber-400 tabular-nums">{{ fmt(balanceBeforeCheckin) }}</span>
+                        </div>
+                    </template>
 
                     <button @click="submit" :disabled="form.processing"
                             class="mt-4 w-full py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 transition-all">
                         {{ form.processing ? 'Creating…' : `Create group booking` }}
                     </button>
-                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 text-center">All units settled now, before check-in.</p>
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 text-center">
+                        {{ form.payment_timing === 'full' ? 'All units settled now, before check-in.' : 'Balance collected per unit before each guest checks in.' }}
+                    </p>
                 </div>
             </div>
         </div>

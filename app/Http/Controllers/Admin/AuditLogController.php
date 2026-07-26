@@ -22,7 +22,7 @@ class AuditLogController extends Controller
             abort_unless($user->can('view-audit-logs'), 403);
         }
 
-        $query = AuditLog::with('user')
+        $query = AuditLog::with(['user', 'subject'])
             ->latest();
 
         // Hide the owner's own actions from the log
@@ -43,6 +43,18 @@ class AuditLogController extends Controller
         }
 
         $logs = $query->paginate(50)->withQueryString();
+
+        // Attach a link to the audited resource where one can be resolved.
+        $logs->through(fn (AuditLog $log) => [
+            'id'           => $log->id,
+            'action'       => $log->action,
+            'model_type'   => $log->model_type,
+            'model_id'     => $log->model_id,
+            'resource_url' => $log->resourceUrl(),
+            'ip_address'   => $log->ip_address,
+            'created_at'   => $log->created_at,
+            'user'         => $log->user ? ['name' => $log->user->name, 'email' => $log->user->email] : null,
+        ]);
 
         $actions = AuditLog::select('action')
             ->distinct()

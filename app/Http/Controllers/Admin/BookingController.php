@@ -171,6 +171,10 @@ class BookingController extends Controller
             'organization_id' => 'nullable|exists:organizations,id',
             // Payment plan (weekly prepaid installments)
             'payment_plan' => 'nullable|in:full,weekly',
+            // How much is collected at booking (non-weekly): the full total now,
+            // a deposit now with the balance due before check-in, or nothing now.
+            'payment_timing'  => 'nullable|in:full,deposit,later',
+            'deposit_amount'  => 'nullable|numeric|min:1|required_if:payment_timing,deposit',
             // Backdated booking - lets staff record a past-dated stay (e.g. migrating
             // bookings from the old platform, or a walk-in that already started).
             'backdated' => 'nullable|boolean',
@@ -305,11 +309,14 @@ class BookingController extends Controller
                 'discount_reason'   => $bookingModel->discount_reason,
                 'caution_fee'       => $bookingModel->caution_fee,
                 'status'            => 'confirmed',
-                'payment_status'    => $weekly ? 'partial' : 'paid',
+                // Payment is applied below (weekly week-1, or the chosen timing),
+                // which rolls this forward to partial/paid.
+                'payment_status'    => 'pending',
+                'amount_received'   => 0,
                 'payment_plan'      => $weekly ? 'weekly' : 'full',
                 'payment_method'    => $validated['payment_method'],
                 'paystack_reference'=> $validated['payment_reference'],
-                'paid_at'           => $weekly ? null : now(),
+                'paid_at'           => null,
             ]);
 
             // Weekly plan: generate the schedule and settle week 1 now (before check-in).
@@ -318,25 +325,26 @@ class BookingController extends Controller
                     $booking->installments()->create($row);
                 }
                 $this->settleInstallment($booking->installments()->orderBy('week_number')->first(), $validated['payment_method'], $validated['payment_reference'] ?? null);
-                $booking->update(['amount_received' => $booking->fresh()->installments_paid]);
+                $booking->update(['amount_received' => $booking->fresh()->installments_paid, 'payment_status' => 'partial']);
             } else {
-            FinancialTransaction::create([
-                'building_id'      => $booking->building_id,
-                'recorded_by'      => auth()->id(),
-                'type'             => 'income',
-                'category'         => 'booking',
-                'reference_type'   => Booking::class,
-                'reference_id'     => $booking->id,
-                'description'      => "Walk-in booking {$booking->booking_reference} - {$booking->guest_name}"
-                    . ($booking->organization_id ? " [Org: {$booking->organization?->name}]" : '')
-                    . ($booking->currency === 'USD'
-                        ? " (\${$booking->price_usd} @ ₦" . number_format((float) $booking->exchange_rate, 0) . "/\$)"
-                        : ''),
-                'amount'           => $booking->total_amount,
-                'payment_method'   => $validated['payment_method'],
-                'payment_reference'=> $validated['payment_reference'] ?? null,
-                'transaction_date' => now()->toDateString(),
-            ]);
+                // Non-weekly: collect the full total, a deposit, or nothing now.
+                $timing = $validated['payment_timing'] ?? 'full';
+                $collect = match ($timing) {
+                    'full'    => (float) $booking->total_amount,
+                    'deposit' => (float) ($validated['deposit_amount'] ?? 0),
+                    'later'   => 0.0,
+                };
+
+                if ($collect > 0) {
+                    $label = ($timing === 'deposit' ? "Deposit for booking {$booking->booking_reference}" : "Walk-in booking {$booking->booking_reference}")
+                        . " - {$booking->guest_name}"
+                        . ($booking->organization_id ? " [Org: {$booking->organization?->name}]" : '')
+                        . ($booking->currency === 'USD'
+                            ? " (\${$booking->price_usd} @ ₦" . number_format((float) $booking->exchange_rate, 0) . "/\$)"
+                            : '');
+                    $this->applyBookingPayment($booking, $collect, $validated['payment_method'], $validated['payment_reference'] ?? null, $label);
+                }
+                $booking->refresh();
             }
 
             AuditLog::log('booking.created', $booking, null, ['reference' => $booking->booking_reference, 'guest' => $booking->guest_name, 'method' => $validated['payment_method']]);
@@ -514,6 +522,15 @@ class BookingController extends Controller
             || $checkOut !== $booking->check_out->toDateString();
         $unitChanged  = $unitId !== $booking->unit_id;
 
+        // A booking may be moved to any unit, but only within its own unit type
+        // (keeps pricing valid, since repricing uses the booking's unit type).
+        if ($unitChanged && $unitId !== null) {
+            $targetUnit = Unit::find($unitId);
+            if (! $targetUnit || (int) $targetUnit->unit_type_id !== (int) $booking->unit_type_id) {
+                return back()->with('error', 'You can only move this booking to another unit of the same type.');
+            }
+        }
+
         if ($datesChanged || $unitChanged) {
             $conflict = Booking::where('unit_id', $unitId)
                 ->where('id', '!=', $booking->id)
@@ -603,7 +620,8 @@ class BookingController extends Controller
         if ($new['guest_phone'] !== $old['guest_phone']) $changes[] = "Phone updated";
 
         if (! empty($changes)) {
-            $recipients = NotificationService::getUsersByRoles(['manager', 'super-admin'], $booking->building_id);
+            $recipients = NotificationService::getUsersByRoles(['manager', 'ceo', 'super-admin'], $booking->building_id)
+                ->reject(fn ($u) => $u->id === $user->id);
             NotificationService::send($recipients, new BookingModifiedNotification($booking, $changes, $user->name));
         }
 
@@ -641,6 +659,49 @@ class BookingController extends Controller
         return response()->json($units);
     }
 
+    public function recordPayment(Request $request, Booking $booking)
+    {
+        abort_unless(auth()->user()->can('manage-bookings'), 403);
+
+        $user = auth()->user();
+        if (!$user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
+
+        if ($booking->isWeekly()) {
+            return back()->with('error', 'Weekly plans are settled through the installment schedule.');
+        }
+        if (in_array($booking->status, ['cancelled'])) {
+            return back()->with('error', 'Cannot record a payment against a cancelled booking.');
+        }
+        if ($booking->balance_due <= 0) {
+            return back()->with('error', 'This booking is already fully paid.');
+        }
+
+        $validated = $request->validate([
+            'amount'            => 'required|numeric|min:1',
+            'payment_method'    => 'required|in:pos,bank_transfer',
+            'payment_reference' => 'nullable|string|max:255',
+        ]);
+
+        $applied = $this->applyBookingPayment(
+            $booking,
+            (float) $validated['amount'],
+            $validated['payment_method'],
+            $validated['payment_reference'] ?? null,
+            "Payment for booking {$booking->booking_reference} - {$booking->guest_name}"
+        );
+
+        AuditLog::log('booking.payment_recorded', $booking, null, [
+            'amount'            => $applied,
+            'balance_remaining' => $booking->fresh()->balance_due,
+            'by'                => auth()->id(),
+        ]);
+
+        return back()->with('success', '₦' . number_format($applied, 0) . ' payment recorded.'
+            . ($booking->fresh()->balance_due > 0 ? ' Balance: ₦' . number_format($booking->fresh()->balance_due, 0) . '.' : ' Booking fully paid.'));
+    }
+
     public function checkIn(Request $request, Booking $booking)
     {
         abort_unless(auth()->user()->can('confirm-checkin'), 403);
@@ -653,16 +714,37 @@ class BookingController extends Controller
             );
         }
 
+        $validated = $request->validate([
+            'checkin_notes'     => 'nullable|string|max:500',
+            // Optionally collect the outstanding balance as part of checking in.
+            'collect_payment'   => 'nullable|boolean',
+            'payment_method'    => 'nullable|required_if:collect_payment,true|in:pos,bank_transfer',
+            'payment_reference' => 'nullable|string|max:255',
+        ]);
+
+        // Collect any outstanding balance first (non-weekly), so a pending or
+        // deposit booking can be settled and checked in in one step.
+        if ($request->boolean('collect_payment') && !$booking->isWeekly() && $booking->balance_due > 0) {
+            $this->applyBookingPayment(
+                $booking,
+                (float) $booking->balance_due,
+                $validated['payment_method'],
+                $validated['payment_reference'] ?? null,
+                "Balance collected at check-in for {$booking->booking_reference} - {$booking->guest_name}"
+            );
+            $booking->refresh();
+        }
+
         if (!$booking->canCheckIn()) {
+            // Distinguish the common cause (unpaid balance) from timing/status.
+            if (!$booking->isWeekly() && $booking->payment_status !== 'paid') {
+                return back()->with('error', 'Full payment must be collected before check-in.');
+            }
             return back()->with('error', 'This booking cannot be checked in at this time.');
         }
 
-        // Payment is always settled before check-in (at creation, or week 1 for a
-        // weekly plan), so check-in is arrival confirmation only - it records NO
-        // income (doing so double-counted the booking payment).
-        $validated = $request->validate([
-            'checkin_notes' => 'nullable|string|max:500',
-        ]);
+        // Any remaining income was booked above (or at creation / week 1), so
+        // arrival confirmation itself records NO income.
 
         $booking->update([
             'status'        => 'checked_in',
@@ -1098,6 +1180,16 @@ class BookingController extends Controller
 
     // Record an installment as paid + write its income transaction. Used at booking
     // creation (week 1) and when staff record each subsequent weekly payment.
+    /**
+     * Record a payment against a (non-weekly) booking: books the income,
+     * increases amount_received, and rolls payment_status forward to
+     * partial/paid. Returns the amount actually applied (never overpays).
+     */
+    private function applyBookingPayment(Booking $booking, float $amount, string $method, ?string $reference, string $description): float
+    {
+        return $booking->recordPayment($amount, $method, $reference, $description);
+    }
+
     private function settleInstallment(BookingInstallment $installment, string $method, ?string $reference = null): void
     {
         if ($installment->paid_at) return;

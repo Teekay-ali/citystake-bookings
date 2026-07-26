@@ -8,7 +8,6 @@ use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\BookingGroup;
 use App\Models\Building;
-use App\Models\FinancialTransaction;
 use App\Models\Unit;
 use App\Models\UnitType;
 use App\Notifications\NewBookingNotification;
@@ -56,6 +55,10 @@ class GroupBookingController extends Controller
             'discount_mode'        => 'required|in:auto,manual,none',
             'manual_discount'      => 'nullable|numeric|min:0|required_if:discount_mode,manual',
             'discount_reason'      => 'nullable|string|max:255|required_if:discount_mode,manual',
+            // How much is collected at booking for the whole group: the full total
+            // now, a deposit now (split across units), or nothing (before check-in).
+            'payment_timing'       => 'nullable|in:full,deposit,later',
+            'deposit_amount'       => 'nullable|numeric|min:1|required_if:payment_timing,deposit',
             'members'                    => 'required|array|min:2',
             'members.*.unit_id'          => 'required|distinct|exists:units,id',
             'members.*.guest_name'       => 'required|string|max:255',
@@ -123,6 +126,7 @@ class GroupBookingController extends Controller
                 'created_by'      => auth()->id(),
             ]);
 
+            $created = [];
             foreach ($validated['members'] as $i => $m) {
                 $unit     = $units->get($m['unit_id']);
                 $unitType = $unit->unitType;
@@ -142,7 +146,7 @@ class GroupBookingController extends Controller
                 $model = new Booking(['check_in' => $checkIn->toDateString(), 'check_out' => $checkOut->toDateString()]);
                 $model->calculateTotal($unitType, $opts);
 
-                $booking = Booking::create([
+                $created[$i] = Booking::create([
                     'booking_reference'   => Booking::generateReference(),
                     'building_id'         => $building->id,
                     'unit_type_id'        => $unitType->id,
@@ -167,26 +171,47 @@ class GroupBookingController extends Controller
                     'caution_fee'         => $model->caution_fee,
                     'policy_version'      => $building->currentPolicy?->version,
                     'status'              => 'confirmed',
-                    'payment_status'      => 'paid',
+                    // Payment is applied below per the chosen timing.
+                    'payment_status'      => 'pending',
+                    'amount_received'     => 0,
                     'payment_method'      => $validated['payment_method'],
                     'paystack_reference'  => $validated['payment_reference'] ?? null,
-                    'paid_at'             => now(),
+                    'paid_at'             => null,
                 ]);
+            }
 
-                // One income transaction per unit, tagged with the group reference
-                FinancialTransaction::create([
-                    'building_id'      => $booking->building_id,
-                    'recorded_by'      => auth()->id(),
-                    'type'             => 'income',
-                    'category'         => 'booking',
-                    'reference_type'   => Booking::class,
-                    'reference_id'     => $booking->id,
-                    'description'      => "Group booking {$group->reference} · {$booking->booking_reference} - {$booking->guest_name}",
-                    'amount'           => $booking->total_amount,
-                    'payment_method'   => $validated['payment_method'],
-                    'payment_reference'=> $validated['payment_reference'] ?? null,
-                    'transaction_date' => now()->toDateString(),
-                ]);
+            // Collect the whole-group amount now: the full total, a deposit split
+            // across units in proportion to each unit's total, or nothing (the
+            // balance is then due per unit before check-in).
+            $timing     = $validated['payment_timing'] ?? 'full';
+            $grandTotal = array_sum(array_map(fn ($b) => (float) $b->total_amount, $created));
+            $paymentAlloc = [];
+            if ($timing === 'deposit') {
+                $depositTotal = min((float) ($validated['deposit_amount'] ?? 0), $grandTotal);
+                $running = 0.0;
+                $lastKey = array_key_last($created);
+                foreach ($created as $i => $b) {
+                    $paymentAlloc[$i] = $i === $lastKey
+                        ? round($depositTotal - $running, 2)                                       // absorb rounding drift
+                        : round($depositTotal * ((float) $b->total_amount / ($grandTotal ?: 1)), 2);
+                    $running += $paymentAlloc[$i];
+                }
+            }
+
+            foreach ($created as $i => $booking) {
+                $amount = match ($timing) {
+                    'deposit' => $paymentAlloc[$i] ?? 0,
+                    'later'   => 0.0,
+                    default   => (float) $booking->total_amount,
+                };
+                if ($amount > 0) {
+                    $booking->recordPayment(
+                        $amount,
+                        $validated['payment_method'],
+                        $validated['payment_reference'] ?? null,
+                        "Group booking {$group->reference} · {$booking->booking_reference} - {$booking->guest_name}"
+                    );
+                }
 
                 if ($booking->guest_email) {
                     try { Mail::to($booking->guest_email)->send(new BookingConfirmation($booking)); }
