@@ -8,7 +8,7 @@ use Spatie\Permission\PermissionRegistrar;
 /**
  * The Head of Procurement now also performs the first approval step (before the
  * accountant). Additively grant the new approve-procurement-officer permission
- * to head-of-procurement (+ super-admin/ceo) — never touches other permissions.
+ * to head-of-procurement (+ super-admin/ceo) - never touches other permissions.
  */
 return new class extends Migration
 {

@@ -8,11 +8,11 @@ import {
     Users, Menu, X, LogOut, User, ClipboardList,
     ShoppingCart, AlertTriangle, Wrench, Package, BookOpen,
     DollarSign, CheckSquare, Sun, Moon,
-    ChevronLeft, ChevronRight, ShieldAlert, ChevronDown,
+    ChevronRight, ShieldAlert, ChevronDown,
     Search, Plus, Banknote, BadgeCheck, WifiOff,
     Inbox, CalendarCheck, MessageSquare, Clock, UserRound,
     ShieldCheck, UserCog, HelpCircle, MessagesSquare, Megaphone, ScrollText,
-    Home, Boxes, Settings, Briefcase, ClipboardCheck, Eye
+    Home, Boxes, Settings, Briefcase, ClipboardCheck, Eye, PanelLeftClose, PanelLeftOpen
 } from 'lucide-vue-next'
 import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
@@ -452,6 +452,20 @@ function canSeeItem(item) {
     // Support pipe-separated permissions (show if user has ANY of them)
     return item.permission.split('|').some(p => userPermissions.value.includes(p.trim()))
 }
+
+// The items a user can actually see within a group (used to draw the tree guide).
+function visibleItems(group) {
+    return group.items.filter(canSeeItem)
+}
+
+// Tree connector (expanded mode): a vertical guide with a short tick per item.
+// The last item's vertical stops at its tick, giving the L-shaped corner.
+// The literal class strings must stay intact so Tailwind's JIT picks them up.
+const treeBase = "before:content-[''] before:absolute before:left-[-6px] before:top-[-2px] before:w-px before:bg-gray-200 dark:before:bg-gray-800 after:content-[''] after:absolute after:left-[-6px] after:top-1/2 after:h-px after:w-2.5 after:bg-gray-200 dark:after:bg-gray-800"
+function treeClass(idx, len) {
+    if (navCollapsed.value) return ''
+    return `${treeBase} ${idx === len - 1 ? 'before:h-[calc(50%_+_2px)]' : 'before:h-[calc(100%_+_4px)]'}`
+}
 </script>
 
 <template>
@@ -515,9 +529,9 @@ function canSeeItem(item) {
             ]">
 
             <!-- Logo row -->
-            <div class="h-16 flex items-center justify-between px-4 shrink-0">
+            <div :class="navCollapsed ? 'justify-center px-2' : 'justify-between px-4'"
+                 class="h-16 flex items-center shrink-0">
                 <Link :href="route('home')"
-                      :class="navCollapsed ? 'mx-auto' : ''"
                       class="flex items-center gap-2.5 min-w-0">
                     <span class="grid place-items-center h-10 w-10 rounded-xl shrink-0
                                  bg-white/50 dark:bg-white/10 backdrop-blur-md
@@ -541,7 +555,7 @@ function canSeeItem(item) {
                         :aria-expanded="!collapsed"
                         aria-label="Toggle sidebar"
                         class="hidden lg:flex p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                    <ChevronLeft class="w-4 h-4" />
+                    <PanelLeftClose class="w-4 h-4" />
                 </button>
             </div>
 
@@ -550,7 +564,7 @@ function canSeeItem(item) {
                 <button @click="toggleCollapsed()"
                         aria-label="Expand sidebar"
                         class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                    <ChevronRight class="w-4 h-4" />
+                    <PanelLeftOpen class="w-4 h-4" />
                 </button>
             </div>
 
@@ -582,11 +596,13 @@ function canSeeItem(item) {
                         <!-- Divider in icon-rail mode -->
                         <div v-else class="border-t border-gray-100 dark:border-gray-800 mx-2 my-2" />
 
-                        <!-- Items: shown when group open, or always in the icon rail -->
-                        <div v-show="navCollapsed || isGroupOpen(group.label)" class="space-y-0.5">
-                            <template v-for="item in group.items" :key="item.label">
-                                <Link v-if="canSeeItem(item)"
-                                      :href="route(item.route)"
+                        <!-- Items: slide open/closed (grid 0fr↔1fr); the icon rail is always open -->
+                        <div class="grid transition-all duration-200 ease-out"
+                             :class="(navCollapsed || isGroupOpen(group.label)) ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
+                          <div class="overflow-hidden">
+                            <div :class="navCollapsed ? 'space-y-0.5' : 'space-y-0.5 pl-6'">
+                            <template v-for="(item, idx) in visibleItems(group)" :key="item.label">
+                                <Link :href="route(item.route)"
                                       @click="sidebarOpen = false"
                                       @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
                                       @mouseleave="onMouseLeave"
@@ -594,7 +610,8 @@ function canSeeItem(item) {
                                           isActive(item.match)
                                               ? 'bg-white dark:bg-gray-800/60 shadow-sm ring-1 ring-gray-900/5 dark:ring-0 text-gray-900 dark:text-white font-medium'
                                               : 'text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-                                          navCollapsed ? 'justify-center px-0' : 'px-3'
+                                          navCollapsed ? 'justify-center px-0' : 'px-3',
+                                          treeClass(idx, visibleItems(group).length)
                                       ]"
                                       class="relative flex items-center gap-2 py-2 rounded-lg text-sm transition-all">
                                     <span :class="isActive(item.match)
@@ -612,6 +629,8 @@ function canSeeItem(item) {
                                           class="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
                                 </Link>
                             </template>
+                            </div>
+                          </div>
                         </div>
                     </div>
                 </template>

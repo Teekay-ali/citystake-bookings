@@ -10,7 +10,7 @@ use Spatie\Permission\PermissionRegistrar;
  *
  * This is deliberately a migration, NOT a seeder run: the RolesAndPermissions
  * seeder uses syncPermissions() and would overwrite role permissions edited
- * directly in production. Everything here only ADDS — it never removes an
+ * directly in production. Everything here only ADDS - it never removes an
  * existing permission from a role.
  */
 return new class extends Migration
