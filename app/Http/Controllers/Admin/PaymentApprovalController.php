@@ -44,7 +44,12 @@ class PaymentApprovalController extends Controller
             $query->where('building_id', $request->building);
         }
 
-        $approvals = $query->latest()->paginate(20)->withQueryString();
+        // Sortable columns (click a table heading). Whitelisted to avoid SQL injection.
+        $sortable  = ['created_at', 'amount', 'status', 'recipient_name', 'type'];
+        $sortBy    = in_array($request->sort_by, $sortable, true) ? $request->sort_by : 'created_at';
+        $sortOrder = $request->sort_order === 'asc' ? 'asc' : 'desc';
+
+        $approvals = $query->orderBy($sortBy, $sortOrder)->paginate(10)->withQueryString();
 
         $summary = [
             'pending'  => PaymentApproval::whereIn('building_id', $buildingIds)
@@ -62,7 +67,10 @@ class PaymentApprovalController extends Controller
             'approvals' => $approvals,
             'summary'   => $summary,
             'buildings' => $this->accessibleBuildings()->get(['id', 'name']),
-            'filters'   => $request->only(['status', 'building']),
+            'filters'   => array_merge($request->only(['status', 'building']), [
+                'sort_by'    => $sortBy,
+                'sort_order' => $sortOrder,
+            ]),
         ]);
     }
 

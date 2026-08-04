@@ -5,7 +5,8 @@ import ManageLayout from '@/Layouts/ManageLayout.vue'
 import {
     Plus, Clock, CheckCircle, XCircle, Banknote,
     ChevronRight, Building2, Filter,
-    FileText, User, CalendarDays, CircleDot
+    FileText, User, CalendarDays, CircleDot,
+    ChevronUp, ChevronDown, ChevronsUpDown
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -19,6 +20,8 @@ const props = defineProps({
 
 const statusFilter   = ref(props.filters?.status ?? '')
 const buildingFilter = ref(props.filters?.building ?? '')
+const sortBy    = ref(props.filters?.sort_by ?? 'created_at')
+const sortOrder = ref(props.filters?.sort_order ?? 'desc')
 
 const formatPrice = (v) => new Intl.NumberFormat('en-NG', {
     style: 'currency', currency: 'NGN', minimumFractionDigits: 0,
@@ -59,9 +62,11 @@ const isTerminal = (status) => status === 'paid' || status === 'declined'
 
 function applyFilters() {
     router.get(route('manage.payment-approvals.index'), {
-        status:   statusFilter.value || undefined,
-        building: buildingFilter.value || undefined,
-    }, { preserveState: true, replace: true })
+        status:     statusFilter.value || undefined,
+        building:   buildingFilter.value || undefined,
+        sort_by:    sortBy.value,
+        sort_order: sortOrder.value,
+    }, { preserveState: true, replace: true, preserveScroll: true })
 }
 
 function clearFilters() {
@@ -69,6 +74,19 @@ function clearFilters() {
     buildingFilter.value = ''
     applyFilters()
 }
+
+// Click a heading to sort: same column toggles direction, a new one starts ascending.
+function sort(col) {
+    if (sortBy.value === col) {
+        sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+    } else {
+        sortBy.value    = col
+        sortOrder.value = 'asc'
+    }
+    applyFilters()
+}
+const sortIcon = (col) => sortBy.value !== col ? ChevronsUpDown : (sortOrder.value === 'asc' ? ChevronUp : ChevronDown)
+const sortIconCls = (col) => sortBy.value === col ? 'w-3 h-3' : 'w-3 h-3 opacity-30'
 </script>
 
 <template>
@@ -166,19 +184,34 @@ function clearFilters() {
                     <thead class="border-b border-gray-100 dark:border-gray-800">
                     <tr class="text-left text-gray-500 dark:text-gray-400">
                         <th class="px-4 py-2.5 font-medium">
-                            <span class="inline-flex items-center gap-1.5"><FileText class="w-3.5 h-3.5" /> Request</span>
+                            <button @click="sort('type')" class="inline-flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <FileText class="w-3.5 h-3.5" /> Request
+                                <component :is="sortIcon('type')" :class="sortIconCls('type')" />
+                            </button>
                         </th>
                         <th class="px-4 py-2.5 font-medium">
-                            <span class="inline-flex items-center gap-1.5"><User class="w-3.5 h-3.5" /> Recipient</span>
+                            <button @click="sort('recipient_name')" class="inline-flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <User class="w-3.5 h-3.5" /> Recipient
+                                <component :is="sortIcon('recipient_name')" :class="sortIconCls('recipient_name')" />
+                            </button>
                         </th>
                         <th class="px-4 py-2.5 text-right font-medium">
-                            <span class="inline-flex items-center gap-1.5"><Banknote class="w-3.5 h-3.5" /> Amount</span>
+                            <button @click="sort('amount')" class="inline-flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white transition-colors ml-auto">
+                                <Banknote class="w-3.5 h-3.5" /> Amount
+                                <component :is="sortIcon('amount')" :class="sortIconCls('amount')" />
+                            </button>
                         </th>
                         <th class="px-4 py-2.5 font-medium">
-                            <span class="inline-flex items-center gap-1.5"><CircleDot class="w-3.5 h-3.5" /> Status</span>
+                            <button @click="sort('status')" class="inline-flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <CircleDot class="w-3.5 h-3.5" /> Status
+                                <component :is="sortIcon('status')" :class="sortIconCls('status')" />
+                            </button>
                         </th>
                         <th class="px-4 py-2.5 font-medium">
-                            <span class="inline-flex items-center gap-1.5"><CalendarDays class="w-3.5 h-3.5" /> Date</span>
+                            <button @click="sort('created_at')" class="inline-flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <CalendarDays class="w-3.5 h-3.5" /> Date
+                                <component :is="sortIcon('created_at')" :class="sortIconCls('created_at')" />
+                            </button>
                         </th>
                         <th class="px-4 py-2.5 font-medium">
                             <span class="inline-flex items-center gap-1.5"><Clock class="w-3.5 h-3.5" /> Time</span>
