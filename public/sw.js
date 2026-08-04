@@ -6,7 +6,7 @@
 // shell are cached.
 //
 // Bump CACHE_VERSION to invalidate everything on the next deploy.
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 const CACHE_NAME    = `citystake-${CACHE_VERSION}`
 const OFFLINE_URL   = '/offline.html'
 
@@ -19,9 +19,12 @@ const PRECACHE = [
 ]
 
 self.addEventListener('install', (event) => {
+    // Precache each entry independently: addAll() is atomic, so a single
+    // missing/failing file would reject the whole install. allSettled lets the
+    // worker install even if an optional icon is unavailable.
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(PRECACHE))
+            .then((cache) => Promise.allSettled(PRECACHE.map((url) => cache.add(url))))
             .then(() => self.skipWaiting())
     )
 })
