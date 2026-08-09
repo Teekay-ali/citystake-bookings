@@ -2,6 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { ArrowLeft } from 'lucide-vue-next'
+import BankSelect from '@/Components/BankSelect.vue'
 
 defineOptions({ layout: ManageLayout })
 
@@ -119,7 +120,7 @@ const sectionHeadingClass = "text-xs font-medium text-gray-400 dark:text-gray-50
 
                     <div>
                         <label :class="labelClass">Bank Name</label>
-                        <input v-model="form.bank_name" type="text" :class="inputClass" />
+                        <BankSelect v-model="form.bank_name" />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
