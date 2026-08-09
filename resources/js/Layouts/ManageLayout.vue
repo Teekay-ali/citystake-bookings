@@ -563,6 +563,8 @@ function treeClass(idx, len) {
             <div v-if="collapsed" class="hidden lg:flex justify-center pb-2 shrink-0">
                 <button @click="toggleCollapsed()"
                         aria-label="Expand sidebar"
+                        @mouseenter="(e) => onMouseEnter({ label: 'Expand sidebar' }, e.currentTarget)"
+                        @mouseleave="onMouseLeave"
                         class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                     <PanelLeftOpen class="w-4 h-4" />
                 </button>
