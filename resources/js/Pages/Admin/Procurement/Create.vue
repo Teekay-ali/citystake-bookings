@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-vue-next'
+import BankSelect from '@/Components/BankSelect.vue'
 
 const props = defineProps({
     buildings: Array,
@@ -236,8 +237,7 @@ function submit() {
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Bank Name</label>
-                                    <input v-model="form.supplier_bank_name" type="text" placeholder="e.g. GTBank, First Bank..."
-                                           class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                    <BankSelect v-model="form.supplier_bank_name" />
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
