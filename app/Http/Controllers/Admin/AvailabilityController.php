@@ -61,14 +61,19 @@ class AvailabilityController extends Controller
             ->get()
             ->groupBy('unit_id');
 
+        // Financial details (amount) are only exposed to booking-privileged roles.
+        // Others (e.g. quality control browsing occupancy for inspections) get
+        // occupancy info but never the money.
+        $canViewBookings = $user->can('view-bookings');
+
         // Shape data - units carry their bookings + blocked ranges for the window
-        $buildings->each(function ($building) use ($bookingsByUnit, $blockedByUnit) {
-            $building->unitTypes->each(function ($unitType) use ($bookingsByUnit, $blockedByUnit) {
-                $unitType->units->each(function ($unit) use ($bookingsByUnit, $blockedByUnit, $unitType) {
+        $buildings->each(function ($building) use ($bookingsByUnit, $blockedByUnit, $canViewBookings) {
+            $building->unitTypes->each(function ($unitType) use ($bookingsByUnit, $blockedByUnit, $canViewBookings) {
+                $unitType->units->each(function ($unit) use ($bookingsByUnit, $blockedByUnit, $unitType, $canViewBookings) {
                     $unit->bookings = ($bookingsByUnit->get($unit->id) ?? collect())
                         ->map(fn($b) => [
                             'id'             => $b->id,
-                            'reference'      => $b->booking_reference,
+                            'reference'      => $canViewBookings ? $b->booking_reference : null,
                             'guest_name'     => $b->guest_name,
                             'guest_phone'    => $b->guest_phone,
                             'unit_type'      => $unitType->name,
@@ -77,8 +82,8 @@ class AvailabilityController extends Controller
                             'check_out'      => $b->check_out->toDateString(),
                             'nights'         => $b->nights,
                             'status'         => $b->status,
-                            'payment_status' => $b->payment_status,
-                            'total_amount'   => $b->total_amount,
+                            'payment_status' => $canViewBookings ? $b->payment_status : null,
+                            'total_amount'   => $canViewBookings ? $b->total_amount : null,
                         ])->values();
 
                     $unit->blocked = ($blockedByUnit->get($unit->id) ?? collect())

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, usePage } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { Building2, ChevronRight, ChevronLeft, ChevronDown, X, Loader2 } from 'lucide-vue-next'
 
@@ -14,6 +14,11 @@ const props = defineProps({
     days:         Number,
     filters:      Object,
 })
+
+const page = usePage()
+// Financial details (amount, payment, full-booking link) are only for
+// booking-privileged roles; QC etc. see occupancy only.
+const canViewBookings = computed(() => page.props.auth?.user?.permissions?.includes('view-bookings'))
 
 // ── Date helpers (UTC-based to avoid timezone day-shift) ──────
 const DAY_MS = 86400000
@@ -499,7 +504,7 @@ const monthGroups = computed(() => {
                                     'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                                 ]">{{ selectedBooking.status }}</span>
                             </div>
-                            <div>
+                            <div v-if="canViewBookings">
                                 <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Payment</p>
                                 <span :class="[
                                     'text-xs font-medium px-2 py-0.5 rounded-full',
@@ -507,13 +512,13 @@ const monthGroups = computed(() => {
                                 ]">{{ selectedBooking.payment_status }}</span>
                             </div>
                         </div>
-                        <div>
+                        <div v-if="canViewBookings">
                             <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total</p>
                             <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatAmount(selectedBooking.total_amount) }}</p>
                         </div>
                     </div>
 
-                    <button @click="goToBooking(selectedBooking.reference)"
+                    <button v-if="canViewBookings" @click="goToBooking(selectedBooking.reference)"
                             class="mt-8 w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium rounded-xl hover:opacity-90 transition-all">
                         View Full Booking →
                     </button>
