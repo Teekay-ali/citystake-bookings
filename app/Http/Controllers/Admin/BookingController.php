@@ -589,6 +589,46 @@ class BookingController extends Controller
             $updates['total_amount']     = $priced->total_amount;
         }
 
+        // Reconcile payment state with a repriced total (non-weekly only). Repricing
+        // changes the amount owed, but payment_status/amount_received were untouched,
+        // so an already-paid booking that got more expensive would still read as
+        // settled with a zero balance. Recompute from what's effectively been paid.
+        $balanceNote = null;
+        if (! $booking->isWeekly()
+            && array_key_exists('total_amount', $updates)
+            && in_array($booking->payment_status, ['pending', 'partial', 'paid'], true)) {
+
+            $oldTotal = (float) $booking->total_amount;      // value before this update
+            $newTotal = (float) $updates['total_amount'];
+
+            if (abs($newTotal - $oldTotal) > 0.01) {
+                // A fully-paid booking has covered its OLD total — using that (rather
+                // than amount_received) also repairs legacy paid bookings, whose
+                // amount_received predates payment tracking and is 0. Partial/pending
+                // bookings track amount_received accurately.
+                $collected = $booking->payment_status === 'paid'
+                    ? $oldTotal
+                    : (float) $booking->amount_received;
+
+                // Never record more than the new total (a shortened stay leaves an
+                // overpayment, handled separately via refunds, not a negative balance).
+                $collected = min($collected, $newTotal);
+
+                $updates['amount_received'] = $collected;
+                $updates['payment_status']  = $collected >= $newTotal - 0.01
+                    ? 'paid'
+                    : ($collected > 0 ? 'partial' : 'pending');
+                $updates['paid_at'] = $updates['payment_status'] === 'paid'
+                    ? ($booking->paid_at ?? now())
+                    : null;
+
+                $outstanding = round($newTotal - $collected, 2);
+                if ($outstanding > 0.01) {
+                    $balanceNote = '₦' . number_format($outstanding, 0) . ' now outstanding (due before check-in)';
+                }
+            }
+        }
+
         $booking->update($updates);
 
         $new = [
@@ -618,6 +658,7 @@ class BookingController extends Controller
         if ($new['guest_name']  !== $old['guest_name'])  $changes[] = "Guest name updated";
         if ($new['guest_email'] !== $old['guest_email']) $changes[] = "Email updated";
         if ($new['guest_phone'] !== $old['guest_phone']) $changes[] = "Phone updated";
+        if ($balanceNote) $changes[] = $balanceNote;
 
         if (! empty($changes)) {
             $recipients = NotificationService::getUsersByRoles(['manager', 'ceo', 'super-admin'], $booking->building_id)
@@ -625,7 +666,9 @@ class BookingController extends Controller
             NotificationService::send($recipients, new BookingModifiedNotification($booking, $changes, $user->name));
         }
 
-        return back()->with('success', 'Booking updated successfully.');
+        return back()->with('success', $balanceNote
+            ? "Booking updated. {$balanceNote}."
+            : 'Booking updated successfully.');
     }
 
     public function availableUnits(Request $request)
