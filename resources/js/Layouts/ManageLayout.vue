@@ -73,7 +73,9 @@ async function checkConnectivity() {
         return
     }
     try {
-        await fetch('/ping', { method: 'HEAD', cache: 'no-store' })
+        // Hit a STATIC file (served without booting PHP) so the connectivity
+        // check doesn't consume a PHP process on shared hosting.
+        await fetch('/ping.txt', { method: 'HEAD', cache: 'no-store' })
         isOnline.value = true
     } catch {
         isOnline.value = false
@@ -98,7 +100,7 @@ onMounted(() => {
         navigator.serviceWorker.addEventListener('message', handleSwMessage)
     }
 
-    connectivityInterval = setInterval(checkConnectivity, 15000)
+    connectivityInterval = setInterval(checkConnectivity, 60000)
 
     desktopMq = window.matchMedia('(min-width: 1024px)')
     desktopMq.addEventListener('change', onDesktopChange)

@@ -113,7 +113,7 @@ const onVisibilityChange = () => { if (!document.hidden) fetchUnreadCount() }
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     // Poll every 45 seconds
-    pollInterval = setInterval(fetchUnreadCount, 45000)
+    pollInterval = setInterval(fetchUnreadCount, 90000)
     // Also refresh on tab focus
     document.addEventListener('visibilitychange', onVisibilityChange)
 })

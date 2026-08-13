@@ -25,7 +25,7 @@ function goToMessages() {
 const onVisibilityChange = () => { if (!document.hidden) fetchUnreadCount() }
 
 onMounted(() => {
-    pollInterval = setInterval(fetchUnreadCount, 45000)
+    pollInterval = setInterval(fetchUnreadCount, 90000)
     document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
