@@ -115,6 +115,18 @@ class ProcurementRequest extends Model
         return $this->status === 'purchased';
     }
 
+    // The Procurement Officer may edit a request only before they've reviewed it.
+    public function canOfficerModify(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    // True while any line item is still awaiting a price (null unit_price).
+    public function hasUnpricedItems(): bool
+    {
+        return $this->items->contains(fn ($item) => $item->unit_price === null);
+    }
+
     public function statusLabel(): string
     {
         return match($this->status) {

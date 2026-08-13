@@ -41,7 +41,8 @@ class BookingController extends Controller
         abort_unless(auth()->user()->can('view-bookings'), 403);
 
         $user  = auth()->user();
-        $query = Booking::with(['building', 'unitType', 'unit', 'user', 'organization']);
+        // Only the relations (and columns) the list actually renders.
+        $query = Booking::with(['building:id,name', 'unitType:id,name', 'organization:id,name']);
 
         if (!$user->hasGlobalAccess()) {
             $query->whereIn('building_id', $user->accessibleBuildingIds() ?? []);
@@ -93,6 +94,32 @@ class BookingController extends Controller
         $sortOrder = $request->sort_order === 'asc' ? 'asc' : 'desc';
 
         $bookings = $query->orderBy($sortBy, $sortOrder)->paginate(10)->withQueryString();
+
+        // Send only the fields the table renders — no guest email/phone, no
+        // pricing internals (subtotal, discounts, rate, references), no unused
+        // relations. Keeps sensitive data out of the page payload entirely.
+        $bookings->through(fn (Booking $b) => [
+            'id'                   => $b->id,
+            'booking_reference'    => $b->booking_reference,
+            'guest_name'           => $b->guest_name,
+            'guests'               => $b->guests,
+            'check_in'             => $b->check_in,
+            'check_out'            => $b->check_out,
+            'checked_in_at'        => $b->checked_in_at,
+            'created_at'           => $b->created_at,
+            'nights'               => $b->nights,
+            'status'               => $b->status,
+            'display_status'       => $b->display_status,
+            'payment_status'       => $b->payment_status,
+            'currency'             => $b->currency,
+            'total_amount'         => $b->total_amount,
+            'price_usd'            => $b->price_usd,
+            'caution_fee'          => $b->caution_fee,
+            'caution_fee_refunded' => $b->caution_fee_refunded,
+            'building'             => $b->building ? ['name' => $b->building->name] : null,
+            'unit_type'            => $b->unitType ? ['name' => $b->unitType->name] : null,
+            'organization'         => $b->organization ? ['name' => $b->organization->name] : null,
+        ]);
 
         // Get buildings for filter
         $buildings = $this->accessibleBuildings()->select('id', 'name')->get();

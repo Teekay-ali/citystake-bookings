@@ -1,12 +1,15 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { ArrowLeft, Phone, Mail, CheckCircle2, Clock, XCircle } from 'lucide-vue-next'
+import Modal from '@/Components/Modal.vue'
+import BankSelect from '@/Components/BankSelect.vue'
+import { ArrowLeft, Phone, Mail, CheckCircle2, Clock, XCircle, Pencil, Plus, Trash2, X, AlertTriangle } from 'lucide-vue-next'
 import { usePage } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
     procurement: Object,
+    vendors:     { type: Array, default: () => [] },
 })
 
 const user = computed(() => usePage().props.auth.user)
@@ -20,6 +23,67 @@ function submitApproval(action) {
     approveForm.action = action
     approveForm.post(route('manage.procurement.approve', props.procurement.id), {
         preserveScroll: true,
+    })
+}
+
+// At the officer stage, approval is blocked until every item is priced.
+const approveBlocked = computed(() =>
+    props.procurement.can_officer_approve && props.procurement.has_unpriced_items
+)
+
+// ── Officer modify (only while the request is still pending) ──
+const showModify = ref(false)
+const modifyForm = useForm({
+    title: '', justification: '', notes: '',
+    vendor_id: '', supplier_name: '', supplier_phone: '', supplier_email: '',
+    supplier_bank_name: '', supplier_account_number: '', supplier_account_name: '',
+    items: [],
+    modification_note: '',
+})
+
+function openModify() {
+    const p = props.procurement
+    modifyForm.clearErrors()
+    modifyForm.title = p.title ?? ''
+    modifyForm.justification = p.justification ?? ''
+    modifyForm.notes = p.notes ?? ''
+    modifyForm.vendor_id = p.vendor_id ?? ''
+    modifyForm.supplier_name = p.supplier_name ?? ''
+    modifyForm.supplier_phone = p.supplier_phone ?? ''
+    modifyForm.supplier_email = p.supplier_email ?? ''
+    modifyForm.supplier_bank_name = p.supplier_bank_name ?? ''
+    modifyForm.supplier_account_number = p.supplier_account_number ?? ''
+    modifyForm.supplier_account_name = p.supplier_account_name ?? ''
+    modifyForm.items = (p.items ?? []).map(i => ({
+        name: i.name, description: i.description ?? '',
+        quantity: i.quantity, unit_price: i.unit_price ?? '', track_stock: !!i.track_stock,
+    }))
+    modifyForm.modification_note = ''
+    showModify.value = true
+}
+function addModifyItem() {
+    modifyForm.items.push({ name: '', description: '', quantity: 1, unit_price: '', track_stock: true })
+}
+function removeModifyItem(i) {
+    if (modifyForm.items.length > 1) modifyForm.items.splice(i, 1)
+}
+const modifyTotal = computed(() =>
+    modifyForm.items.reduce((s, it) => s + (Number(it.quantity) * Number(it.unit_price) || 0), 0)
+)
+function onVendorPick(id) {
+    const v = props.vendors.find(x => x.id == id)
+    if (!v) return
+    modifyForm.supplier_name = v.name ?? ''
+    modifyForm.supplier_phone = v.phone ?? ''
+    modifyForm.supplier_email = v.email ?? ''
+    modifyForm.supplier_bank_name = v.bank_name ?? ''
+    modifyForm.supplier_account_number = v.bank_account_number ?? ''
+    modifyForm.supplier_account_name = v.bank_account_name ?? ''
+}
+function submitModify() {
+    modifyForm.put(route('manage.procurement.update', props.procurement.id), {
+        preserveScroll: true,
+        onSuccess: () => { showModify.value = false },
     })
 }
 
@@ -157,8 +221,11 @@ const timelineSteps = computed(() => {
                                     <p v-if="item.description" class="text-[11px] text-gray-400 mt-0.5 leading-snug">{{ item.description }}</p>
                                 </td>
                                 <td class="px-5 py-3.5 text-right text-sm text-gray-500 dark:text-gray-400 tabular-nums align-top">{{ item.quantity }}</td>
-                                <td class="px-5 py-3.5 text-right text-sm text-gray-500 dark:text-gray-400 tabular-nums align-top whitespace-nowrap">{{ formatAmount(item.unit_price) }}</td>
-                                <td class="px-5 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-white tabular-nums align-top whitespace-nowrap">{{ formatAmount(item.total_price) }}</td>
+                                <td class="px-5 py-3.5 text-right text-sm text-gray-500 dark:text-gray-400 tabular-nums align-top whitespace-nowrap">
+                                    <span v-if="item.unit_price === null" class="text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">Pending</span>
+                                    <template v-else>{{ formatAmount(item.unit_price) }}</template>
+                                </td>
+                                <td class="px-5 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-white tabular-nums align-top whitespace-nowrap">{{ item.total_price === null ? '—' : formatAmount(item.total_price) }}</td>
                             </tr>
                             </tbody>
                             <tfoot>
@@ -176,11 +243,11 @@ const timelineSteps = computed(() => {
                             <div v-for="item in procurement.items" :key="item.id" class="px-4 py-3.5">
                                 <div class="flex items-start justify-between gap-3 mb-1">
                                     <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.name }}</p>
-                                    <p class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums whitespace-nowrap">{{ formatAmount(item.total_price) }}</p>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white tabular-nums whitespace-nowrap">{{ item.total_price === null ? '—' : formatAmount(item.total_price) }}</p>
                                 </div>
                                 <p v-if="item.description" class="text-xs text-gray-400 mb-1.5">{{ item.description }}</p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    {{ item.quantity }} × {{ formatAmount(item.unit_price) }}
+                                    {{ item.quantity }} × <span v-if="item.unit_price === null" class="text-amber-600 dark:text-amber-400">pricing pending</span><template v-else>{{ formatAmount(item.unit_price) }}</template>
                                 </p>
                             </div>
                             <!-- Grand total -->
@@ -308,6 +375,18 @@ const timelineSteps = computed(() => {
                 <!-- ── Sidebar ── -->
                 <div class="flex flex-col gap-4 order-1 lg:order-none lg:sticky lg:top-20 self-start">
 
+                    <!-- Officer modify (pending only) -->
+                    <div v-if="procurement.can_officer_modify" class="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 p-4">
+                        <p v-if="procurement.has_unpriced_items" class="flex items-start gap-2 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded-lg px-2.5 py-2 mb-3">
+                            <AlertTriangle class="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                            Some items have no price yet. Set prices before approving.
+                        </p>
+                        <button @click="openModify"
+                                class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                            <Pencil class="w-3.5 h-3.5" /> Modify request
+                        </button>
+                    </div>
+
                     <!-- Action panel - inverted, matches the sidebar logo/avatar accent -->
                     <div v-if="canAct && !['completed','rejected'].includes(procurement.status)"
                          class="rounded-2xl bg-gray-900 dark:bg-white border border-gray-900 dark:border-gray-100 p-5">
@@ -328,8 +407,9 @@ const timelineSteps = computed(() => {
 
                         <div class="flex flex-col gap-2">
                             <button @click="submitApproval('approve')"
-                                    :disabled="approveForm.processing"
-                                    class="w-full py-2.5 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer">
+                                    :disabled="approveForm.processing || approveBlocked"
+                                    :title="approveBlocked ? 'Set a price for every item before approving' : ''"
+                                    class="w-full py-2.5 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                                 {{ procurement.can_mark_purchased ? 'Confirm Purchased' : procurement.can_confirm_receipt ? 'Confirm Receipt' : 'Approve' }}
                             </button>
                             <button v-if="!procurement.can_mark_purchased && !procurement.can_confirm_receipt"
@@ -393,5 +473,93 @@ const timelineSteps = computed(() => {
                 </div>
             </div>
         </div>
+
+        <!-- ── Officer modify modal ── -->
+        <Modal :show="showModify" max-width="2xl" @close="showModify = false">
+            <div class="p-6 max-h-[85vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2"><Pencil class="w-4 h-4 text-gray-400" /> Modify Request</h2>
+                    <button @click="showModify = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-white"><X class="w-4 h-4" /></button>
+                </div>
+
+                <form @submit.prevent="submitModify" class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Title</label>
+                        <input v-model="modifyForm.title" type="text" class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                        <p v-if="modifyForm.errors.title" class="mt-1 text-xs text-red-600">{{ modifyForm.errors.title }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Justification</label>
+                        <textarea v-model="modifyForm.justification" rows="2" class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none" />
+                    </div>
+
+                    <!-- Supplier -->
+                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Supplier</p>
+                        <select v-if="vendors.length" v-model="modifyForm.vendor_id" @change="onVendorPick(modifyForm.vendor_id)"
+                                class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white">
+                            <option value="">Pick from directory (optional)</option>
+                            <option v-for="v in vendors" :key="v.id" :value="v.id">{{ v.name }}</option>
+                        </select>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <input v-model="modifyForm.supplier_name" type="text" placeholder="Supplier name" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                            <input v-model="modifyForm.supplier_phone" type="text" placeholder="Phone" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                            <input v-model="modifyForm.supplier_email" type="email" placeholder="Email" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <BankSelect v-model="modifyForm.supplier_bank_name" />
+                            <input v-model="modifyForm.supplier_account_number" type="text" maxlength="10" placeholder="Account number" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                            <input v-model="modifyForm.supplier_account_name" type="text" placeholder="Account name" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                        </div>
+                    </div>
+
+                    <!-- Items -->
+                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Items</p>
+                            <button type="button" @click="addModifyItem" class="inline-flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><Plus class="w-3.5 h-3.5" /> Add item</button>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="(it, i) in modifyForm.items" :key="i" class="rounded-xl border border-gray-200/80 dark:border-gray-800 p-3">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Item {{ i + 1 }}</span>
+                                    <button v-if="modifyForm.items.length > 1" type="button" @click="removeModifyItem(i)" class="p-1 text-gray-300 hover:text-red-500"><Trash2 class="w-3.5 h-3.5" /></button>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <input v-model="it.name" type="text" placeholder="Item name" class="col-span-2 w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                    <input v-model="it.quantity" type="number" min="1" placeholder="Qty" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                    <input v-model="it.unit_price" type="number" min="0" step="0.01" placeholder="Unit price" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                    <input v-model="it.description" type="text" placeholder="Description (optional)" class="col-span-2 sm:col-span-4 w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
+                                </div>
+                                <label class="inline-flex items-center gap-2 mt-2 text-[11px] text-gray-500 dark:text-gray-400 cursor-pointer">
+                                    <input v-model="it.track_stock" type="checkbox" class="rounded border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-gray-900 dark:focus:ring-white bg-white dark:bg-gray-950" />
+                                    Add to stock on receipt
+                                </label>
+                            </div>
+                        </div>
+                        <p v-if="modifyForm.errors.items" class="mt-1 text-xs text-red-600">{{ modifyForm.errors.items }}</p>
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total</span>
+                            <span class="text-lg font-semibold text-gray-900 dark:text-white tabular-nums">{{ formatAmount(modifyTotal) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Mandatory note -->
+                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Reason for modification <span class="text-red-500">*</span></label>
+                        <textarea v-model="modifyForm.modification_note" rows="2" placeholder="Explain what you changed and why" class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none" />
+                        <p v-if="modifyForm.errors.modification_note" class="mt-1 text-xs text-red-600">{{ modifyForm.errors.modification_note }}</p>
+                    </div>
+
+                    <div class="flex gap-3 pt-1">
+                        <button type="submit" :disabled="modifyForm.processing"
+                                class="flex-1 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 disabled:opacity-50 transition-all text-sm">
+                            {{ modifyForm.processing ? 'Saving…' : 'Save changes' }}
+                        </button>
+                        <button type="button" @click="showModify = false" class="px-6 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
     </ManageLayout>
 </template>

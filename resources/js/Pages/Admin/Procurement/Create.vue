@@ -146,8 +146,8 @@ function submit() {
                                            class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Unit Price (₦) *</label>
-                                    <input v-model="item.unit_price" type="number" min="0" step="0.01"
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Unit Price (₦) <span class="text-gray-400 font-normal">(optional)</span></label>
+                                    <input v-model="item.unit_price" type="number" min="0" step="0.01" placeholder="Set by officer"
                                            class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
                                 </div>
                                 <div class="col-span-2">

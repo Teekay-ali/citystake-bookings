@@ -14,6 +14,7 @@ use App\Models\Building;
 use App\Models\ProcurementRequest;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ProcurementController extends Controller
@@ -104,7 +105,7 @@ class ProcurementController extends Controller
             'items.*.name'        => 'required|string|max:255',
             'items.*.description' => 'nullable|string|max:500',
             'items.*.quantity'    => 'required|integer|min:1',
-            'items.*.unit_price'  => 'required|numeric|min:0',
+            'items.*.unit_price'  => 'nullable|numeric|min:0',
             'items.*.track_stock' => 'boolean',
         ]);
 
@@ -126,13 +127,15 @@ class ProcurementController extends Controller
 
         $total = 0;
         foreach ($validated['items'] as $item) {
-            $lineTotal = $item['quantity'] * $item['unit_price'];
-            $total += $lineTotal;
+            // A null unit_price means "pricing pending" - the officer fills it in.
+            $unitPrice = $item['unit_price'] ?? null;
+            $lineTotal = $unitPrice === null ? null : $item['quantity'] * $unitPrice;
+            $total += $lineTotal ?? 0;
             $pr->items()->create([
                 'name'        => $item['name'],
                 'description' => $item['description'] ?? null,
                 'quantity'    => $item['quantity'],
-                'unit_price'  => $item['unit_price'],
+                'unit_price'  => $unitPrice,
                 'total_price' => $lineTotal,
                 'track_stock' => $item['track_stock'] ?? true,
             ]);
@@ -153,6 +156,98 @@ class ProcurementController extends Controller
             ->with('success', 'Procurement request submitted successfully.');
     }
 
+    /**
+     * Procurement Officer edits a request during their review — correct items,
+     * fill in prices, fix supplier details. Only allowed before the officer has
+     * approved/rejected, and a note explaining the change is mandatory.
+     */
+    public function update(Request $request, ProcurementRequest $procurement)
+    {
+        abort_unless(auth()->user()->can('approve-procurement-officer'), 403);
+        $this->authorizeBuilding($procurement);
+
+        if (! $procurement->canOfficerModify()) {
+            return back()->with('error', 'This request can no longer be modified.');
+        }
+
+        $validated = $request->validate([
+            'title'          => 'required|string|max:255',
+            'justification'  => 'nullable|string|max:1000',
+            'notes'          => 'nullable|string|max:1000',
+            'vendor_id'      => 'nullable|exists:vendors,id',
+            'supplier_name'  => 'nullable|string|max:255',
+            'supplier_phone' => 'nullable|string|max:20',
+            'supplier_email' => 'nullable|email|max:255',
+            'supplier_bank_name'      => 'nullable|string|max:100',
+            'supplier_account_number' => 'nullable|string|max:20',
+            'supplier_account_name'   => 'nullable|string|max:255',
+            'items'               => 'required|array|min:1',
+            'items.*.name'        => 'required|string|max:255',
+            'items.*.description' => 'nullable|string|max:500',
+            'items.*.quantity'    => 'required|integer|min:1',
+            'items.*.unit_price'  => 'nullable|numeric|min:0',
+            'items.*.track_stock' => 'boolean',
+            'modification_note'   => 'required|string|max:1000',
+        ]);
+
+        $before = [
+            'total_amount' => $procurement->total_amount,
+            'items'        => $procurement->items->map(fn ($i) => "{$i->name} ×{$i->quantity} @ " . ($i->unit_price ?? '—'))->all(),
+        ];
+
+        DB::transaction(function () use ($procurement, $validated) {
+            $procurement->update([
+                'title'          => $validated['title'],
+                'justification'  => $validated['justification'] ?? null,
+                'notes'          => $validated['notes'] ?? null,
+                'vendor_id'      => $validated['vendor_id'] ?? null,
+                'supplier_name'  => $validated['supplier_name'] ?? null,
+                'supplier_phone' => $validated['supplier_phone'] ?? null,
+                'supplier_email' => $validated['supplier_email'] ?? null,
+                'supplier_bank_name'      => $validated['supplier_bank_name'] ?? null,
+                'supplier_account_number' => $validated['supplier_account_number'] ?? null,
+                'supplier_account_name'   => $validated['supplier_account_name'] ?? null,
+            ]);
+
+            // Replace the line items wholesale (add/remove/edit in one pass).
+            $procurement->items()->delete();
+            $total = 0;
+            foreach ($validated['items'] as $item) {
+                $unitPrice = $item['unit_price'] ?? null;
+                $lineTotal = $unitPrice === null ? null : $item['quantity'] * $unitPrice;
+                $total += $lineTotal ?? 0;
+                $procurement->items()->create([
+                    'name'        => $item['name'],
+                    'description' => $item['description'] ?? null,
+                    'quantity'    => $item['quantity'],
+                    'unit_price'  => $unitPrice,
+                    'total_price' => $lineTotal,
+                    'track_stock' => $item['track_stock'] ?? true,
+                ]);
+            }
+            $procurement->update(['total_amount' => $total]);
+        });
+
+        $procurement->refresh()->loadMissing('items');
+
+        AuditLog::log('procurement.modified', $procurement, $before, [
+            'note'         => $validated['modification_note'],
+            'total_amount' => $procurement->total_amount,
+            'items'        => $procurement->items->map(fn ($i) => "{$i->name} ×{$i->quantity} @ " . ($i->unit_price ?? '—'))->all(),
+            'by'           => auth()->id(),
+        ]);
+
+        $this->notifyProcurement(
+            $procurement,
+            'Procurement Request Updated',
+            "The Procurement Officer updated \"{$procurement->title}\". Note: {$validated['modification_note']}",
+            [],
+            [$procurement->submitted_by],
+        );
+
+        return back()->with('success', 'Request updated.');
+    }
+
     public function show(ProcurementRequest $procurement)
     {
         abort_unless(auth()->user()->can('view-procurement'), 403);
@@ -165,16 +260,25 @@ class ProcurementController extends Controller
             'ceoApprovedBy', 'purchasedBy', 'receiptConfirmedBy',
         ]);
 
+        $canModify = auth()->user()->can('approve-procurement-officer') && $procurement->canOfficerModify();
+
         return Inertia::render('Admin/Procurement/Show', [
             'procurement' => array_merge($procurement->toArray(), [
                 'submitted_by_id' => $procurement->submitted_by,
                 'status_label'            => $procurement->statusLabel(),
                 'can_officer_approve'     => $procurement->canOfficerApprove(),
+                'can_officer_modify'      => $canModify,
+                'has_unpriced_items'      => $procurement->hasUnpricedItems(),
                 'can_accountant_approve'  => $procurement->canAccountantApprove(),
                 'can_ceo_approve'         => $procurement->canCeoApprove(),
                 'can_mark_purchased'      => $procurement->canMarkPurchased(),
                 'can_confirm_receipt'     => $procurement->canConfirmReceipt(),
             ]),
+            // Vendors power the supplier picker in the officer's modify modal.
+            'vendors' => $canModify
+                ? Vendor::where('is_active', true)->orderBy('name')
+                    ->get(['id', 'name', 'phone', 'email', 'bank_name', 'bank_account_number', 'bank_account_name'])
+                : [],
         ]);
     }
 
@@ -210,6 +314,12 @@ class ProcurementController extends Controller
         }
 
         if ($procurement->canOfficerApprove() && $user->can('approve-procurement-officer')) {
+            // Prices must be set before the request moves to the accountant, or
+            // the rest of the chain would approve an incomplete amount.
+            if ($procurement->loadMissing('items')->hasUnpricedItems()) {
+                return back()->with('error', 'Set a price for every item before approving.');
+            }
+
             $procurement->update([
                 'status'              => 'officer_approved',
                 'officer_approved_by' => $user->id,

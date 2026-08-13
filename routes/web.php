@@ -307,6 +307,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('/procurement/create', [ProcurementController::class, 'create'])->name('procurement.create');
     Route::post('/procurement', [ProcurementController::class, 'store'])->name('procurement.store');
     Route::get('/procurement/{procurement}', [ProcurementController::class, 'show'])->name('procurement.show');
+    Route::put('/procurement/{procurement}', [ProcurementController::class, 'update'])->name('procurement.update');
     Route::post('/procurement/{procurement}/approve', [ProcurementController::class, 'approve'])->name('procurement.approve');
     Route::delete('/procurement/{procurement}', [ProcurementController::class, 'destroy'])->name('procurement.destroy');
 
