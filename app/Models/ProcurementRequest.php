@@ -13,7 +13,7 @@ class ProcurementRequest extends Model
     use HasFactory, HasBuildingScope;
 
     protected $fillable = [
-        'reference', 'building_id', 'submitted_by',
+        'reference', 'building_id', 'related_request_id', 'submitted_by',
         'vendor_id', 'supplier_name', 'supplier_phone', 'supplier_email',
         'supplier_bank_name',
         'supplier_account_number',
@@ -86,6 +86,18 @@ class ProcurementRequest extends Model
     public function documents(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(Document::class, 'documentable')->orderBy('sort_order');
+    }
+
+    // The completed request this one continues from.
+    public function relatedRequest(): BelongsTo
+    {
+        return $this->belongsTo(ProcurementRequest::class, 'related_request_id');
+    }
+
+    // Later requests that cite this one as their continuation source.
+    public function continuations(): HasMany
+    {
+        return $this->hasMany(ProcurementRequest::class, 'related_request_id');
     }
 
     public function hasReceipt(): bool

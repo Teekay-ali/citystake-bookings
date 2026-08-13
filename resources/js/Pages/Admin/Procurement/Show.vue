@@ -4,7 +4,7 @@ import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
 import BankSelect from '@/Components/BankSelect.vue'
 import DocumentManager from '@/Components/DocumentManager.vue'
-import { ArrowLeft, Phone, Mail, CheckCircle2, Clock, XCircle, Pencil, Plus, Trash2, X, AlertTriangle } from 'lucide-vue-next'
+import { ArrowLeft, ArrowRight, Phone, Mail, CheckCircle2, Clock, XCircle, Pencil, Plus, Trash2, X, AlertTriangle } from 'lucide-vue-next'
 import { usePage } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 
@@ -210,6 +210,27 @@ const timelineSteps = computed(() => {
 
                 <!-- ── Main column ── -->
                 <div class="lg:col-span-2 flex flex-col gap-4 order-2 lg:order-none">
+
+                    <!-- Continuation link -->
+                    <div v-if="procurement.related_request || (procurement.continuations && procurement.continuations.length)"
+                         class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-4 space-y-2">
+                        <div v-if="procurement.related_request" class="flex items-center gap-2 text-sm">
+                            <ArrowLeft class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                            <span class="text-gray-500 dark:text-gray-400">Continuation of</span>
+                            <Link :href="route('manage.procurement.show', procurement.related_request.id)"
+                                  class="font-medium text-gray-900 dark:text-white hover:underline truncate">
+                                {{ procurement.related_request.reference }} · {{ procurement.related_request.title }}
+                            </Link>
+                        </div>
+                        <div v-for="c in (procurement.continuations || [])" :key="c.id" class="flex items-center gap-2 text-sm">
+                            <ArrowRight class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                            <span class="text-gray-500 dark:text-gray-400">Continued by</span>
+                            <Link :href="route('manage.procurement.show', c.id)"
+                                  class="font-medium text-gray-900 dark:text-white hover:underline truncate">
+                                {{ c.reference }} · {{ c.title }}
+                            </Link>
+                        </div>
+                    </div>
 
                     <!-- Items table -->
                     <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">

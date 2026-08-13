@@ -81,9 +81,17 @@ class ProcurementController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'phone', 'email', 'bank_name', 'bank_account_number', 'bank_account_name']);
 
+        // Completed requests this one can be a continuation of (searchable picker).
+        $completedRequests = ProcurementRequest::where('status', 'completed')
+            ->when(! $user->hasGlobalAccess(), fn ($q) => $q->whereIn('building_id', $user->accessibleBuildingIds() ?? []))
+            ->latest()
+            ->limit(300)
+            ->get(['id', 'reference', 'title']);
+
         return Inertia::render('Admin/Procurement/Create', [
-            'buildings' => $buildings,
-            'vendors'   => $vendors,
+            'buildings'         => $buildings,
+            'vendors'           => $vendors,
+            'completedRequests' => $completedRequests,
         ]);
     }
 
@@ -101,6 +109,7 @@ class ProcurementController extends Controller
             'supplier_bank_name'       => 'nullable|string|max:100',
             'supplier_account_number'  => 'nullable|string|max:20',
             'supplier_account_name'    => 'nullable|string|max:255',
+            'related_request_id' => 'nullable|exists:procurement_requests,id',
             'items'          => 'required|array|min:1',
             'items.*.name'        => 'required|string|max:255',
             'items.*.description' => 'nullable|string|max:500',
@@ -109,9 +118,20 @@ class ProcurementController extends Controller
             'items.*.track_stock' => 'boolean',
         ]);
 
+        // A continuation may only link to a completed request in an accessible building.
+        if (! empty($validated['related_request_id'])) {
+            $related = ProcurementRequest::find($validated['related_request_id']);
+            $user    = auth()->user();
+            if (! $related || $related->status !== 'completed'
+                || (! $user->hasGlobalAccess() && ! in_array($related->building_id, $user->accessibleBuildingIds() ?? []))) {
+                return back()->with('error', 'You can only continue from a completed request you have access to.')->withInput();
+            }
+        }
+
         $pr = ProcurementRequest::create([
             'reference'      => ProcurementRequest::generateReference(),
             'building_id'    => $validated['building_id'],
+            'related_request_id' => $validated['related_request_id'] ?? null,
             'submitted_by'   => auth()->id(),
             'title'          => $validated['title'],
             'justification'  => $validated['justification'] ?? null,
@@ -284,6 +304,8 @@ class ProcurementController extends Controller
             'submittedBy', 'officerApprovedBy', 'accountantApprovedBy',
             'ceoApprovedBy', 'purchasedBy', 'receiptConfirmedBy',
             'documents.uploadedBy',
+            'relatedRequest:id,reference,title,status',
+            'continuations:id,related_request_id,reference,title,status',
         ]);
 
         $user      = auth()->user();

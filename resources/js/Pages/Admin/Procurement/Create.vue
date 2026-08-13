@@ -4,16 +4,23 @@ import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-vue-next'
 import BankSelect from '@/Components/BankSelect.vue'
+import SearchableSelect from '@/Components/SearchableSelect.vue'
 
 const props = defineProps({
-    buildings: Array,
-    vendors:   Array,
+    buildings:         Array,
+    vendors:           Array,
+    completedRequests: { type: Array, default: () => [] },
 })
+
+const continuationOptions = computed(() =>
+    props.completedRequests.map(r => ({ value: r.id, label: r.reference, sublabel: r.title }))
+)
 
 const useVendorDirectory = ref(true)
 
 const form = useForm({
     building_id:    props.buildings.length === 1 ? props.buildings[0].id : '',
+    related_request_id: '',
     title:          '',
     justification:  '',
     notes:          '',
@@ -106,6 +113,12 @@ function submit() {
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Justification</label>
                         <textarea v-model="form.justification" rows="2" placeholder="Why is this purchase needed?"
                                   class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white resize-none" />
+                    </div>
+
+                    <div v-if="continuationOptions.length">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Continuation of <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <SearchableSelect v-model="form.related_request_id" :options="continuationOptions" placeholder="Link to a completed request…" />
+                        <p class="mt-1 text-[11px] text-gray-400">Choose a completed request this one continues from.</p>
                     </div>
                 </div>
 
