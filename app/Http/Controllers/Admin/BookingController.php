@@ -194,6 +194,8 @@ class BookingController extends Controller
             'currency'      => 'nullable|in:NGN,USD',
             'price_usd'     => 'nullable|numeric|min:0|required_if:currency,USD',
             'exchange_rate' => 'nullable|numeric|min:0|required_if:currency,USD',
+            // Discretionary service charge (USD contracts) - disclosed portion of price_usd.
+            'service_charge' => 'nullable|numeric|min:0|lte:price_usd',
             // Payer (Block D1) - optional organization billed for the booking
             'organization_id' => 'nullable|exists:organizations,id',
             // Payment plan (weekly prepaid installments)
@@ -305,6 +307,7 @@ class BookingController extends Controller
                 'currency'        => $weekly ? 'NGN' : ($validated['currency'] ?? 'NGN'),
                 'price_usd'       => (float) ($validated['price_usd'] ?? 0),
                 'exchange_rate'   => (float) ($validated['exchange_rate'] ?? 0),
+                'service_charge'  => (float) ($validated['service_charge'] ?? 0),
             ]);
 
             // Create booking
@@ -330,6 +333,7 @@ class BookingController extends Controller
                 'currency'          => $bookingModel->currency,
                 'price_usd'         => $bookingModel->price_usd,
                 'exchange_rate'     => $bookingModel->exchange_rate,
+                'service_charge'    => $bookingModel->service_charge,
                 'discount_type'     => $bookingModel->discount_type,
                 'discount_percent'  => $bookingModel->discount_percent,
                 'discount_amount'   => $bookingModel->discount_amount,
@@ -499,14 +503,17 @@ class BookingController extends Controller
 
     public function modifyBooking(Request $request, Booking $booking)
     {
-        abort_unless(auth()->user()->can('manage-bookings'), 403);
-
         $user = auth()->user();
-        if (!$user->hasGlobalAccess()) {
-            abort_unless(
-                in_array($booking->building_id, $user->accessibleBuildingIds() ?? []),
-                403
-            );
+
+        // Explicit, legible reasons instead of a bare 403 page, so staff (and we)
+        // can tell a permission problem from a building-scope one.
+        if (! $user->can('manage-bookings')) {
+            return back()->with('error', "You don't have permission to modify bookings.");
+        }
+
+        if (! $user->hasGlobalAccess()
+            && ! in_array($booking->building_id, $user->accessibleBuildingIds() ?? [])) {
+            return back()->with('error', "You don't have access to this booking's building, so it can't be modified here.");
         }
 
         if (in_array($booking->status, ['cancelled', 'completed'])) {
@@ -605,9 +612,11 @@ class BookingController extends Controller
                 'currency'        => $booking->currency ?? 'NGN',
                 'price_usd'       => (float) $booking->price_usd,
                 'exchange_rate'   => (float) $booking->exchange_rate,
+                'service_charge'  => (float) $booking->service_charge,
             ]);
 
             $updates['subtotal']         = $priced->subtotal;
+            $updates['service_charge']   = $priced->service_charge;
             $updates['discount_type']    = $priced->discount_type;
             $updates['discount_percent'] = $priced->discount_percent;
             $updates['discount_amount']  = $priced->discount_amount;

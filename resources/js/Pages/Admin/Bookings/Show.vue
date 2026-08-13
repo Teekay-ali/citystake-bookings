@@ -504,7 +504,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                             class="inline-flex items-center gap-1.5 px-2 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                         <Pencil class="w-3.5 h-3.5" /> Modify booking
                     </button>
-                    <a :href="route('manage.bookings.invoice', booking.booking_reference)" target="_blank"
+                    <a :href="route('manage.bookings.invoice', booking.booking_reference)" download
                        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
                         <Download class="w-3.5 h-3.5" /> Invoice
                     </a>
@@ -678,6 +678,10 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                             <div class="flex justify-between text-xs">
                                 <span class="text-gray-500 dark:text-gray-400">{{ fmt(booking.subtotal / booking.nights) }} × {{ booking.nights }} nights</span>
                                 <span class="text-gray-900 dark:text-white tabular-nums">{{ fmt(booking.subtotal) }}</span>
+                            </div>
+                            <div v-if="booking.currency === 'USD' && Number(booking.service_charge) > 0" class="flex justify-between text-[11px] text-gray-400 dark:text-gray-500 -mt-1">
+                                <span>incl. service charge (${{ Number(booking.service_charge).toLocaleString() }})</span>
+                                <span class="tabular-nums">{{ fmt(Number(booking.service_charge) * Number(booking.exchange_rate)) }}</span>
                             </div>
                             <div v-if="booking.discount_amount > 0" class="flex justify-between text-xs text-emerald-600 dark:text-emerald-400">
                                 <span>Discount ({{ booking.discount_percent }}% off)</span>

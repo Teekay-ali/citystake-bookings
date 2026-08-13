@@ -35,6 +35,7 @@ class Booking extends Model
         'currency',
         'price_usd',
         'exchange_rate',
+        'service_charge',
         'discount_type',
         'discount_percent',
         'discount_amount',
@@ -99,6 +100,7 @@ class Booking extends Model
         'total_amount' => 'decimal:2',
         'price_usd' => 'decimal:2',
         'exchange_rate' => 'decimal:2',
+        'service_charge' => 'decimal:2',
         'discount_percent' => 'decimal:2',
         'discount_amount'  => 'decimal:2',
         'late_checkout_requested'   => 'boolean',
@@ -344,13 +346,19 @@ class Booking extends Model
             $this->price_usd     = (float) ($opts['price_usd'] ?? 0);
             $this->exchange_rate = (float) ($opts['exchange_rate'] ?? 0);
             $this->subtotal      = round($this->price_usd * $this->exchange_rate, 2);
-            $this->caution_fee   = $defaultCautionFee;
+            // Long-stay USD contracts carry no caution fee - the service charge covers it.
+            $this->caution_fee   = 0;
+            // Discretionary service charge - a disclosed portion OF the contract
+            // price (never exceeds it), not an add-on, so it doesn't affect totals.
+            $service = (float) ($opts['service_charge'] ?? 0);
+            $this->service_charge = $service > 0 ? min($service, $this->price_usd) : null;
             // Nightly auto-discount is meaningless for a flat USD contract
             $mode = ($opts['discount_mode'] ?? 'none') === 'manual' ? 'manual' : 'none';
         } else {
             $this->currency      = 'NGN';
             $this->price_usd     = null;
             $this->exchange_rate = null;
+            $this->service_charge = null;
             $this->subtotal      = $this->nights * $unitType->base_price_per_night;
             // 1-night caution defaults to the room rate, but a property can opt out
             // (one_night_caution_uses_rate = false) to always use the flat fee.

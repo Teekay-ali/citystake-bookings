@@ -76,6 +76,10 @@
     $wmColor = $isPaid ? 'rgba(22,163,74,0.06)' : ($isPartial ? 'rgba(217,119,6,0.06)' : 'rgba(220,38,38,0.06)');
     $badgeClass = $isPaid ? 'status-paid' : ($isPartial ? 'status-partial' : 'status-pending');
     $badgeText  = $isPaid ? 'Paid' : ($isPartial ? 'Part-paid' : 'Unpaid');
+    // With nothing paid yet, the document is a proforma / reservation confirmation
+    // rather than a receipt.
+    $isProforma = $paid <= 0;
+    $docLabel   = $isProforma ? 'Proforma Invoice' : 'Invoice';
 @endphp
 
 <div class="watermark-paid" style="color: {{ $wmColor }};">{{ $wmText }}</div>
@@ -88,11 +92,14 @@
         <div style="margin-top: 12px;">
             <div class="detail-line">{{ $booking->building->address ?? '' }}</div>
             <div class="detail-line">{{ $booking->building->city ?? 'Abuja' }}, Nigeria</div>
-            <div class="detail-line">bookings@citystake.net</div>
+            <div class="detail-line">reservation@csbookings.ninetentech.net</div>
         </div>
     </div>
     <div class="header-right">
-        <div class="invoice-label">Invoice</div>
+        <div class="invoice-label">{{ $docLabel }}</div>
+        @if($isProforma)
+            <div style="font-size:10px;color:#9ca3af;margin-top:2px;">Reservation Confirmation</div>
+        @endif
         <div class="invoice-ref">{{ $booking->booking_reference }}</div>
         <div class="invoice-date">Issued: {{ $booking->paid_at ? $booking->paid_at->format('d M Y') : now()->format('d M Y') }}</div>
         <div style="margin-top: 10px;">
@@ -157,6 +164,9 @@
             <strong>{{ $booking->unitType->name }}</strong><br>
             @if($booking->currency === 'USD')
                 <span style="font-size:11px;color:#9ca3af;">${{ number_format($booking->price_usd, 2) }} contract × ₦{{ number_format($booking->exchange_rate, 0) }}/$ (rate locked)</span>
+                @if($booking->service_charge > 0)
+                    <br><span style="font-size:11px;color:#9ca3af;">incl. service charge ${{ number_format($booking->service_charge, 2) }} (≈ ₦{{ number_format($booking->service_charge * $booking->exchange_rate, 0) }})</span>
+                @endif
             @else
                 <span style="font-size:11px;color:#9ca3af;">{{ $booking->nights }} night{{ $booking->nights > 1 ? 's' : '' }} × ₦{{ number_format($booking->subtotal / max($booking->nights, 1), 0) }}/night</span>
             @endif
@@ -204,7 +214,7 @@
         <strong>Payment Reference:</strong> {{ $booking->paystack_reference ?? $booking->monnify_reference ?? $booking->payment_reference ?? 'N/A' }}<br>
         <strong>Booking Created:</strong> {{ $booking->created_at->format('d M Y, g:i A') }}<br><br>
         Thank you for choosing CityStake. This is a computer-generated invoice and requires no signature.
-        For support, contact us at bookings@citystake.net.
+        For support, contact us at reservation@csbookings.ninetentech.net.
     </div>
 </div>
 

@@ -40,6 +40,7 @@ const form = useForm({
     currency:      'NGN',
     price_usd:     '',
     exchange_rate: '',
+    service_charge: '',
     // Payer (Block D1) - optional organization
     organization_id: '',
     // Payment plan (weekly prepaid installments)
@@ -275,8 +276,9 @@ const pricing = computed(() => {
     const flatCaution     = parseFloat(selectedBuilding.value?.caution_fee_amount ?? 70000);
     const oneNightAtRate  = (selectedBuilding.value?.one_night_caution_uses_rate ?? true)
         && nights === 1;
+    // Long-stay USD contracts carry no caution fee (the service charge covers it).
     const cautionFee = isUsd.value
-        ? flatCaution
+        ? 0
         : (oneNightAtRate
             ? (parseFloat(selectedUnitType.value.base_price_per_night) || 0)
             : flatCaution);
@@ -743,6 +745,10 @@ const inputCls = (hasError) => [
                                 </span>
                                 <span class="text-gray-900 dark:text-white">{{ formatPrice(pricing.subtotal) }}</span>
                             </div>
+                            <div v-if="isUsd && Number(form.service_charge) > 0" class="flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500 -mt-1.5">
+                                <span>incl. service charge (${{ Number(form.service_charge).toLocaleString() }})</span>
+                                <span class="tabular-nums">{{ formatPrice(Number(form.service_charge) * Number(form.exchange_rate || 0)) }}</span>
+                            </div>
                             <div v-if="pricing.discountAmount > 0" class="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400">
                                 <span>
                                     <template v-if="pricing.discountType === 'manual'">Discount (manual)</template>
@@ -825,7 +831,7 @@ const inputCls = (hasError) => [
 
         <!-- ── Pricing & payment options modal ── -->
         <Modal :show="showOptions" max-width="md" @close="showOptions = false">
-            <div class="p-6 space-y-5">
+            <div class="p-6 space-y-5 max-h-[85vh] overflow-y-auto">
                 <div class="flex items-center justify-between">
                     <h3 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <SlidersHorizontal class="w-4 h-4 text-gray-400" /> Pricing &amp; payment options
@@ -844,7 +850,7 @@ const inputCls = (hasError) => [
                                 :class="form.payment_plan === p[0] ? 'bg-white dark:bg-gray-950 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'"
                                 class="flex-1 py-1.5 rounded-md text-xs font-medium transition-all">{{ p[1] }}</button>
                     </div>
-                    <div v-if="isWeekly" class="mt-2 rounded-lg border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
+                    <div v-if="isWeekly" class="mt-2 rounded-lg border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 max-h-56 overflow-y-auto">
                         <div v-for="row in weeklySchedule" :key="row.week" class="flex items-center justify-between px-3 py-1.5 text-[11px]">
                             <span class="text-gray-500 dark:text-gray-400">Week {{ row.week }} · {{ row.due }}<span v-if="row.week === 1" class="text-emerald-600 dark:text-emerald-400"> · due now</span></span>
                             <span class="tabular-nums text-gray-900 dark:text-white">{{ formatPrice(row.amount) }}</span>
@@ -873,7 +879,13 @@ const inputCls = (hasError) => [
                             <input v-model.number="form.exchange_rate" type="number" min="0" step="0.01" placeholder="Rate /$"
                                    class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white tabular-nums" />
                         </div>
-                        <p class="col-span-2 text-[11px] text-gray-400">Rate is locked to this booking. Financials recorded in ₦.</p>
+                        <div class="col-span-2 relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+                            <input v-model.number="form.service_charge" type="number" min="0" step="0.01" :max="form.price_usd || undefined" placeholder="Service charge (incl. in price)"
+                                   class="w-full pl-7 pr-3 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white tabular-nums" />
+                        </div>
+                        <p v-if="form.errors.service_charge" class="col-span-2 text-[11px] text-red-600">{{ form.errors.service_charge }}</p>
+                        <p class="col-span-2 text-[11px] text-gray-400">Rate is locked to this booking. Financials recorded in ₦. Service charge is part of the price, shown on the invoice.</p>
                     </div>
                 </div>
 

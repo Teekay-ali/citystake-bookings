@@ -65,6 +65,12 @@
                     <span>Room charge (NGN)</span>
                     <span>₦{{ number_format($booking->subtotal, 0) }}</span>
                 </div>
+                @if($booking->service_charge > 0)
+                    <div class="total-row">
+                        <span style="color:#9ca3af;font-size:12px;">&nbsp;&nbsp;incl. service charge (${{ number_format($booking->service_charge, 2) }})</span>
+                        <span style="color:#9ca3af;font-size:12px;">≈ ₦{{ number_format($booking->service_charge * $booking->exchange_rate, 0) }}</span>
+                    </div>
+                @endif
             @else
                 <div class="total-row">
                     <span>Room charge ({{ $booking->nights }} night{{ $booking->nights > 1 ? 's' : '' }})</span>
