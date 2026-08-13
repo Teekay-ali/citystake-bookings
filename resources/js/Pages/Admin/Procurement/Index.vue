@@ -92,7 +92,8 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Procurement</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Manage purchase requests and approvals</p>
             </div>
-            <Link :href="route('manage.procurement.create')"
+            <Link v-if="$page.props.auth.user.permissions?.includes('submit-procurement')"
+                  :href="route('manage.procurement.create')"
                   class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                 <Plus class="w-3.5 h-3.5" />
                 New Request
@@ -154,7 +155,7 @@ const selectClass = "pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-800 
                     {{ status || buildingId || search ? 'No requests match these filters.' : 'No procurement requests yet.' }}
                 </p>
                 <Link
-                    v-if="!status && !buildingId && !search"
+                    v-if="!status && !buildingId && !search && $page.props.auth.user.permissions?.includes('submit-procurement')"
                     :href="route('manage.procurement.create')"
                     class="inline-flex items-center gap-2 mt-4 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 rounded-lg shadow-sm transition-all">
                     <Plus class="w-3.5 h-3.5" /> New Request

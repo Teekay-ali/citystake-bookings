@@ -145,6 +145,31 @@ class ProcurementController extends Controller
 
         AuditLog::log('procurement.submitted', $pr, null, ['reference' => $pr->reference, 'title' => $pr->title, 'total' => $pr->total_amount]);
 
+        // The Procurement Officer is also the first reviewer, so a request they
+        // raise skips their own review and goes straight to the accountant -
+        // provided every item is priced (the officer stage's pricing rule).
+        $isOfficer   = auth()->user()->can('approve-procurement-officer');
+        $hasUnpriced = $pr->items()->whereNull('unit_price')->exists();
+
+        if ($isOfficer && ! $hasUnpriced) {
+            $pr->update([
+                'status'              => 'officer_approved',
+                'officer_approved_by' => auth()->id(),
+                'officer_approved_at' => now(),
+            ]);
+            AuditLog::log('procurement.status_updated', $pr, ['status' => 'pending'], ['status' => 'officer_approved']);
+
+            $this->notifyProcurement(
+                $pr,
+                'Procurement Awaiting Accountant Approval',
+                "Procurement request \"{$pr->title}\" was raised by the Procurement Officer and needs the accountant's approval.",
+                ['accountant'],
+            );
+
+            return redirect()->route('manage.procurement.index')
+                ->with('success', 'Request submitted and sent to the accountant for approval.');
+        }
+
         $this->notifyProcurement(
             $pr,
             'New Procurement Request',
