@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Document;
 use App\Models\PaymentApproval;
+use App\Models\ProcurementRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -21,6 +22,7 @@ class DocumentController extends Controller
         $requiredPermission = match($type) {
             'payment-approval' => 'manage-payment-approvals',
             'booking'          => 'confirm-checkin',
+            'procurement'      => 'view-procurement',
             default            => abort(403),
         };
         abort_unless(auth()->user()->can($requiredPermission), 403);
@@ -28,6 +30,7 @@ class DocumentController extends Controller
         $request->validate([
             'documents'   => 'required|array|min:1|max:5',
             'documents.*' => 'required|file|mimes:jpeg,jpg,png,pdf|max:5120',
+            'category'    => 'nullable|string|max:50',
         ]);
 
         $model = $this->resolveModel($type, $id);
@@ -38,6 +41,7 @@ class DocumentController extends Controller
             $path = $file->store("documents/{$type}", 'public');
 
             $doc = $model->documents()->create([
+                'category'      => $request->input('category'),
                 'file_path'     => $path,
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type'     => $file->getMimeType(),
@@ -48,6 +52,7 @@ class DocumentController extends Controller
 
             $uploaded[] = [
                 'id'             => $doc->id,
+                'category'       => $doc->category,
                 'url'            => $doc->url,
                 'original_name'  => $doc->original_name,
                 'mime_type'      => $doc->mime_type,
@@ -68,9 +73,12 @@ class DocumentController extends Controller
      */
     public function destroy(Document $document)
     {
-        $requiredPermission = str_contains($document->documentable_type ?? '', 'Booking')
+        $type = $document->documentable_type ?? '';
+        $requiredPermission = str_contains($type, 'Booking')
             ? 'confirm-checkin'
-            : 'manage-payment-approvals';
+            : (str_contains($type, 'ProcurementRequest')
+                ? 'view-procurement'
+                : 'manage-payment-approvals');
         abort_unless(auth()->user()->can($requiredPermission), 403);
 
         // Only uploader or super-admin can delete
@@ -90,6 +98,7 @@ class DocumentController extends Controller
         return match($type) {
             'payment-approval' => PaymentApproval::findOrFail($id),
             'booking'          => Booking::findOrFail($id),
+            'procurement'      => ProcurementRequest::findOrFail($id),
             default            => abort(404, 'Unknown document target type.'),
         };
     }

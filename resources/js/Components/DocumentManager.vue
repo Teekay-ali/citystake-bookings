@@ -8,6 +8,7 @@ const props = defineProps({
     modelId:   { type: Number, required: true },
     initial:   { type: Array,  default: () => [] },
     readonly:  { type: Boolean, default: false },
+    category:  { type: String, default: null },
 })
 
 const success = ref(null)
@@ -32,6 +33,7 @@ async function handleFiles(files) {
 
     const formData = new FormData()
     Array.from(files).forEach(f => formData.append('documents[]', f))
+    if (props.category) formData.append('category', props.category)
 
     try {
         const { data } = await axios.post(

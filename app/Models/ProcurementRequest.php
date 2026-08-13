@@ -83,6 +83,16 @@ class ProcurementRequest extends Model
         return $this->hasMany(ProcurementItem::class);
     }
 
+    public function documents(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable')->orderBy('sort_order');
+    }
+
+    public function hasReceipt(): bool
+    {
+        return $this->documents()->where('category', 'receipt')->exists();
+    }
+
     // ─── Workflow helpers ───────────────────────────────
 
     public static function generateReference(): string

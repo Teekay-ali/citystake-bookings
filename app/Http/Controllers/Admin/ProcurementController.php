@@ -258,9 +258,11 @@ class ProcurementController extends Controller
             'building', 'vendor', 'items',
             'submittedBy', 'officerApprovedBy', 'accountantApprovedBy',
             'ceoApprovedBy', 'purchasedBy', 'receiptConfirmedBy',
+            'documents.uploadedBy',
         ]);
 
-        $canModify = auth()->user()->can('approve-procurement-officer') && $procurement->canOfficerModify();
+        $user      = auth()->user();
+        $canModify = $user->can('approve-procurement-officer') && $procurement->canOfficerModify();
 
         return Inertia::render('Admin/Procurement/Show', [
             'procurement' => array_merge($procurement->toArray(), [
@@ -273,6 +275,8 @@ class ProcurementController extends Controller
                 'can_ceo_approve'         => $procurement->canCeoApprove(),
                 'can_mark_purchased'      => $procurement->canMarkPurchased(),
                 'can_confirm_receipt'     => $procurement->canConfirmReceipt(),
+                'has_receipt'             => $procurement->hasReceipt(),
+                'can_upload_documents'    => $user->can('view-procurement'),
             ]),
             // Vendors power the supplier picker in the officer's modify modal.
             'vendors' => $canModify
@@ -376,6 +380,11 @@ class ProcurementController extends Controller
             );
 
         } elseif ($procurement->canConfirmReceipt() && $user->can('confirm-procurement-receipt')) {
+            // A purchase receipt must be attached before the request can complete.
+            if (! $procurement->hasReceipt()) {
+                return back()->with('error', 'Upload the purchase receipt before confirming.');
+            }
+
             $procurement->load('items');
 
             foreach ($procurement->items as $item) {

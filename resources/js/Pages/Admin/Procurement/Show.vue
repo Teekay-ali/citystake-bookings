@@ -3,6 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
 import BankSelect from '@/Components/BankSelect.vue'
+import DocumentManager from '@/Components/DocumentManager.vue'
 import { ArrowLeft, Phone, Mail, CheckCircle2, Clock, XCircle, Pencil, Plus, Trash2, X, AlertTriangle } from 'lucide-vue-next'
 import { usePage } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
@@ -26,10 +27,29 @@ function submitApproval(action) {
     })
 }
 
-// At the officer stage, approval is blocked until every item is priced.
+// Documents split by kind: general attachments vs the purchase receipt.
+const attachments = computed(() => (props.procurement.documents ?? []).filter(d => d.category !== 'receipt'))
+const receipts    = computed(() => (props.procurement.documents ?? []).filter(d => d.category === 'receipt'))
+const isReceiptStage = computed(() => ['purchased', 'completed'].includes(props.procurement.status))
+
+// Track receipt presence live, so uploading one (an async call, no page reload)
+// immediately unblocks the Confirm Receipt button.
+const receiptCount = ref(receipts.value.length)
+const hasReceipt   = computed(() => receiptCount.value > 0)
+
+// Approval is blocked at the officer stage until every item is priced, and at
+// the receipt stage until a purchase receipt is attached.
 const approveBlocked = computed(() =>
-    props.procurement.can_officer_approve && props.procurement.has_unpriced_items
+    (props.procurement.can_officer_approve && props.procurement.has_unpriced_items) ||
+    (props.procurement.can_confirm_receipt && !hasReceipt.value)
 )
+const approveBlockReason = computed(() => {
+    if (props.procurement.can_officer_approve && props.procurement.has_unpriced_items)
+        return 'Set a price for every item before approving'
+    if (props.procurement.can_confirm_receipt && !hasReceipt.value)
+        return 'Upload the purchase receipt before confirming'
+    return ''
+})
 
 // ── Officer modify (only while the request is still pending) ──
 const showModify = ref(false)
@@ -258,6 +278,39 @@ const timelineSteps = computed(() => {
                         </div>
                     </div>
 
+                    <!-- Supporting documents (optional) -->
+                    <div v-if="procurement.can_upload_documents || attachments.length"
+                         class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
+                        <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Supporting Documents <span class="font-normal normal-case tracking-normal text-gray-400">(optional)</span></h2>
+                        <DocumentManager
+                            model-type="procurement"
+                            :model-id="procurement.id"
+                            :initial="attachments"
+                            category="attachment"
+                            :readonly="!procurement.can_upload_documents || ['completed','rejected'].includes(procurement.status)" />
+                    </div>
+
+                    <!-- Purchase receipt (required to complete) -->
+                    <div v-if="isReceiptStage"
+                         :class="procurement.status === 'purchased' && !hasReceipt ? 'ring-1 ring-amber-300 dark:ring-amber-700/50' : ''"
+                         class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400">Purchase Receipt</h2>
+                            <span v-if="procurement.status === 'purchased' && !hasReceipt"
+                                  class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">Required</span>
+                        </div>
+                        <p v-if="procurement.status === 'purchased' && !hasReceipt" class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            Attach the purchase receipt to confirm and complete this request.
+                        </p>
+                        <DocumentManager
+                            model-type="procurement"
+                            :model-id="procurement.id"
+                            :initial="receipts"
+                            category="receipt"
+                            @updated="(docs) => receiptCount = docs.length"
+                            :readonly="!procurement.can_upload_documents || procurement.status === 'completed'" />
+                    </div>
+
                     <!-- Justification / Notes -->
                     <div v-if="procurement.justification || procurement.notes"
                          class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5 space-y-4">
@@ -408,7 +461,7 @@ const timelineSteps = computed(() => {
                         <div class="flex flex-col gap-2">
                             <button @click="submitApproval('approve')"
                                     :disabled="approveForm.processing || approveBlocked"
-                                    :title="approveBlocked ? 'Set a price for every item before approving' : ''"
+                                    :title="approveBlockReason"
                                     class="w-full py-2.5 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                                 {{ procurement.can_mark_purchased ? 'Confirm Purchased' : procurement.can_confirm_receipt ? 'Confirm Receipt' : 'Approve' }}
                             </button>
