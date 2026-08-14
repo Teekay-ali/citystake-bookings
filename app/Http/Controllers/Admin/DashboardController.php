@@ -19,8 +19,16 @@ class DashboardController extends Controller
 
     public function index()
     {
+        $user = auth()->user();
+
+        // The executive dashboard exposes revenue/financial aggregates, so it's
+        // limited to financial-visibility roles. Anyone else is sent to their
+        // own home page rather than hitting a 403.
+        if (! $user->can('view-analytics')) {
+            return redirect()->route('manage.home');
+        }
+
         $today     = Carbon::today();
-        $user      = auth()->user();
         $isGlobal  = $user->hasGlobalAccess();
         $buildingIds = $user->accessibleBuildingIds();
 
