@@ -37,17 +37,14 @@ const isReceiptStage = computed(() => ['purchased', 'completed'].includes(props.
 const receiptCount = ref(receipts.value.length)
 const hasReceipt   = computed(() => receiptCount.value > 0)
 
-// Approval is blocked at the officer stage until every item is priced, and at
-// the receipt stage until a purchase receipt is attached.
+// Approval is blocked at the officer stage until every item is priced. The
+// purchase receipt is encouraged but optional, so it never blocks confirmation.
 const approveBlocked = computed(() =>
-    (props.procurement.can_officer_approve && props.procurement.has_unpriced_items) ||
-    (props.procurement.can_confirm_receipt && !hasReceipt.value)
+    props.procurement.can_officer_approve && props.procurement.has_unpriced_items
 )
 const approveBlockReason = computed(() => {
     if (props.procurement.can_officer_approve && props.procurement.has_unpriced_items)
         return 'Set a price for every item before approving'
-    if (props.procurement.can_confirm_receipt && !hasReceipt.value)
-        return 'Upload the purchase receipt before confirming'
     return ''
 })
 
@@ -311,17 +308,16 @@ const timelineSteps = computed(() => {
                             :readonly="!procurement.can_upload_documents || ['completed','rejected'].includes(procurement.status)" />
                     </div>
 
-                    <!-- Purchase receipt (required to complete) -->
+                    <!-- Purchase receipt (optional) -->
                     <div v-if="isReceiptStage"
-                         :class="procurement.status === 'purchased' && !hasReceipt ? 'ring-1 ring-amber-300 dark:ring-amber-700/50' : ''"
                          class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
                         <div class="flex items-center justify-between mb-3">
                             <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400">Purchase Receipt</h2>
                             <span v-if="procurement.status === 'purchased' && !hasReceipt"
-                                  class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">Required</span>
+                                  class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">Optional</span>
                         </div>
                         <p v-if="procurement.status === 'purchased' && !hasReceipt" class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                            Attach the purchase receipt to confirm and complete this request.
+                            Attach the purchase receipt if you have one — it's recommended for record-keeping but not required to confirm.
                         </p>
                         <DocumentManager
                             model-type="procurement"

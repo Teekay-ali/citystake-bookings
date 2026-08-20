@@ -427,11 +427,7 @@ class ProcurementController extends Controller
             );
 
         } elseif ($procurement->canConfirmReceipt() && $user->can('confirm-procurement-receipt')) {
-            // A purchase receipt must be attached before the request can complete.
-            if (! $procurement->hasReceipt()) {
-                return back()->with('error', 'Upload the purchase receipt before confirming.');
-            }
-
+            // A purchase receipt is encouraged but optional — confirmation is not blocked on it.
             $procurement->load('items');
 
             foreach ($procurement->items as $item) {
