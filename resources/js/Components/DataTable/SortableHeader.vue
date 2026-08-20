@@ -13,6 +13,7 @@ const props = defineProps({
     sortBy:    { type: String, default: '' },
     sortOrder: { type: String, default: 'desc' },
     align:     { type: String, default: 'left' }, // left | right
+    icon:      { type: [Object, Function], default: null }, // lucide component
 })
 const emit = defineEmits(['sort'])
 
@@ -30,8 +31,8 @@ function onClick() {
     <button
         type="button"
         @click="onClick"
-        :class="align === 'right' ? 'flex-row-reverse' : ''"
         class="group inline-flex items-center gap-1.5 font-medium hover:text-gray-900 dark:hover:text-white transition-colors">
+        <component :is="icon" v-if="icon" class="w-3.5 h-3.5 text-gray-400" />
         <span :class="active ? 'text-gray-900 dark:text-white' : ''">{{ label }}</span>
         <ChevronUp   v-if="active && sortOrder === 'asc'"  class="w-3.5 h-3.5 text-gray-900 dark:text-white" />
         <ChevronDown v-else-if="active"                    class="w-3.5 h-3.5 text-gray-900 dark:text-white" />

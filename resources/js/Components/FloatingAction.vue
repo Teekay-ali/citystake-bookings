@@ -19,6 +19,10 @@ const actions = {
 const permissions = computed(() => page.props.auth?.user?.permissions ?? [])
 
 const current = computed(() => {
+    // Touch the reactive URL so this recomputes on every Inertia visit. Ziggy's
+    // route().current() reads window.location, which Vue can't track on its own,
+    // so without this the button only updates on a full page reload.
+    void page.url
     for (const [name, action] of Object.entries(actions)) {
         if (route().current(name)) return action
     }

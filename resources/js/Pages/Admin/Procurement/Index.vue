@@ -8,6 +8,7 @@ import ViewOptions from '@/Components/DataTable/ViewOptions.vue'
 import DataTablePagination from '@/Components/DataTable/DataTablePagination.vue'
 import {
     Plus, ShoppingCart, ChevronRight, Search, X,
+    FileText, User, Banknote, CircleDot, CalendarDays,
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -218,19 +219,19 @@ function formatRelative(d) {
                     <thead class="border-b border-gray-100 dark:border-gray-800">
                     <tr class="text-left text-gray-500 dark:text-gray-400">
                         <th v-if="shown('request')" class="px-4 py-2.5">
-                            <SortableHeader label="Request" field="reference" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
+                            <SortableHeader label="Request" field="reference" :icon="FileText" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
                         </th>
                         <th v-if="shown('submitted_by')" class="px-4 py-2.5">
-                            <SortableHeader label="Submitted by" field="submitted_by" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
+                            <SortableHeader label="Submitted by" field="submitted_by" :icon="User" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
                         </th>
                         <th v-if="shown('status')" class="px-4 py-2.5">
-                            <SortableHeader label="Status" field="status" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
+                            <SortableHeader label="Status" field="status" :icon="CircleDot" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
                         </th>
                         <th v-if="shown('created')" class="px-4 py-2.5">
-                            <SortableHeader label="Submitted" field="created_at" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
+                            <SortableHeader label="Submitted" field="created_at" :icon="CalendarDays" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
                         </th>
                         <th v-if="shown('amount')" class="px-4 py-2.5 text-right">
-                            <SortableHeader label="Amount" field="total_amount" align="right" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
+                            <SortableHeader label="Amount" field="total_amount" align="right" :icon="Banknote" :sort-by="sortBy" :sort-order="sortOrder" @sort="onSort" />
                         </th>
                         <th class="px-4 py-2.5"></th>
                     </tr>
