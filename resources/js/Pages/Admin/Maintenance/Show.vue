@@ -257,14 +257,9 @@ function deleteReport() {
                     <p class="text-xs text-red-400 mt-2">Rejected by {{ report.rejected_by_role }}</p>
                 </div>
 
-            </div>
-
-            <!-- ── RIGHT COLUMN (1/3) ── -->
-            <div class="space-y-5 order-1 lg:order-none lg:sticky lg:top-20 self-start">
-
-                <!-- Approval Timeline -->
+                <!-- Approval Timeline (foot of the page on mobile, mirrors procurement) -->
                 <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                    <h2 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-5">Approval Progress</h2>
+                    <h2 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-5">Approval Timeline</h2>
 
                     <div class="space-y-0">
                         <div v-for="(step, index) in timelineSteps" :key="step.label" class="flex gap-3">
@@ -303,6 +298,26 @@ function deleteReport() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+            </div>
+
+            <!-- ── RIGHT COLUMN (1/3) ── -->
+            <div class="space-y-5 order-1 lg:order-none lg:sticky lg:top-20 self-start">
+
+                <!-- Completed state (first card on mobile, mirrors procurement) -->
+                <div v-if="report.status === 'completed'"
+                     class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 p-5">
+                    <div class="flex items-center gap-2.5 mb-1">
+                        <div class="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">✓</div>
+                        <p class="text-sm font-bold text-emerald-800 dark:text-emerald-300">Completed</p>
+                    </div>
+                    <p class="text-[12px] text-emerald-600 dark:text-emerald-500 pl-7">
+                        Payment confirmed by {{ report.payment_made_by?.name }} on {{ formatDate(report.payment_made_at) }}
+                    </p>
+                    <p v-if="report.actual_cost" class="text-[12px] font-semibold text-emerald-700 dark:text-emerald-400 mt-2 pl-7">
+                        Final cost: {{ formatPrice(report.actual_cost) }}
+                    </p>
                 </div>
 
                 <!-- Quick Info -->
@@ -385,21 +400,6 @@ function deleteReport() {
                             Reject
                         </button>
                     </div>
-                </div>
-
-                <!-- Completed state -->
-                <div v-if="report.status === 'completed'"
-                     class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-5">
-                    <div class="flex items-center gap-2 mb-1">
-                        <CheckCircle2 class="w-4 h-4 text-green-600 dark:text-green-400" />
-                        <p class="text-sm font-semibold text-green-700 dark:text-green-400">Completed</p>
-                    </div>
-                    <p class="text-xs text-green-600 dark:text-green-500">
-                        Payment confirmed by {{ report.payment_made_by?.name }} on {{ formatDate(report.payment_made_at) }}
-                    </p>
-                    <p v-if="report.actual_cost" class="text-sm font-semibold text-green-700 dark:text-green-400 mt-2">
-                        Final cost: {{ formatPrice(report.actual_cost) }}
-                    </p>
                 </div>
 
             </div>
