@@ -25,19 +25,42 @@ class ProcurementController extends Controller
 
         $user = auth()->user();
 
-        $query = ProcurementRequest::with(['building', 'submittedBy', 'vendor', 'items'])
-            ->latest();
+        // Faceted filters arrive as arrays (status[]=..&building_id[]=..); a bare
+        // scalar (legacy links / single pick) is coerced to a one-element array.
+        $statuses  = array_filter((array) $request->input('status', []));
+        $buildingIds = array_filter((array) $request->input('building_id', []));
+
+        // Sorting is server-driven and whitelisted so the sort_by param can never
+        // reach an arbitrary column.
+        $sortable  = ['reference', 'title', 'total_amount', 'status', 'created_at', 'submitted_by'];
+        $sortBy    = in_array($request->sort_by, $sortable, true) ? $request->sort_by : 'created_at';
+        $sortOrder = $request->sort_order === 'asc' ? 'asc' : 'desc';
+
+        $perPage = in_array((int) $request->per_page, [10, 20, 30, 50], true) ? (int) $request->per_page : 10;
+
+        $query = ProcurementRequest::with(['building', 'submittedBy', 'vendor', 'items']);
+
+        // "Submitted by" is a users FK, so ordering by the raw column would sort
+        // by id. Join users to sort by the submitter's name instead, keeping the
+        // select limited to the requests table so the model hydrates cleanly.
+        if ($sortBy === 'submitted_by') {
+            $query->leftJoin('users', 'users.id', '=', 'procurement_requests.submitted_by')
+                ->orderBy('users.name', $sortOrder)
+                ->select('procurement_requests.*');
+        } else {
+            $query->orderBy($sortBy, $sortOrder);
+        }
 
         if (!$user->hasGlobalAccess()) {
             $query->whereIn('building_id', $user->accessibleBuildingIds());
         }
 
-        if ($request->building_id) {
-            $query->where('building_id', $request->building_id);
+        if ($buildingIds) {
+            $query->whereIn('building_id', $buildingIds);
         }
 
-        if ($request->status) {
-            $query->where('status', $request->status);
+        if ($statuses) {
+            $query->whereIn('status', $statuses);
         }
 
         if ($request->search) {
@@ -47,7 +70,14 @@ class ProcurementController extends Controller
             });
         }
 
-        $requests = $query->paginate(10)->withQueryString();
+        $requests = $query->paginate($perPage)->withQueryString();
+
+        // Per-status totals (respecting building scope) power the faceted filter counts.
+        $statusCounts = ProcurementRequest::scopedToUser($user)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
 
         $buildings = Building::when(!$user->hasGlobalAccess(), function ($q) use ($user) {
             $q->whereIn('id', $user->accessibleBuildingIds());
@@ -56,7 +86,15 @@ class ProcurementController extends Controller
         return Inertia::render('Admin/Procurement/Index', [
             'requests'  => $requests,
             'buildings' => $buildings,
-            'filters' => $request->only(['building_id', 'status', 'search']),
+            'filters' => [
+                'building_id' => $buildingIds,
+                'status'      => $statuses,
+                'search'      => $request->search ?? '',
+                'sort_by'     => $sortBy,
+                'sort_order'  => $sortOrder,
+                'per_page'    => $perPage,
+            ],
+            'statusCounts' => $statusCounts,
             'counts' => ProcurementRequest::scopedToUser($user)
                 ->whereIn('status', ['pending', 'accountant_approved', 'ceo_approved', 'purchased'])
                 ->selectRaw('status, COUNT(*) as total')
