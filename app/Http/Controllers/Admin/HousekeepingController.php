@@ -75,16 +75,9 @@ class HousekeepingController extends Controller
             $arrival  = $nextArrival->get($u->id);
             $active   = $to && in_array($to->status, UnitTurnover::ACTIVE_STATUSES, true);
 
-            $needsCleaning = $out
-                && ! ($to && $to->ready_at && $to->ready_at->gte(Carbon::parse($out->check_out)->endOfDay()));
-
-            $state = match (true) {
-                (bool) $blocked->get($u->id), ($to && $to->status === 'blocked') => 'blocked',
-                (bool) $occ                                                       => 'occupied',
-                $active                                                           => $to->status,
-                $needsCleaning                                                    => 'needs_cleaning',
-                default                                                           => 'ready',
-            };
+            $state = $this->turnovers->readinessState(
+                (bool) $occ, (bool) $blocked->get($u->id), $to, $out?->check_out, $u->status === 'available'
+            );
 
             return [
                 'unit_id'      => $u->id,

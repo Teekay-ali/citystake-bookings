@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import ConfirmationModal from '@/Components/ConfirmationModal.vue'
-import { Sparkles, Search, Building2, CheckCircle, Clock, LogIn, BedDouble, Wrench, DoorClosed } from 'lucide-vue-next'
+import { Sparkles, Search, Building2, CheckCircle, Clock, LogIn, BedDouble, Wrench, DoorClosed, ClipboardCheck } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -15,15 +15,17 @@ const props = defineProps({
 
 // Readiness state → label, colour, icon, whether reception can act.
 const stateMeta = {
-    needs_cleaning:       { label: 'Needs cleaning', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400', dot: 'bg-gray-400', icon: DoorClosed },
-    cleaning_in_progress: { label: 'Cleaning',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500', icon: Sparkles },
-    cleaning_completed:   { label: 'Ready for QA',   cls: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400', dot: 'bg-sky-500', icon: CheckCircle },
-    qa_in_progress:       { label: 'QA in progress', cls: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400', dot: 'bg-orange-500', icon: Clock },
-    ready:                { label: 'Guest ready',    cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500', icon: CheckCircle },
-    occupied:             { label: 'Occupied',       cls: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400', dot: 'bg-indigo-500', icon: BedDouble },
-    blocked:              { label: 'Blocked',  cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', dot: 'bg-red-500', icon: Wrench },
+    needs_cleaning: { label: 'Needs cleaning', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400', dot: 'bg-gray-400', icon: DoorClosed },
+    cleaning:       { label: 'Cleaning',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500', icon: Sparkles },
+    ready_for_qa:   { label: 'Ready for QA',   cls: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400', dot: 'bg-sky-500', icon: CheckCircle },
+    qa_in_progress: { label: 'QA in progress', cls: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400', dot: 'bg-orange-500', icon: Clock },
+    pending:        { label: 'To inspect',     cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300', dot: 'bg-gray-500', icon: ClipboardCheck },
+    ready:          { label: 'Guest ready',    cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500', icon: CheckCircle },
+    occupied:       { label: 'Occupied',       cls: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400', dot: 'bg-indigo-500', icon: BedDouble },
+    blocked:        { label: 'Blocked',        cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', dot: 'bg-red-500', icon: Wrench },
+    offline:        { label: 'Maintenance',    cls: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400', dot: 'bg-gray-400', icon: Wrench },
 }
-const tabOrder = ['needs_cleaning', 'cleaning_in_progress', 'cleaning_completed', 'qa_in_progress', 'ready', 'occupied', 'blocked']
+const tabOrder = ['needs_cleaning', 'cleaning', 'ready_for_qa', 'qa_in_progress', 'pending', 'ready', 'occupied', 'blocked', 'offline']
 
 const activeTab = ref('all')
 const search    = ref('')
@@ -140,7 +142,7 @@ function fmtDate(iso) {
                 </div>
 
                 <!-- Action -->
-                <div v-if="['needs_cleaning', 'cleaning_in_progress'].includes(u.state)" class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <div v-if="['needs_cleaning', 'cleaning'].includes(u.state)" class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                     <button v-if="u.state === 'needs_cleaning'" @click="askRequest(u)"
                             class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 transition-all">
                         <Sparkles class="w-3.5 h-3.5" /> Request cleaning

@@ -8,6 +8,7 @@ use App\Models\Unit;
 use App\Models\UnitInspection;
 use App\Models\UnitTurnover;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 
 /**
@@ -101,6 +102,58 @@ class UnitTurnoverService
         ]);
 
         return $blocked;
+    }
+
+    /**
+     * Ensure a unit is in QA when QC starts inspecting it — whether it came
+     * through cleaning (advance the turnover) or QC picked it directly (open a
+     * fresh QA-only turnover so a pass still records as guest-ready).
+     */
+    public function beginQa(Unit $unit, UnitInspection $inspection): void
+    {
+        $active = $this->activeFor($unit);
+
+        if ($active) {
+            if ($active->status === 'cleaning_completed') {
+                $this->startQa($active, $inspection);
+            }
+            return; // already in QA (resume), or mid-clean — nothing to open
+        }
+
+        UnitTurnover::create([
+            'unit_id'            => $unit->id,
+            'building_id'        => $unit->unitType?->building_id ?? $unit->building_id,
+            'status'             => 'qa_in_progress',
+            'qa_started_at'      => now(),
+            'unit_inspection_id' => $inspection->id,
+        ]);
+    }
+
+    /**
+     * The canonical readiness state for a unit — the single source of truth used
+     * by both the housekeeping board and the inspection round, so they never drift.
+     * Returns: occupied | blocked | offline | needs_cleaning | cleaning |
+     *          ready_for_qa | qa_in_progress | ready | pending
+     */
+    public function readinessState(bool $occupied, bool $blocked, ?UnitTurnover $turnover, $lastCheckout, bool $available): string
+    {
+        $active = $turnover && in_array($turnover->status, UnitTurnover::ACTIVE_STATUSES, true);
+
+        // Checked out and not cleaned-and-passed since → needs cleaning.
+        $needsCleaning = $lastCheckout
+            && ! ($turnover && $turnover->ready_at && $turnover->ready_at->gte(Carbon::parse($lastCheckout)->endOfDay()));
+
+        return match (true) {
+            $blocked || ($turnover && $turnover->status === 'blocked') => 'blocked',
+            $occupied                                                  => 'occupied',
+            $active && $turnover->status === 'cleaning_in_progress'    => 'cleaning',
+            $active && $turnover->status === 'cleaning_completed'      => 'ready_for_qa',
+            $active && $turnover->status === 'qa_in_progress'          => 'qa_in_progress',
+            $needsCleaning                                             => 'needs_cleaning',
+            $turnover && $turnover->status === 'ready'                 => 'ready',
+            ! $available                                              => 'offline',
+            default                                                   => 'pending',
+        };
     }
 
     /** The current in-flight turnover for a unit, if any. */

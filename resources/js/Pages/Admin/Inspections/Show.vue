@@ -174,7 +174,7 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
             <div v-if="!readOnly" class="bg-white dark:bg-gray-900 border border-red-100 dark:border-red-900/40 rounded-2xl p-4 flex items-center justify-between gap-3">
                 <div class="min-w-0">
                     <p class="text-sm font-medium text-gray-900 dark:text-white">Needs repair?</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Block this unit for maintenance — it won't be bookable for the dates you set.</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Block this unit for maintenance - it won't be bookable for the dates you set.</p>
                 </div>
                 <button @click="showBlock = true"
                         class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">

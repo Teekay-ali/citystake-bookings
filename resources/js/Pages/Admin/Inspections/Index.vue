@@ -54,6 +54,7 @@ function spacesOf(card) {
 }
 // Readiness breakdown chips shown under the units progress bar (req 3).
 const readinessDefs = [
+    { key: 'to_inspect',     label: 'To inspect',     cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300' },
     { key: 'ready_for_qa',   label: 'Ready for QA',   cls: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400' },
     { key: 'cleaning',       label: 'Cleaning',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
     { key: 'needs_cleaning', label: 'Needs cleaning', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },

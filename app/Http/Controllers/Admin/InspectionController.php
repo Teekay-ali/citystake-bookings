@@ -93,6 +93,7 @@ class InspectionController extends Controller
                 'concerns'      => $counts['concerns'],
                 // Readiness breakdown chips (req 3).
                 'readiness'     => [
+                    'to_inspect'     => $counts['to_inspect'],
                     'ready_for_qa'   => $counts['ready_for_qa'],
                     'cleaning'       => $counts['cleaning'],
                     'needs_cleaning' => $counts['needs_cleaning'],
@@ -277,11 +278,9 @@ class InspectionController extends Controller
         $inspection->load('unit.unitType');
         $this->checklist->seed($inspection, $this->checklist->unitPlan($inspection));
 
-        // Advance the turnover (if the unit came through cleaning) into QA.
-        $turnover = $this->turnovers->activeFor($unit);
-        if ($turnover && $turnover->status === 'cleaning_completed') {
-            $this->turnovers->startQa($turnover, $inspection);
-        }
+        // Put the unit into QA — advancing a cleaned turnover, or opening a
+        // fresh one when QC inspects directly.
+        $this->turnovers->beginQa($unit, $inspection);
 
         return redirect()->route('manage.inspections.show', $inspection->id);
     }
@@ -683,20 +682,16 @@ class InspectionController extends Controller
             $arr  = $nextArrival->get($u->id);
             $active = $to && in_array($to->status, UnitTurnover::ACTIVE_STATUSES, true);
 
-            $needsCleaning = $out
-                && ! ($to && $to->ready_at && $to->ready_at->gte(Carbon::parse($out->check_out)->endOfDay()));
-
-            // The round's own inspection wins once QC has touched the unit today.
+            // Shared base state, then overlay this round's own inspection verdict
+            // (blocked still wins over everything).
+            $base = $this->turnovers->readinessState(
+                $occupied->contains($u->id), $blocked->contains($u->id), $to, $out?->check_out, $u->status === 'available'
+            );
             $state = match (true) {
-                $blocked->contains($u->id) || ($to && $to->status === 'blocked') => 'blocked',
+                $base === 'blocked'                      => 'blocked',
                 $insp && $insp->status === 'completed'   => $insp->overall_result === 'concerns' ? 'concern' : 'ok',
                 $insp && $insp->status === 'in_progress' => 'qa_in_progress',
-                $occupied->contains($u->id)              => 'occupied',
-                $active && $to->status === 'cleaning_in_progress' => 'cleaning',
-                $active && $to->status === 'cleaning_completed'   => 'ready_for_qa',
-                $needsCleaning                           => 'needs_cleaning',
-                $u->status !== 'available'               => 'offline',
-                default                                  => 'ready',
+                default                                  => $base,
             };
 
             return [
@@ -726,8 +721,8 @@ class InspectionController extends Controller
     {
         $by = collect($rows)->countBy('state');
 
-        // Units QC still owes work on today.
-        $pending   = ($by['ready_for_qa'] ?? 0) + ($by['qa_in_progress'] ?? 0);
+        // Units QC still owes work on today (to-inspect + ready-for-QA + mid-QA).
+        $pending   = ($by['pending'] ?? 0) + ($by['ready_for_qa'] ?? 0) + ($by['qa_in_progress'] ?? 0);
         $inspected = ($by['ok'] ?? 0) + ($by['concern'] ?? 0);
 
         $concerns = collect($rows)->where('state', 'concern')->sum('concern_count');
@@ -738,6 +733,7 @@ class InspectionController extends Controller
             'inspectable'    => $inspected + $pending,
             'concerns'       => $concerns,
             // Readiness breakdown for the landing-card chips.
+            'to_inspect'     => $by['pending'] ?? 0,
             'ready_for_qa'   => $by['ready_for_qa'] ?? 0,
             'cleaning'       => $by['cleaning'] ?? 0,
             'needs_cleaning' => $by['needs_cleaning'] ?? 0,

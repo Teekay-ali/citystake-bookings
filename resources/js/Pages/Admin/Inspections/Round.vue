@@ -38,6 +38,7 @@ const CIRC = 2 * Math.PI * R
 const dash = computed(() => `${CIRC * pct.value / 100} ${CIRC}`)
 
 const stateMeta = {
+    pending:        { label: 'To inspect',     cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300', dot: 'bg-gray-500', icon: ClipboardCheck },
     needs_cleaning: { label: 'Needs cleaning', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400', dot: 'bg-gray-400', icon: DoorClosed },
     cleaning:       { label: 'Cleaning',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500', icon: Sparkles },
     ready_for_qa:   { label: 'Ready for QA',   cls: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400', dot: 'bg-sky-500', icon: ClipboardCheck },
@@ -53,7 +54,7 @@ const stateMeta = {
 // ── Quick filter + search over the unit list ──
 const activeTab = ref('all')
 const search    = ref('')
-const tabOrder  = ['ready_for_qa', 'qa_in_progress', 'cleaning', 'needs_cleaning', 'concern', 'ok', 'ready', 'occupied', 'blocked', 'offline']
+const tabOrder  = ['pending', 'ready_for_qa', 'qa_in_progress', 'cleaning', 'needs_cleaning', 'concern', 'ok', 'ready', 'occupied', 'blocked', 'offline']
 const stateCounts = computed(() => {
     const c = {}
     props.units.forEach(u => { c[u.state] = (c[u.state] || 0) + 1 })
@@ -68,7 +69,7 @@ const filteredUnits = computed(() => props.units.filter(u => {
     if (search.value && !`${u.unit_number} ${u.unit_type}`.toLowerCase().includes(search.value.toLowerCase())) return false
     return true
 }))
-const isActionable = (u) => ['ready_for_qa', 'qa_in_progress'].includes(u.state)
+const isActionable = (u) => ['pending', 'ready_for_qa', 'qa_in_progress'].includes(u.state)
 const fmtShort = (iso) => iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''
 
 function inspectUnit(unit) {
@@ -79,7 +80,7 @@ function onUnitClick(unit) {
     if (props.round.status === 'cancelled') return
     if (['ok', 'concern', 'qa_in_progress'].includes(unit.state) && unit.inspection_id) {
         router.get(route('manage.inspections.show', unit.inspection_id))
-    } else if (unit.state === 'ready_for_qa') {
+    } else if (['pending', 'ready_for_qa'].includes(unit.state)) {
         inspectUnit(unit)
     }
 }
@@ -211,7 +212,7 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                                 <div class="flex items-center gap-2 shrink-0">
                                     <span class="text-[11px] font-medium px-2 py-1 rounded-lg" :class="stateMeta[unit.state].cls">{{ stateMeta[unit.state].label }}</span>
                                     <template v-if="isActive">
-                                        <span v-if="unit.state === 'ready_for_qa'" class="inline-flex items-center gap-1 text-xs font-semibold text-gray-900 dark:text-white">
+                                        <span v-if="['pending', 'ready_for_qa'].includes(unit.state)" class="inline-flex items-center gap-1 text-xs font-semibold text-gray-900 dark:text-white">
                                             Inspect <ArrowRight class="w-3.5 h-3.5" />
                                         </span>
                                         <span v-else-if="unit.state === 'qa_in_progress'" class="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400">
