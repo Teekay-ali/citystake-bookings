@@ -25,3 +25,6 @@ Schedule::command('bookings:remind-installments')->dailyAt('09:15');
 
 // Prune read notifications older than 30 days so the table doesn't grow unbounded
 Schedule::command('notifications:prune')->dailyAt('03:00');
+
+// Prune page-visit records older than 90 days
+Schedule::command('page-visits:prune')->dailyAt('03:10');

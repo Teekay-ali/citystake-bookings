@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Middleware\EnsureUserIsStaff;
+use App\Http\Middleware\TrackPageVisit;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -144,7 +145,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Admin routes prefix('manage.*')
-Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('manage.')->group(function () {
+Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->prefix('manage')->name('manage.')->group(function () {
 
     Route::get('/search', App\Http\Controllers\Admin\GlobalSearchController::class)
         ->name('search');
@@ -240,6 +241,9 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     // Analytics hub
     Route::get('/analytics', [App\Http\Controllers\Admin\AnalyticsController::class, 'index'])
         ->name('analytics.index');
+    // Usage analytics (staff page-visit tracking)
+    Route::get('/usage-analytics', [App\Http\Controllers\Admin\UsageAnalyticsController::class, 'index'])
+        ->name('usage-analytics.index');
     // Backward compat redirect
     Route::redirect('/analytics/occupancy', '/manage/analytics?tab=occupancy')->name('analytics.occupancy');
 

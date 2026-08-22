@@ -12,7 +12,7 @@ import {
     Search, Plus, Banknote, BadgeCheck, WifiOff,
     Inbox, CalendarCheck, MessageSquare, Clock, UserRound,
     ShieldCheck, UserCog, HelpCircle, MessagesSquare, Megaphone, ScrollText,
-    Home, Boxes, Settings, Briefcase, ClipboardCheck, Eye, PanelLeftClose, PanelLeftOpen
+    Home, Boxes, Settings, Briefcase, ClipboardCheck, Eye, PanelLeftClose, PanelLeftOpen, Activity
 } from 'lucide-vue-next'
 import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
@@ -366,6 +366,7 @@ const navGroups = computed(() => [
         items: [
             { label: 'Dashboard', icon: LayoutDashboard, route: dashboardRoute.value, match: 'manage.dashboard|manage.home' },
             { label: 'Analytics', icon: BarChart3, route: 'manage.analytics.index', match: 'manage.analytics.*', permission: 'view-analytics' },
+            { label: 'Usage', icon: Activity, route: 'manage.usage-analytics.index', match: 'manage.usage-analytics.*', permission: 'view-usage-analytics' },
         ]
     },
     {
