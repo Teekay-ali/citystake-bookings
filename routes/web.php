@@ -244,6 +244,11 @@ Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->pr
     // Usage analytics (staff page-visit tracking)
     Route::get('/usage-analytics', [App\Http\Controllers\Admin\UsageAnalyticsController::class, 'index'])
         ->name('usage-analytics.index');
+
+    // Housekeeping — reception cleaning board
+    Route::get('/housekeeping', [App\Http\Controllers\Admin\HousekeepingController::class, 'index'])->name('housekeeping.index');
+    Route::post('/housekeeping/request-cleaning', [App\Http\Controllers\Admin\HousekeepingController::class, 'requestCleaning'])->name('housekeeping.request-cleaning');
+    Route::post('/housekeeping/mark-cleaned', [App\Http\Controllers\Admin\HousekeepingController::class, 'markCleaned'])->name('housekeeping.mark-cleaned');
     // Backward compat redirect
     Route::redirect('/analytics/occupancy', '/manage/analytics?tab=occupancy')->name('analytics.occupancy');
 

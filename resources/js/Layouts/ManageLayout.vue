@@ -12,7 +12,7 @@ import {
     Search, Plus, Banknote, BadgeCheck, WifiOff,
     Inbox, CalendarCheck, MessageSquare, Clock, UserRound,
     ShieldCheck, UserCog, HelpCircle, MessagesSquare, Megaphone, ScrollText,
-    Home, Boxes, Settings, Briefcase, ClipboardCheck, Eye, PanelLeftClose, PanelLeftOpen, Activity
+    Home, Boxes, Settings, Briefcase, ClipboardCheck, Eye, PanelLeftClose, PanelLeftOpen, Activity, Sparkles
 } from 'lucide-vue-next'
 import MessageBell from '@/Components/MessageBell.vue'
 import NotificationBell from '@/Components/NotificationBell.vue'
@@ -393,6 +393,7 @@ const navGroups = computed(() => [
         items: [
             { label: 'Complaints',  icon: AlertTriangle, route: 'manage.complaints.index',  match: 'manage.complaints.*',  permission: 'view-complaints' },
             { label: 'Maintenance', icon: Wrench,        route: 'manage.maintenance.index', match: 'manage.maintenance.*', permission: 'view-maintenance', badge: pendingMaintenance.value },
+            { label: 'Housekeeping', icon: Sparkles, route: 'manage.housekeeping.index', match: 'manage.housekeeping.*', permission: 'request-cleaning' },
             { label: 'Inspections', icon: ClipboardCheck, route: 'manage.inspections.index', match: 'manage.inspections.*', permission: 'view-inspections', badge: pendingInspections.value },
             { label: 'Procurement', icon: ShoppingCart,  route: 'manage.procurement.index', match: 'manage.procurement.*', permission: 'view-procurement', badge: pendingProcurement.value },
             { label: 'Stock',       icon: Package,       route: 'manage.stock.index',       match: 'manage.stock.*',       permission: 'view-stock' },
