@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 class ChecklistItem extends Model
 {
     protected $fillable = [
-        'key', 'category', 'section', 'scope', 'label',
+        'key', 'category', 'issue_category', 'section', 'scope', 'label',
         'sort_order', 'repeats_per_bedroom', 'requires_photo_on_fail', 'active',
     ];
 

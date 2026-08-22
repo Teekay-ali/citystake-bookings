@@ -49,10 +49,31 @@ class ChecklistTemplateSeeder extends Seeder
             ['key' => 'outdoor.environment', 'category' => 'outdoor', 'section' => 'outdoor', 'scope' => 'property', 'sort_order' => 7, 'label' => 'Environment'],
         ];
 
+        // Issue type per item, for recurring-failure analytics (grouping by
+        // plumbing/electrical/… on top of the specific item).
+        $issue = [
+            'living_room.main_door' => 'safety',      'living_room.remotes' => 'appliance',
+            'living_room.sofa' => 'furniture',        'living_room.dining' => 'furniture',
+            'living_room.surfaces' => 'cleanliness',  'living_room.lights' => 'electrical',
+            'kitchen.appliances' => 'appliance',      'kitchen.cleanliness' => 'cleanliness',
+            'bedroom.bedding' => 'cleanliness',       'bedroom.storage' => 'furniture',
+            'bedroom.toilet' => 'plumbing',
+            'common.lobbies' => 'cleanliness',        'common.office' => 'cleanliness',
+            'common.gym' => 'cleanliness',
+            'outdoor.entrance' => 'general',          'outdoor.driveway' => 'general',
+            'outdoor.pool' => 'plumbing',             'outdoor.lawn' => 'general',
+            'outdoor.lighting' => 'electrical',       'outdoor.bins' => 'cleanliness',
+            'outdoor.environment' => 'general',
+        ];
+
         foreach ($items as $item) {
             ChecklistItem::updateOrCreate(
                 ['key' => $item['key']],
-                array_merge(['repeats_per_bedroom' => false, 'active' => true], $item)
+                array_merge(
+                    ['repeats_per_bedroom' => false, 'active' => true],
+                    $item,
+                    ['issue_category' => $issue[$item['key']] ?? 'general'],
+                )
             );
         }
     }

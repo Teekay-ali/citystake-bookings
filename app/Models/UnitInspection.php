@@ -11,7 +11,7 @@ class UnitInspection extends Model
 {
     protected $fillable = [
         'building_id', 'inspection_round_id', 'unit_id', 'inspector_id', 'created_by',
-        'status', 'overall_result', 'scheduled_for',
+        'status', 'overall_result', 'score', 'scheduled_for',
         'started_at', 'completed_at', 'summary', 'photos',
     ];
 
@@ -57,6 +57,11 @@ class UnitInspection extends Model
     public function itemResults(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(InspectionItemResult::class, 'inspectable');
+    }
+
+    public function turnover(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UnitTurnover::class, 'unit_inspection_id');
     }
 
     public function scopeCompleted($query)

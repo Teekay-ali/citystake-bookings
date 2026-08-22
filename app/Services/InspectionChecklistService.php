@@ -148,6 +148,19 @@ class InspectionChecklistService
     }
 
     /**
+     * Overall pass rate (0–100) for a completed inspectable: passed ÷ (passed +
+     * failed), with N/A excluded. 100 when nothing was failed.
+     */
+    public function score(Model $inspectable): int
+    {
+        $pass = $inspectable->itemResults()->where('result', 'pass')->count();
+        $fail = $inspectable->itemResults()->where('result', 'fail')->count();
+        $assessed = $pass + $fail;
+
+        return $assessed > 0 ? (int) round($pass / $assessed * 100) : 100;
+    }
+
+    /**
      * Why an inspectable can't be completed yet, or null when it's ready.
      * Every item must be answered; every Fail needs a note (+ photo when the
      * item requires one).

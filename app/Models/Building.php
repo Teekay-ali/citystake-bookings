@@ -30,6 +30,7 @@ class Building extends Model
         'house_rules',
         'monthly_emergency_limit',
         'standard_checkout_time',
+        'standard_checkin_time',
         'late_checkout_fee_per_hour',
         'is_active',
     ];
