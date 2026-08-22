@@ -54,8 +54,22 @@ class ChangelogController extends Controller
             'roles.*' => 'string|exists:roles,name',
         ]);
 
-        $roles = Changelog::audienceRolesFrom($data['roles']);
+        $previous = Changelog::audienceRoles();
+        $roles    = Changelog::audienceRolesFrom($data['roles']);
         Setting::set(Changelog::AUDIENCE_SETTING, $roles);
+
+        // Newly added roles shouldn't be flooded with the whole back-catalogue:
+        // mark every already-published update as read for their users, so they
+        // only see updates published from now on.
+        $added = array_diff($roles, $previous);
+        if ($added) {
+            $publishedIds = Changelog::published()->pluck('id');
+            if ($publishedIds->isNotEmpty()) {
+                User::whereHas('roles', fn ($q) => $q->whereIn('name', $added))
+                    ->get()
+                    ->each(fn ($u) => $u->changelogReads()->syncWithoutDetaching($publishedIds->all()));
+            }
+        }
 
         AuditLog::log('changelog.audience_updated', null, null, ['roles' => $roles]);
 
