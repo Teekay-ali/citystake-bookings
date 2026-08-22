@@ -15,6 +15,7 @@ const props = defineProps({
     units:       { type: Array, default: () => [] },
     sections:    { type: Array, default: () => [] },
     counts:      { type: Object, default: () => ({}) },
+    concerns:    { type: Array, default: () => [] },
     canComplete: Boolean,
 })
 
@@ -129,7 +130,7 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
         <div class="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_20rem] lg:gap-5 lg:items-start">
 
             <!-- ════ Unit inspections (collapsible) ════ -->
-            <div class="order-2 lg:order-none">
+            <div class="order-2 lg:order-none space-y-4">
                 <div :class="card" class="overflow-hidden">
                     <button type="button" @click="unitsOpen = !unitsOpen"
                             :class="unitsOpen ? 'border-b border-gray-100 dark:border-gray-800' : ''"
@@ -180,6 +181,32 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                         </div>
 
                         <div v-if="units.length === 0" class="px-5 py-10 text-center text-sm text-gray-400">No units in this property.</div>
+                    </div>
+                </div>
+
+                <!-- ════ Concerns report ════ -->
+                <div v-if="concerns.length" :class="card" class="overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center gap-2">
+                            <AlertTriangle class="w-4 h-4 text-amber-500" />
+                            <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Concerns</h2>
+                        </div>
+                        <span class="text-xs tabular-nums text-gray-400">{{ concerns.length }} failed item{{ concerns.length !== 1 ? 's' : '' }}</span>
+                    </div>
+                    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                        <div v-for="(c, i) in concerns" :key="i" class="px-5 py-3.5">
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white leading-snug">{{ c.label }}</p>
+                                <span class="shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 whitespace-nowrap">{{ c.source }}</span>
+                            </div>
+                            <p v-if="c.note" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ c.note }}</p>
+                            <div v-if="c.photos.length" class="flex flex-wrap gap-2 mt-2.5">
+                                <a v-for="(p, pi) in c.photos" :key="pi" :href="p" target="_blank" rel="noopener"
+                                   class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 hover:ring-2 hover:ring-gray-900 dark:hover:ring-white transition-all">
+                                    <img :src="p" class="w-full h-full object-cover" />
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

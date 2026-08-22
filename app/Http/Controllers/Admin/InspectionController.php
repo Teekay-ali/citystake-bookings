@@ -175,6 +175,7 @@ class InspectionController extends Controller
             'units'    => $rows,
             'sections' => $sections,
             'counts'   => $counts,
+            'concerns' => $this->roundConcerns($round),
             // A round closes once every inspectable unit AND both property
             // sections are done.
             'canComplete' => $round->status === 'in_progress' && $counts['pending'] === 0 && $sectionsDone,
@@ -572,6 +573,40 @@ class InspectionController extends Controller
             'inspectable' => count($rows) - $occupied,
             'concerns'    => $concerns,
         ];
+    }
+
+    /**
+     * Every failed checklist item in a round — the report management reviews.
+     * Sourced from both unit inspections and the property sections, newest first.
+     */
+    private function roundConcerns(InspectionRound $round): array
+    {
+        $units    = $round->unitInspections()->with('unit:id,unit_number')->get()->keyBy('id');
+        $sections = $round->sectionInspections()->get()->keyBy('id');
+
+        if ($units->isEmpty() && $sections->isEmpty()) {
+            return [];
+        }
+
+        return $this->failedItemsQuery($units->keys(), $sections->keys())
+            ->orderByDesc('updated_at')
+            ->get()
+            ->map(function ($r) use ($units, $sections) {
+                if ($r->inspectable_type === UnitInspection::class) {
+                    $u = $units->get($r->inspectable_id);
+                    $source = 'Unit '.($u?->unit?->unit_number ?? '—');
+                } else {
+                    $sec = $sections->get($r->inspectable_id);
+                    $source = ($sec?->section === 'common') ? 'Guest Common Spaces' : 'Outdoor Space';
+                }
+
+                return [
+                    'source' => $source,
+                    'label'  => $r->item_label,
+                    'note'   => $r->note,
+                    'photos' => collect($r->photos ?? [])->map(fn ($p) => Storage::url($p))->values(),
+                ];
+            })->all();
     }
 
     /** Failed checklist items across the given unit- and section-inspection ids. */
