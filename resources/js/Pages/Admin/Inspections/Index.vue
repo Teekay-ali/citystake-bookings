@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { ClipboardCheck, Building2, CheckCircle, AlertTriangle, ArrowRight, DoorOpen, PlayCircle, Sofa, Trees } from 'lucide-vue-next'
+import { ClipboardCheck, Building2, CheckCircle, AlertTriangle, ArrowRight, DoorOpen, PlayCircle, Sofa, Trees, BarChart3 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -81,9 +81,15 @@ function spaceCls(sp) {
     <div class="p-4 lg:p-6">
 
         <!-- Header -->
-        <div class="mb-6">
-            <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Inspections</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Daily quality-control rounds · {{ todayLabel }}</p>
+        <div class="flex items-start justify-between gap-3 mb-6">
+            <div>
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Inspections</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Daily quality-control rounds · {{ todayLabel }}</p>
+            </div>
+            <Link :href="route('manage.inspections.analytics')"
+                  class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <BarChart3 class="w-4 h-4" /> Analytics
+            </Link>
         </div>
 
         <!-- Tabs -->

@@ -307,6 +307,8 @@ Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->pr
     Route::post('/inspections/rounds/{round}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'completeRound'])->name('inspections.round.complete');
     Route::post('/inspections/rounds/{round}/cancel', [\App\Http\Controllers\Admin\InspectionController::class, 'cancelRound'])->name('inspections.round.cancel');
     Route::post('/inspections/start', [\App\Http\Controllers\Admin\InspectionController::class, 'start'])->name('inspections.start');
+    // QC analytics — turnaround times + recurring issues
+    Route::get('/inspections/analytics', [\App\Http\Controllers\Admin\QcAnalyticsController::class, 'index'])->name('inspections.analytics');
     // Property-level sections (common / outdoor), one per round.
     Route::get('/inspections/sections/{section}', [\App\Http\Controllers\Admin\InspectionController::class, 'section'])->name('inspections.section');
     Route::post('/inspections/sections/{section}', [\App\Http\Controllers\Admin\InspectionController::class, 'sectionUpdate'])->name('inspections.section.update');
@@ -318,6 +320,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->pr
     Route::post('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'update'])->name('inspections.update');
     Route::post('/inspections/{inspection}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'complete'])->name('inspections.complete');
     Route::post('/inspections/{inspection}/block', [\App\Http\Controllers\Admin\InspectionController::class, 'blockUnit'])->name('inspections.block');
+    Route::get('/inspections/{inspection}/report', [\App\Http\Controllers\Admin\InspectionController::class, 'report'])->name('inspections.report');
 
     // Procurement
     Route::get('/procurement', [ProcurementController::class, 'index'])->name('procurement.index');

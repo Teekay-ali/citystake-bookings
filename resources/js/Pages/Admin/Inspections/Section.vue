@@ -92,7 +92,7 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                         <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ section.title }}</h1>
                         <span v-if="readOnly" class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium"
                               :class="section.result === 'fail' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'">
-                            {{ section.result === 'fail' ? 'Fail' : 'Pass' }}
+                            {{ section.result === 'fail' ? 'Concerns' : 'Passed' }}
                         </span>
                         <span v-else class="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400">
                             <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> In progress

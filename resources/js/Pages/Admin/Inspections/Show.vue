@@ -4,7 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import ChecklistSection from '@/Components/Inspections/ChecklistSection.vue'
 import Modal from '@/Components/Modal.vue'
-import { ArrowLeft, Building2, ClipboardCheck, User, Clock, Check, Loader2, AlertTriangle, Wrench } from 'lucide-vue-next'
+import { ArrowLeft, Building2, ClipboardCheck, User, Clock, Check, Loader2, AlertTriangle, Wrench, Download } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -112,7 +112,7 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                         <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate">Unit {{ inspection.unit_number }}</h1>
                         <span v-if="readOnly" class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium"
                               :class="inspection.overall_result === 'concerns' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'">
-                            {{ inspection.overall_result === 'concerns' ? 'Fail' : 'Pass' }}
+                            {{ inspection.overall_result === 'concerns' ? 'Concerns' : 'Passed' }}<template v-if="inspection.score != null"> · {{ inspection.score }}%</template>
                         </span>
                         <span v-else class="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400">
                             <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> In progress
@@ -136,6 +136,12 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                     <ClipboardCheck class="w-3.5 h-3.5" /> {{ completeLabel }}
                 </button>
             </div>
+
+            <!-- Completed: download report -->
+            <a v-else :href="route('manage.inspections.report', inspection.id)"
+               class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                <Download class="w-3.5 h-3.5" /> Report
+            </a>
         </div>
 
         <!-- ── Content ── -->

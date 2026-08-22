@@ -42,8 +42,8 @@ const stateMeta = {
     cleaning:       { label: 'Cleaning',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500', icon: Sparkles },
     ready_for_qa:   { label: 'Ready for QA',   cls: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400', dot: 'bg-sky-500', icon: ClipboardCheck },
     qa_in_progress: { label: 'QA in progress', cls: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400', dot: 'bg-orange-500', icon: Clock },
-    ok:             { label: 'Pass',           cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500', icon: CheckCircle },
-    concern:        { label: 'Fail',           cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', dot: 'bg-red-500', icon: AlertTriangle },
+    ok:             { label: 'Passed',         cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500', icon: CheckCircle },
+    concern:        { label: 'Concerns',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500', icon: AlertTriangle },
     ready:          { label: 'Guest ready',    cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500', icon: CheckCircle },
     occupied:       { label: 'Occupied',       cls: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400', dot: 'bg-indigo-500', icon: BedDouble },
     blocked:        { label: 'Blocked',  cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', dot: 'bg-red-500', icon: Wrench },
@@ -333,7 +333,7 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                                             : s.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                                             : s.status === 'in_progress' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400'
                                             : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'">
-                                    {{ s.status === 'completed' ? (s.result === 'fail' ? 'Fail' : 'Pass') : s.status === 'in_progress' ? 'In progress' : 'Pending' }}
+                                    {{ s.status === 'completed' ? (s.result === 'fail' ? 'Concerns' : 'Passed') : s.status === 'in_progress' ? 'In progress' : 'Pending' }}
                                 </span>
                                 <ArrowRight v-if="isActive && s.status !== 'completed'" class="w-3.5 h-3.5 text-gray-400" />
                             </div>

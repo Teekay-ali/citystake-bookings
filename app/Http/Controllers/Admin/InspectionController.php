@@ -304,6 +304,7 @@ class InspectionController extends Controller
                 'round_id'       => $inspection->inspection_round_id,
                 'status'         => $inspection->status,
                 'overall_result' => $inspection->overall_result,
+                'score'          => $inspection->score,
                 'unit_number'    => $inspection->unit?->unit_number,
                 'unit_type'      => $inspection->unit?->unitType?->name,
                 'building_name'  => $inspection->building?->name,
@@ -359,6 +360,44 @@ class InspectionController extends Controller
         }
 
         return redirect()->route('manage.inspections.index')->with('success', 'Inspection saved.');
+    }
+
+    /** One-click branded PDF report for a completed inspection. */
+    public function report(UnitInspection $inspection)
+    {
+        abort_unless(auth()->user()->can('view-inspections'), 403);
+        abort_unless(in_array($inspection->building_id, $this->scopedBuildingIds()), 403);
+
+        $inspection->load(['unit.unitType', 'building:id,name', 'inspector:id,name']);
+
+        // Grouped results with photos inlined as base64 (dompdf can't fetch URLs).
+        $groups = collect($this->checklist->grouped($inspection))->map(function ($g) {
+            $g['items'] = collect($g['items'])->map(function ($i) {
+                $i['photos'] = collect($i['photos'])->map(function ($p) {
+                    $path = is_array($p) ? ($p['path'] ?? null) : $p;
+                    $abs  = $path ? Storage::disk('public')->path($path) : null;
+                    if (! $abs || ! is_file($abs)) {
+                        return null;
+                    }
+                    return 'data:' . (mime_content_type($abs) ?: 'image/jpeg') . ';base64,' . base64_encode(file_get_contents($abs));
+                })->filter()->values()->all();
+                return $i;
+            })->all();
+            return $g;
+        })->all();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.inspection', [
+            'inspection'    => $inspection,
+            'groups'        => $groups,
+            'score'         => $inspection->score,
+            'inspectorRole' => $inspection->inspector?->getRoleNames()->first(),
+            'generatedAt'   => now(),
+        ]);
+
+        $filename = 'inspection-unit-' . ($inspection->unit?->unit_number ?? 'x')
+            . '-' . optional($inspection->completed_at)->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     /** Flag a unit for maintenance: block dates + optional maintenance request. */
