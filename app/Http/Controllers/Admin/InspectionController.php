@@ -16,6 +16,7 @@ use App\Models\UnitTurnover;
 use App\Services\UnitTurnoverService;
 use App\Notifications\InspectionRoundCompletedNotification;
 use App\Notifications\UnitBlockedNotification;
+use App\Notifications\UnitGuestReadyNotification;
 use App\Services\InspectionChecklistService;
 use App\Services\NotificationService;
 use App\Traits\ScopedByBuilding;
@@ -352,6 +353,12 @@ class InspectionController extends Controller
         $turnover = $inspection->turnover;
         if ($passed && $turnover && $turnover->status === 'qa_in_progress') {
             $this->turnovers->completeQa($turnover);
+
+            // Let the front desk know the unit is guest-ready.
+            NotificationService::send(
+                NotificationService::getUsersByRoles(['receptionist', 'manager', 'super-admin', 'ceo'], $inspection->building_id),
+                new UnitGuestReadyNotification($inspection->unit?->unit_number ?? '—', $inspection->building?->name ?? ''),
+            );
         }
 
         if ($inspection->inspection_round_id) {
