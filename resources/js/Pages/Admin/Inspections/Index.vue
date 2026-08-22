@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
-import { ClipboardCheck, Building2, CheckCircle, AlertTriangle, ArrowRight, DoorOpen, PlayCircle } from 'lucide-vue-next'
+import { ClipboardCheck, Building2, CheckCircle, AlertTriangle, ArrowRight, DoorOpen, PlayCircle, Sofa, Trees } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
@@ -9,7 +9,6 @@ const props = defineProps({
     tab:     String,
     today:   { type: Array, default: () => [] },
     history: { type: Object, default: null },
-    stats:   { type: Object, default: () => ({}) },
 })
 
 function setTab(tab) {
@@ -44,12 +43,21 @@ function formatDate(d) {
 }
 const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
-const statCards = [
-    { key: 'active_rounds',   label: 'Active rounds',    cls: 'text-blue-600 dark:text-blue-400' },
-    { key: 'inspected_today', label: 'Inspected today',  cls: 'text-gray-500 dark:text-gray-400' },
-    { key: 'rounds_week',     label: 'Rounds this week', cls: 'text-emerald-600 dark:text-emerald-400' },
-    { key: 'open_concerns',   label: 'Open concerns',    cls: 'text-amber-600 dark:text-amber-400' },
-]
+const spaceIcon = { common: Sofa, outdoor: Trees }
+const spaceName = { common: 'Common', outdoor: 'Outdoor' }
+
+// The two property spaces, falling back to pending placeholders before a round exists.
+function spacesOf(card) {
+    return card.spaces?.length
+        ? card.spaces
+        : [{ section: 'common', status: null }, { section: 'outdoor', status: null }]
+}
+function spaceCls(sp) {
+    if (sp.status === 'completed' && sp.result === 'fail') return 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'
+    if (sp.status === 'completed') return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+    if (sp.status === 'in_progress') return 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400'
+    return 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+}
 </script>
 
 <template>
@@ -61,15 +69,6 @@ const statCards = [
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Inspections</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Daily quality-control rounds · {{ todayLabel }}</p>
-        </div>
-
-        <!-- Stats -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div v-for="s in statCards" :key="s.key"
-                 class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none px-4 py-3">
-                <p class="text-xs font-medium uppercase tracking-wider mb-1.5" :class="s.cls">{{ s.label }}</p>
-                <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ stats[s.key] ?? 0 }}</p>
-            </div>
         </div>
 
         <!-- Tabs -->
@@ -106,9 +105,11 @@ const statCards = [
                         <span class="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full" :class="roundBadge(card).cls">{{ roundBadge(card).label }}</span>
                     </div>
 
-                    <!-- Progress -->
-                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
-                        <span>{{ card.inspected }} of {{ card.inspectable }} inspected</span>
+                    <!-- Units progress -->
+                    <div class="flex items-center justify-between text-xs mb-1.5">
+                        <span class="text-gray-500 dark:text-gray-400">
+                            <span class="font-medium text-gray-700 dark:text-gray-300">Units</span> · {{ card.inspected }}/{{ card.inspectable }} inspected
+                        </span>
                         <span v-if="card.concerns > 0" class="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
                             <AlertTriangle class="w-3 h-3" /> {{ card.concerns }}
                         </span>
@@ -118,11 +119,28 @@ const statCards = [
                              :class="card.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-500'"
                              :style="{ width: progress(card) + '%' }" />
                     </div>
+                    <p v-if="card.occupied" class="text-[11px] text-gray-400 mt-1">{{ card.occupied }} occupied · not inspectable today</p>
 
-                    <div class="flex items-center justify-between gap-2 mt-4">
-                        <span class="text-[11px] text-gray-400">
-                            {{ card.total }} unit{{ card.total !== 1 ? 's' : '' }}<template v-if="card.occupied"> · {{ card.occupied }} occupied</template>
-                        </span>
+                    <!-- Property spaces -->
+                    <div class="mt-3.5 pt-3.5 border-t border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Property spaces</span>
+                            <span class="text-[11px] tabular-nums text-gray-400">{{ card.spaces_done ?? 0 }}/{{ card.spaces_total ?? 2 }} done</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span v-for="sp in spacesOf(card)" :key="sp.section"
+                                  :class="spaceCls(sp)"
+                                  class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium">
+                                <CheckCircle v-if="sp.status === 'completed' && sp.result !== 'fail'" class="w-3 h-3" />
+                                <AlertTriangle v-else-if="sp.status === 'completed'" class="w-3 h-3" />
+                                <component v-else :is="spaceIcon[sp.section]" class="w-3 h-3" />
+                                {{ spaceName[sp.section] }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 mt-4 pt-3.5 border-t border-gray-100 dark:border-gray-800">
+                        <span class="text-[11px] text-gray-400">{{ card.total }} unit{{ card.total !== 1 ? 's' : '' }} total</span>
                         <span class="inline-flex items-center gap-1 text-xs font-semibold text-gray-900 dark:text-white">
                             <PlayCircle v-if="!card.round_id || card.status === 'cancelled'" class="w-3.5 h-3.5" />
                             {{ ctaLabel(card) }}

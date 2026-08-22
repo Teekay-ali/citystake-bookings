@@ -54,6 +54,11 @@ class UnitInspection extends Model
         return $this->hasMany(InspectionFinding::class);
     }
 
+    public function itemResults(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(InspectionItemResult::class, 'inspectable');
+    }
+
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');

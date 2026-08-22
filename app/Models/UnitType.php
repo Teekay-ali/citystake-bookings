@@ -50,6 +50,20 @@ class UnitType extends Model
         return $this->belongsTo(Building::class);
     }
 
+    /**
+     * How many bedrooms a unit of this type has, for expanding the per-bedroom
+     * inspection items. A studio is treated as one combined bedroom; every other
+     * type carries its leading digit ("2-bed" → 2).
+     */
+    public function bedroomCount(): int
+    {
+        if ($this->bedroom_type === 'studio') {
+            return 1;
+        }
+
+        return (int) $this->bedroom_type ?: 1;
+    }
+
     public function units(): HasMany
     {
         return $this->hasMany(Unit::class);

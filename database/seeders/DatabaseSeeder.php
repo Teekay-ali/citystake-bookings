@@ -33,6 +33,10 @@ class DatabaseSeeder extends Seeder
         $this->call(SixtyNinePlaceSeeder::class);
 
         $this->call(RolesAndPermissionsSeeder::class);
+
+        // Inspection checklist template (idempotent; also runnable standalone on
+        // production via db:seed --class=ChecklistTemplateSeeder).
+        $this->call(ChecklistTemplateSeeder::class);
     }
 
 }

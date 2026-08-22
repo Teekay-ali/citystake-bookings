@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
-use App\Models\InspectionFinding;
+use App\Models\InspectionItemResult;
 use App\Models\InspectionRound;
+use App\Models\RoundSectionInspection;
 use App\Models\Unit;
 use App\Models\UnitInspection;
 use App\Notifications\InspectionRoundCompletedNotification;
+use App\Services\InspectionChecklistService;
 use App\Services\NotificationService;
 use App\Traits\ScopedByBuilding;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -20,11 +23,15 @@ class InspectionController extends Controller
 {
     use ScopedByBuilding;
 
+    public function __construct(private InspectionChecklistService $checklist)
+    {
+    }
+
+    // The two property-level sections inspected once per round.
+    private const PROPERTY_SECTIONS = ['common', 'outdoor'];
+
     // Statuses that mean a guest currently holds the unit on a given date.
     private const OCCUPYING_STATUSES = ['confirmed', 'checked_in', 'paused'];
-
-    private const CATEGORIES = ['cleanliness', 'damage', 'electrical', 'plumbing', 'appliance', 'furniture', 'safety', 'other'];
-    private const SEVERITIES = ['low', 'medium', 'high'];
 
     // Unit states that a QC must resolve before a round can close.
     private const BLOCKING_STATES = ['pending', 'in_progress'];
@@ -42,16 +49,6 @@ class InspectionController extends Controller
             'tab'     => $tab,
             'today'   => $tab === 'today' ? $this->todayCards($buildingIds, $today) : [],
             'history' => $tab === 'history' ? $this->history($buildingIds) : null,
-            'stats'   => [
-                'active_rounds'   => InspectionRound::whereIn('building_id', $buildingIds)
-                    ->where('status', 'in_progress')->whereDate('round_date', $today)->count(),
-                'inspected_today' => UnitInspection::whereIn('building_id', $buildingIds)
-                    ->where('status', 'completed')->whereDate('completed_at', $today)->count(),
-                'rounds_week'     => InspectionRound::whereIn('building_id', $buildingIds)
-                    ->where('status', 'completed')->where('completed_at', '>=', $today->copy()->subDays(7))->count(),
-                'open_concerns'   => InspectionFinding::whereHas('inspection', fn ($q) => $q->whereIn('building_id', $buildingIds))
-                    ->where('resolved', false)->count(),
-            ],
         ]);
     }
 
@@ -72,6 +69,7 @@ class InspectionController extends Controller
             $round   = $rounds->get($b->id);
             $rows    = $this->unitRows($b->id, $round, $today);
             $counts  = $this->countStates($rows);
+            $spaces  = $round ? $this->sectionCards($round) : collect();
 
             return [
                 'building_id'   => $b->id,
@@ -84,6 +82,14 @@ class InspectionController extends Controller
                 'pending'       => $counts['pending'],
                 'occupied'      => $counts['occupied'],
                 'concerns'      => $counts['concerns'],
+                // Property-wide spaces (common + outdoor), inspected once per round.
+                'spaces_total'  => count(self::PROPERTY_SECTIONS),
+                'spaces_done'   => $spaces->where('status', 'completed')->count(),
+                'spaces'        => $spaces->map(fn ($s) => [
+                    'section' => $s['section'],
+                    'status'  => $s['status'],
+                    'result'  => $s['result'],
+                ])->values(),
             ];
         })->all();
     }
@@ -104,9 +110,9 @@ class InspectionController extends Controller
                 'status'         => $r->status,
                 'inspected'      => $r->inspected_count,
                 'completed_by'   => $r->completedBy?->name,
-                'concerns'       => InspectionFinding::whereIn(
-                    'unit_inspection_id',
-                    $r->unitInspections()->where('status', 'completed')->pluck('id')
+                'concerns'       => $this->failedItemsQuery(
+                    $r->unitInspections()->where('status', 'completed')->pluck('id'),
+                    $r->sectionInspections()->pluck('id'),
                 )->count(),
             ]);
     }
@@ -131,6 +137,14 @@ class InspectionController extends Controller
             $round->update(['status' => 'in_progress', 'started_by' => auth()->id()]);
         }
 
+        // Ensure the two property-level sections exist for this round.
+        foreach (self::PROPERTY_SECTIONS as $section) {
+            RoundSectionInspection::firstOrCreate(
+                ['inspection_round_id' => $round->id, 'section' => $section],
+                ['building_id' => $round->building_id, 'status' => 'pending']
+            );
+        }
+
         return redirect()->route('manage.inspections.round', $round->id);
     }
 
@@ -144,6 +158,9 @@ class InspectionController extends Controller
 
         $rows   = $this->unitRows($round->building_id, $round, Carbon::parse($round->round_date));
         $counts = $this->countStates($rows);
+        $sections = $this->sectionCards($round);
+
+        $sectionsDone = $sections->every(fn ($s) => $s['status'] === 'completed');
 
         return Inertia::render('Admin/Inspections/Round', [
             'round' => [
@@ -155,10 +172,12 @@ class InspectionController extends Controller
                 'completed_at'  => $round->completed_at,
                 'note'          => $round->note,
             ],
-            'units'  => $rows,
-            'counts' => $counts,
-            // A round can close once nothing inspectable is still outstanding.
-            'canComplete' => $round->status === 'in_progress' && $counts['pending'] === 0,
+            'units'    => $rows,
+            'sections' => $sections,
+            'counts'   => $counts,
+            // A round closes once every inspectable unit AND both property
+            // sections are done.
+            'canComplete' => $round->status === 'in_progress' && $counts['pending'] === 0 && $sectionsDone,
         ]);
     }
 
@@ -184,6 +203,10 @@ class InspectionController extends Controller
 
         if ($counts['pending'] > 0) {
             return back()->with('error', 'Every vacant unit must be inspected before completing the round.');
+        }
+
+        if ($this->sectionCards($round)->contains(fn ($s) => $s['status'] !== 'completed')) {
+            return back()->with('error', 'Complete the common and outdoor space checklists before closing the round.');
         }
 
         $round->update([
@@ -231,6 +254,10 @@ class InspectionController extends Controller
             ]
         );
 
+        // Lay down the checklist rows (bedroom items multiplied per bedroom).
+        $inspection->load('unit.unitType');
+        $this->checklist->seed($inspection, $this->checklist->unitPlan($inspection));
+
         return redirect()->route('manage.inspections.show', $inspection->id);
     }
 
@@ -239,7 +266,13 @@ class InspectionController extends Controller
         abort_unless(auth()->user()->can('view-inspections'), 403);
         abort_unless(in_array($inspection->building_id, $this->scopedBuildingIds()), 403);
 
-        $inspection->load(['unit.unitType', 'building:id,name', 'inspector:id,name', 'findings']);
+        $inspection->load(['unit.unitType', 'building:id,name', 'inspector:id,name']);
+
+        // Self-heal: a resumed inspection (or one predating a template change)
+        // gets any missing checklist rows laid down before rendering.
+        if ($inspection->status !== 'completed') {
+            $this->checklist->seed($inspection, $this->checklist->unitPlan($inspection));
+        }
 
         return Inertia::render('Admin/Inspections/Show', [
             'inspection' => [
@@ -247,29 +280,22 @@ class InspectionController extends Controller
                 'round_id'       => $inspection->inspection_round_id,
                 'status'         => $inspection->status,
                 'overall_result' => $inspection->overall_result,
-                'summary'        => $inspection->summary,
-                'photos'         => collect($inspection->photos ?? [])->map(fn ($p) => ['path' => $p, 'url' => Storage::url($p)]),
                 'unit_number'    => $inspection->unit?->unit_number,
                 'unit_type'      => $inspection->unit?->unitType?->name,
                 'building_name'  => $inspection->building?->name,
                 'inspector'      => $inspection->inspector?->name,
                 'started_at'     => $inspection->started_at,
                 'completed_at'   => $inspection->completed_at,
-                'findings'       => $inspection->findings->map(fn ($f) => [
-                    'category'    => $f->category,
-                    'severity'    => $f->severity,
-                    'description' => $f->description,
-                ]),
+                'groups'         => $this->checklist->grouped($inspection),
+                'progress'       => $this->checklist->progress($inspection),
             ],
-            'categories' => self::CATEGORIES,
-            'severities' => self::SEVERITIES,
         ]);
     }
 
     public function update(Request $request, UnitInspection $inspection)
     {
         $this->authorizeEdit($inspection);
-        $this->applyForm($request, $inspection);
+        $this->saveResults($request, $inspection);
 
         return back()->with('success', 'Inspection saved.');
     }
@@ -278,20 +304,19 @@ class InspectionController extends Controller
     public function complete(Request $request, UnitInspection $inspection)
     {
         $this->authorizeEdit($inspection);
-        $this->applyForm($request, $inspection);
+        $this->saveResults($request, $inspection);
 
-        if (! $inspection->overall_result) {
-            return back()->with('error', 'Choose an overall result before completing.');
-        }
-
-        if ($inspection->overall_result === 'concerns' && $inspection->findings()->count() === 0) {
-            return back()->with('error', 'Add at least one concern, or mark the inspection as OK.');
+        if ($error = $this->checklist->completionError($inspection)) {
+            return back()->with('error', $error);
         }
 
         $inspection->update([
-            'status'       => 'completed',
-            'completed_at' => now(),
-            'inspector_id' => $inspection->inspector_id ?? auth()->id(),
+            // pass/fail derived from items → the legacy ok/concerns verdict the
+            // round list still reads.
+            'overall_result' => $this->checklist->deriveResult($inspection) === 'fail' ? 'concerns' : 'ok',
+            'status'         => 'completed',
+            'completed_at'   => now(),
+            'inspector_id'   => $inspection->inspector_id ?? auth()->id(),
         ]);
 
         if ($inspection->inspection_round_id) {
@@ -302,11 +327,176 @@ class InspectionController extends Controller
         return redirect()->route('manage.inspections.index')->with('success', 'Inspection saved.');
     }
 
+    // ── Per-property section inspection (common | outdoor) ───────────
+
+    public function section(RoundSectionInspection $section)
+    {
+        abort_unless(auth()->user()->can('view-inspections'), 403);
+        abort_unless(in_array($section->building_id, $this->scopedBuildingIds()), 403);
+
+        $section->load(['round:id,round_date,status', 'building:id,name', 'inspector:id,name']);
+
+        if ($section->status !== 'completed') {
+            $this->checklist->seed($section, $this->checklist->sectionPlan($section));
+            if ($section->status === 'pending' && auth()->user()->can('conduct-inspections')) {
+                $section->update(['status' => 'in_progress', 'inspector_id' => auth()->id()]);
+            }
+        }
+
+        return Inertia::render('Admin/Inspections/Section', [
+            'section' => [
+                'id'            => $section->id,
+                'round_id'      => $section->inspection_round_id,
+                'section'       => $section->section,
+                'title'         => $section->section === 'common' ? 'Guest Common Spaces' : 'Outdoor Space',
+                'status'        => $section->status,
+                'result'        => $section->result,
+                'building_name' => $section->building?->name,
+                'inspector'     => $section->inspector?->name,
+                'completed_at'  => $section->completed_at,
+                'groups'        => $this->checklist->grouped($section),
+                'progress'      => $this->checklist->progress($section),
+            ],
+        ]);
+    }
+
+    public function sectionUpdate(Request $request, RoundSectionInspection $section)
+    {
+        $this->authorizeSectionEdit($section);
+        $this->saveResults($request, $section);
+
+        return back()->with('success', 'Checklist saved.');
+    }
+
+    public function sectionComplete(Request $request, RoundSectionInspection $section)
+    {
+        $this->authorizeSectionEdit($section);
+        $this->saveResults($request, $section);
+
+        if ($error = $this->checklist->completionError($section)) {
+            return back()->with('error', $error);
+        }
+
+        $section->update([
+            'result'       => $this->checklist->deriveResult($section),
+            'status'       => 'completed',
+            'completed_at' => now(),
+            'inspector_id' => $section->inspector_id ?? auth()->id(),
+        ]);
+
+        return redirect()->route('manage.inspections.round', $section->inspection_round_id)
+            ->with('success', ucfirst($section->section).' spaces inspected.');
+    }
+
+    // ── Per-item photo upload (incremental, small requests) ──────────
+
+    public function uploadResultPhotos(Request $request, InspectionItemResult $result)
+    {
+        $this->authorizeResult($result);
+
+        $validated = $request->validate([
+            'photos'   => 'required|array|max:6',
+            'photos.*' => 'image|mimes:jpeg,png,jpg,webp|max:5120',
+        ]);
+
+        $photos = collect($result->photos ?? []);
+        foreach ($validated['photos'] as $photo) {
+            $photos->push($photo->store('inspections', 'public'));
+        }
+        $result->update(['photos' => $photos->values()->all()]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['photos' => $this->photoPayload($result)]);
+        }
+
+        return back()->with('success', 'Photo added.');
+    }
+
+    public function deleteResultPhoto(Request $request, InspectionItemResult $result)
+    {
+        $this->authorizeResult($result);
+
+        $data = $request->validate(['path' => 'required|string']);
+
+        if (in_array($data['path'], $result->photos ?? [], true)) {
+            Storage::disk('public')->delete($data['path']);
+            $result->update([
+                'photos' => collect($result->photos)->reject(fn ($p) => $p === $data['path'])->values()->all() ?: null,
+            ]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['photos' => $this->photoPayload($result)]);
+        }
+
+        return back()->with('success', 'Photo removed.');
+    }
+
+    private function photoPayload(InspectionItemResult $result): array
+    {
+        return collect($result->photos ?? [])
+            ->map(fn ($p) => ['path' => $p, 'url' => Storage::url($p)])
+            ->values()->all();
+    }
+
+    // ── Authorization + result persistence ──────────────────────────
+
     private function authorizeEdit(UnitInspection $inspection): void
     {
         abort_unless(auth()->user()->can('conduct-inspections'), 403);
         abort_unless(in_array($inspection->building_id, $this->scopedBuildingIds()), 403);
         abort_if($inspection->status === 'completed', 422, 'This inspection is already completed.');
+    }
+
+    private function authorizeSectionEdit(RoundSectionInspection $section): void
+    {
+        abort_unless(auth()->user()->can('conduct-inspections'), 403);
+        abort_unless(in_array($section->building_id, $this->scopedBuildingIds()), 403);
+        abort_if($section->status === 'completed', 422, 'This section is already completed.');
+    }
+
+    /** A photo belongs to whichever inspectable (unit or section) owns its result row. */
+    private function authorizeResult(InspectionItemResult $result): void
+    {
+        abort_unless(auth()->user()->can('conduct-inspections'), 403);
+
+        $owner = $result->inspectable;
+        abort_unless($owner && in_array($owner->building_id, $this->scopedBuildingIds()), 403);
+        abort_if(($owner->status ?? null) === 'completed', 422, 'This inspection is already completed.');
+    }
+
+    /**
+     * Persist per-item pass/fail/na + note. Photos are handled by their own
+     * incremental endpoint, so a save never carries file uploads.
+     */
+    private function saveResults(Request $request, Model $inspectable): void
+    {
+        $validated = $request->validate([
+            'results'          => 'nullable|array',
+            'results.*.id'     => 'required|integer',
+            'results.*.result' => 'nullable|in:pass,fail,na',
+            'results.*.note'   => 'nullable|string|max:1000',
+        ]);
+
+        if (empty($validated['results'])) {
+            return;
+        }
+
+        // Only rows that actually belong to this inspectable can be touched.
+        $owned = $inspectable->itemResults()
+            ->whereIn('id', collect($validated['results'])->pluck('id'))
+            ->get()->keyBy('id');
+
+        foreach ($validated['results'] as $row) {
+            $target = $owned->get($row['id']);
+            if (! $target) {
+                continue;
+            }
+            $target->update([
+                'result' => $row['result'] ?? null,
+                'note'   => $row['note'] ?? null,
+            ]);
+        }
     }
 
     // ── Shared helpers ──────────────────────────────────────────────
@@ -333,7 +523,8 @@ class InspectionController extends Controller
 
         $inspections = $round
             ? UnitInspection::where('inspection_round_id', $round->id)
-                ->withCount('findings')->get()->keyBy('unit_id')
+                ->withCount(['itemResults as concern_count' => fn ($q) => $q->where('result', 'fail')])
+                ->get()->keyBy('unit_id')
             : collect();
 
         return $units->map(function ($u) use ($occupied, $inspections) {
@@ -357,7 +548,7 @@ class InspectionController extends Controller
                 'unit_type'      => $u->unitType->name,
                 'state'          => $state,
                 'inspection_id'  => $insp?->id,
-                'findings_count' => $insp?->findings_count ?? 0,
+                'concern_count'  => $insp?->concern_count ?? 0,
             ];
         })->all();
     }
@@ -372,7 +563,7 @@ class InspectionController extends Controller
 
         $concerns = collect($rows)
             ->filter(fn ($r) => $r['state'] === 'concern')
-            ->sum('findings_count');
+            ->sum('concern_count');
 
         return [
             'inspected'   => $inspected,
@@ -383,53 +574,37 @@ class InspectionController extends Controller
         ];
     }
 
-    /** Save photos, overall result, summary and findings from the form (draft state). */
-    private function applyForm(Request $request, UnitInspection $inspection): void
+    /** Failed checklist items across the given unit- and section-inspection ids. */
+    private function failedItemsQuery($unitIds, $sectionIds)
     {
-        $validated = $request->validate([
-            'overall_result'         => 'nullable|in:ok,concerns',
-            'summary'                => 'nullable|string|max:2000',
-            'photos'                 => 'nullable|array|max:12',
-            'photos.*'               => 'image|mimes:jpeg,png,jpg,webp|max:5120',
-            'remove_photos'          => 'nullable|array',
-            'remove_photos.*'        => 'string',
-            'findings'               => 'nullable|array|max:30',
-            'findings.*.category'    => 'required|in:' . implode(',', self::CATEGORIES),
-            'findings.*.severity'    => 'required|in:' . implode(',', self::SEVERITIES),
-            'findings.*.description' => 'required|string|max:1000',
-        ]);
+        return InspectionItemResult::where('result', 'fail')
+            ->where(function ($q) use ($unitIds, $sectionIds) {
+                $q->where(fn ($w) => $w->where('inspectable_type', UnitInspection::class)->whereIn('inspectable_id', $unitIds))
+                    ->orWhere(fn ($w) => $w->where('inspectable_type', RoundSectionInspection::class)->whereIn('inspectable_id', $sectionIds));
+            });
+    }
 
-        $photos = collect($inspection->photos ?? []);
-        if (! empty($validated['remove_photos'])) {
-            foreach ($validated['remove_photos'] as $path) {
-                Storage::disk('public')->delete($path);
-            }
-            $photos = $photos->reject(fn ($p) => in_array($p, $validated['remove_photos']));
-        }
-        if ($request->hasFile('photos')) {
-            foreach ($request->file('photos') as $photo) {
-                $photos->push($photo->store('inspections', 'public'));
-            }
-        }
+    /** The two property-section cards for a round, ensuring both rows exist. */
+    private function sectionCards(InspectionRound $round): \Illuminate\Support\Collection
+    {
+        return collect(self::PROPERTY_SECTIONS)->map(function ($key) use ($round) {
+            $sec = RoundSectionInspection::firstOrCreate(
+                ['inspection_round_id' => $round->id, 'section' => $key],
+                ['building_id' => $round->building_id, 'status' => 'pending']
+            );
 
-        $result = $validated['overall_result'] ?? $inspection->overall_result;
+            $answered = $sec->itemResults()->whereNotNull('result')->count();
+            $total    = $sec->itemResults()->count() ?: $this->checklist->sectionPlan($sec)->count();
 
-        $inspection->update([
-            'overall_result' => $result,
-            'summary'        => $validated['summary'] ?? $inspection->summary,
-            'photos'         => $photos->values()->all() ?: null,
-            'started_at'     => $inspection->started_at ?? now(),
-        ]);
-
-        $inspection->findings()->delete();
-        if ($result === 'concerns' && ! empty($validated['findings'])) {
-            foreach ($validated['findings'] as $f) {
-                $inspection->findings()->create([
-                    'category'    => $f['category'],
-                    'severity'    => $f['severity'],
-                    'description' => $f['description'],
-                ]);
-            }
-        }
+            return [
+                'id'       => $sec->id,
+                'section'  => $key,
+                'title'    => $key === 'common' ? 'Guest Common Spaces' : 'Outdoor Space',
+                'status'   => $sec->status,
+                'result'   => $sec->result,
+                'answered' => $answered,
+                'total'    => $total,
+            ];
+        });
     }
 }

@@ -298,6 +298,13 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::post('/inspections/rounds/{round}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'completeRound'])->name('inspections.round.complete');
     Route::post('/inspections/rounds/{round}/cancel', [\App\Http\Controllers\Admin\InspectionController::class, 'cancelRound'])->name('inspections.round.cancel');
     Route::post('/inspections/start', [\App\Http\Controllers\Admin\InspectionController::class, 'start'])->name('inspections.start');
+    // Property-level sections (common / outdoor), one per round.
+    Route::get('/inspections/sections/{section}', [\App\Http\Controllers\Admin\InspectionController::class, 'section'])->name('inspections.section');
+    Route::post('/inspections/sections/{section}', [\App\Http\Controllers\Admin\InspectionController::class, 'sectionUpdate'])->name('inspections.section.update');
+    Route::post('/inspections/sections/{section}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'sectionComplete'])->name('inspections.section.complete');
+    // Per-item photo evidence (uploaded incrementally, not batched with saves).
+    Route::post('/inspections/results/{result}/photos', [\App\Http\Controllers\Admin\InspectionController::class, 'uploadResultPhotos'])->name('inspections.results.photos');
+    Route::delete('/inspections/results/{result}/photos', [\App\Http\Controllers\Admin\InspectionController::class, 'deleteResultPhoto'])->name('inspections.results.photos.delete');
     Route::get('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'show'])->name('inspections.show');
     Route::post('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'update'])->name('inspections.update');
     Route::post('/inspections/{inspection}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'complete'])->name('inspections.complete');

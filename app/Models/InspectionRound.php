@@ -43,6 +43,11 @@ class InspectionRound extends Model
         return $this->hasMany(UnitInspection::class);
     }
 
+    public function sectionInspections(): HasMany
+    {
+        return $this->hasMany(RoundSectionInspection::class);
+    }
+
     public function scopeInProgress($query)
     {
         return $query->where('status', 'in_progress');

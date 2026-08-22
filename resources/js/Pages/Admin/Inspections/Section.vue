@@ -3,16 +3,16 @@ import { ref, reactive, computed, watch, onBeforeUnmount } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import ChecklistSection from '@/Components/Inspections/ChecklistSection.vue'
-import { ArrowLeft, Building2, ClipboardCheck, User, Clock, Check, Loader2, AlertTriangle } from 'lucide-vue-next'
+import { ArrowLeft, Building2, ClipboardCheck, Check, Loader2, AlertTriangle } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
 
-const props = defineProps({ inspection: Object })
+const props = defineProps({ section: Object })
 
-const readOnly = computed(() => props.inspection.status === 'completed')
+const readOnly = computed(() => props.section.status === 'completed')
 
 const sections = reactive(
-    props.inspection.groups.map(g => ({
+    props.section.groups.map(g => ({
         key: g.key,
         title: g.title,
         items: g.items.map(i => reactive({
@@ -55,7 +55,7 @@ function scheduleSave() {
 function flushSave() {
     if (readOnly.value) return
     saveState.value = 'saving'
-    router.post(route('manage.inspections.update', props.inspection.id),
+    router.post(route('manage.inspections.section.update', props.section.id),
         { results: resultsPayload() },
         {
             preserveScroll: true,
@@ -69,46 +69,37 @@ onBeforeUnmount(() => clearTimeout(timer))
 
 function complete() {
     clearTimeout(timer)
-    router.post(route('manage.inspections.complete', props.inspection.id), { results: resultsPayload() })
-}
-
-function relTime(d) {
-    if (!d) return null
-    const diff = Math.floor((Date.now() - new Date(d)) / 60000)
-    if (diff < 1) return 'just now'
-    if (diff < 60) return `${diff}m ago`
-    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`
-    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    router.post(route('manage.inspections.section.complete', props.section.id), { results: resultsPayload() })
 }
 
 const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none'
 </script>
 
 <template>
-    <Head :title="`Inspection · Unit ${inspection.unit_number}`" />
+    <Head :title="`Inspection · ${section.title}`" />
 
     <div class="p-4 lg:p-6" :class="!readOnly ? 'pb-24 lg:pb-6' : ''">
 
         <!-- ── Fixed topbar ── -->
         <div class="sticky top-0 z-20 -mx-4 lg:-mx-6 -mt-4 lg:-mt-6 px-4 lg:px-6 py-3 mb-5 flex items-center justify-between gap-3 flex-wrap bg-white/90 dark:bg-gray-950/90 backdrop-blur border-b border-gray-100 dark:border-gray-800">
             <div class="flex items-center gap-3 min-w-0">
-                <Link :href="inspection.round_id ? route('manage.inspections.round', inspection.round_id) : route('manage.inspections.index')"
+                <Link :href="route('manage.inspections.round', section.round_id)"
                       class="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all shrink-0">
                     <ArrowLeft class="w-4 h-4" />
                 </Link>
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
-                        <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate">Unit {{ inspection.unit_number }}</h1>
+                        <h1 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ section.title }}</h1>
                         <span v-if="readOnly" class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium"
-                              :class="inspection.overall_result === 'concerns' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'">
-                            {{ inspection.overall_result === 'concerns' ? 'Fail' : 'Pass' }}
+                              :class="section.result === 'fail' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'">
+                            {{ section.result === 'fail' ? 'Fail' : 'Pass' }}
                         </span>
                         <span v-else class="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400">
                             <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" /> In progress
                         </span>
                     </div>
                     <p class="text-xs text-gray-400 dark:text-gray-500 truncate flex items-center gap-1.5">
-                        <Building2 class="w-3 h-3" /> {{ inspection.building_name }} · {{ inspection.unit_type }}
+                        <Building2 class="w-3 h-3" /> {{ section.building_name }}
                     </p>
                 </div>
             </div>
@@ -134,12 +125,9 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
             <div :class="card" class="p-4">
                 <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
                     <span class="tabular-nums">{{ answered }} of {{ total }} checked</span>
-                    <div class="flex items-center gap-3">
-                        <span v-if="inspection.started_at" class="hidden sm:inline-flex items-center gap-1.5"><Clock class="w-3 h-3" /> {{ relTime(inspection.started_at) }}</span>
-                        <span v-if="failCount > 0" class="inline-flex items-center gap-1 text-red-600 dark:text-red-400">
-                            <AlertTriangle class="w-3 h-3" /> {{ failCount }} fail{{ failCount !== 1 ? 's' : '' }}
-                        </span>
-                    </div>
+                    <span v-if="failCount > 0" class="inline-flex items-center gap-1 text-red-600 dark:text-red-400">
+                        <AlertTriangle class="w-3 h-3" /> {{ failCount }} fail{{ failCount !== 1 ? 's' : '' }}
+                    </span>
                 </div>
                 <div class="h-1.5 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
                     <div class="h-full rounded-full bg-gray-900 dark:bg-white transition-all"
@@ -148,9 +136,9 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
             </div>
 
             <ChecklistSection
-                v-for="section in sections"
-                :key="section.key"
-                :section="section"
+                v-for="s in sections"
+                :key="s.key"
+                :section="s"
                 :read-only="readOnly" />
         </div>
 
