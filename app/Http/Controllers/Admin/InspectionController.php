@@ -3,13 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BlockedDate;
 use App\Models\Booking;
+use App\Models\Building;
 use App\Models\InspectionItemResult;
 use App\Models\InspectionRound;
+use App\Models\MaintenanceReport;
 use App\Models\RoundSectionInspection;
 use App\Models\Unit;
 use App\Models\UnitInspection;
+use App\Models\UnitTurnover;
+use App\Services\UnitTurnoverService;
 use App\Notifications\InspectionRoundCompletedNotification;
+use App\Notifications\UnitBlockedNotification;
 use App\Services\InspectionChecklistService;
 use App\Services\NotificationService;
 use App\Traits\ScopedByBuilding;
@@ -23,8 +29,10 @@ class InspectionController extends Controller
 {
     use ScopedByBuilding;
 
-    public function __construct(private InspectionChecklistService $checklist)
-    {
+    public function __construct(
+        private InspectionChecklistService $checklist,
+        private UnitTurnoverService $turnovers,
+    ) {
     }
 
     // The two property-level sections inspected once per round.
@@ -82,6 +90,15 @@ class InspectionController extends Controller
                 'pending'       => $counts['pending'],
                 'occupied'      => $counts['occupied'],
                 'concerns'      => $counts['concerns'],
+                // Readiness breakdown chips (req 3).
+                'readiness'     => [
+                    'ready_for_qa'   => $counts['ready_for_qa'],
+                    'cleaning'       => $counts['cleaning'],
+                    'needs_cleaning' => $counts['needs_cleaning'],
+                    'qa_in_progress' => $counts['qa_in_progress'],
+                    'guest_ready'    => $counts['guest_ready'],
+                    'blocked'        => $counts['blocked'],
+                ],
                 // Property-wide spaces (common + outdoor), inspected once per round.
                 'spaces_total'  => count(self::PROPERTY_SECTIONS),
                 'spaces_done'   => $spaces->where('status', 'completed')->count(),
@@ -259,6 +276,12 @@ class InspectionController extends Controller
         $inspection->load('unit.unitType');
         $this->checklist->seed($inspection, $this->checklist->unitPlan($inspection));
 
+        // Advance the turnover (if the unit came through cleaning) into QA.
+        $turnover = $this->turnovers->activeFor($unit);
+        if ($turnover && $turnover->status === 'cleaning_completed') {
+            $this->turnovers->startQa($turnover, $inspection);
+        }
+
         return redirect()->route('manage.inspections.show', $inspection->id);
     }
 
@@ -311,14 +334,24 @@ class InspectionController extends Controller
             return back()->with('error', $error);
         }
 
+        $passed = $this->checklist->deriveResult($inspection) === 'pass';
+
         $inspection->update([
             // pass/fail derived from items → the legacy ok/concerns verdict the
             // round list still reads.
-            'overall_result' => $this->checklist->deriveResult($inspection) === 'fail' ? 'concerns' : 'ok',
+            'overall_result' => $passed ? 'ok' : 'concerns',
+            'score'          => $this->checklist->score($inspection),
             'status'         => 'completed',
             'completed_at'   => now(),
             'inspector_id'   => $inspection->inspector_id ?? auth()->id(),
         ]);
+
+        // A clean pass makes the unit guest-ready; a fail stays in QA until it's
+        // re-cleaned or blocked (Phase D).
+        $turnover = $inspection->turnover;
+        if ($passed && $turnover && $turnover->status === 'qa_in_progress') {
+            $this->turnovers->completeQa($turnover);
+        }
 
         if ($inspection->inspection_round_id) {
             return redirect()->route('manage.inspections.round', $inspection->inspection_round_id)
@@ -326,6 +359,53 @@ class InspectionController extends Controller
         }
 
         return redirect()->route('manage.inspections.index')->with('success', 'Inspection saved.');
+    }
+
+    /** Flag a unit for maintenance: block dates + optional maintenance request. */
+    public function blockUnit(Request $request, UnitInspection $inspection)
+    {
+        abort_unless(auth()->user()->can('conduct-inspections'), 403);
+        abort_unless(in_array($inspection->building_id, $this->scopedBuildingIds()), 403);
+
+        $data = $request->validate([
+            'blocked_from'      => 'required|date',
+            'blocked_to'        => 'required|date|after_or_equal:blocked_from',
+            'reason'            => 'required|string|max:255',
+            'raise_maintenance' => 'boolean',
+        ]);
+
+        $inspection->loadMissing('unit', 'building');
+        $unit = $inspection->unit;
+
+        $blocked = $this->turnovers->blockUnit(
+            $unit, $data['blocked_from'], $data['blocked_to'], $data['reason'], auth()->user()
+        );
+
+        $raised = false;
+        if (! empty($data['raise_maintenance'])) {
+            MaintenanceReport::create([
+                'building_id'  => $inspection->building_id,
+                'submitted_by' => auth()->id(),
+                'title'        => "Unit {$unit->unit_number}: {$data['reason']}",
+                'issue_type'   => 'other',
+                'description'  => "Flagged during a QC inspection. {$data['reason']}",
+                'location'     => "Unit {$unit->unit_number}",
+                'status'       => 'pending',
+            ]);
+            $raised = true;
+        }
+
+        NotificationService::send(
+            NotificationService::getUsersByRoles(['manager', 'super-admin', 'ceo'], $inspection->building_id),
+            new UnitBlockedNotification($blocked, $unit->unit_number, $inspection->building?->name ?? '', $raised),
+        );
+
+        $back = $inspection->inspection_round_id
+            ? redirect()->route('manage.inspections.round', $inspection->inspection_round_id)
+            : redirect()->route('manage.inspections.index');
+
+        return $back->with('success', "Unit {$unit->unit_number} blocked for maintenance"
+            . ($raised ? ' and a maintenance request was raised.' : '.'));
     }
 
     // ── Per-property section inspection (common | outdoor) ───────────
@@ -506,21 +586,43 @@ class InspectionController extends Controller
      * Every unit in a property with its state for the given round/date.
      * States: occupied | offline | pending | in_progress | ok | concern
      */
+    /**
+     * Every unit in a property with its turnover-aware readiness state and the
+     * relevant checkout / next-arrival times.
+     * States: occupied | offline | blocked | needs_cleaning | cleaning |
+     *         ready_for_qa | qa_in_progress | ok | concern | ready
+     */
     private function unitRows(int $buildingId, ?InspectionRound $round, Carbon $date): array
     {
+        $building = Building::find($buildingId);
+
         $units = Unit::whereHas('unitType', fn ($q) => $q->where('building_id', $buildingId))
             ->with('unitType:id,name,building_id')
             ->orderBy('unit_number')
             ->get();
-
         $unitIds = $units->pluck('id');
 
         $occupied = Booking::whereIn('unit_id', $unitIds)
             ->whereIn('status', self::OCCUPYING_STATUSES)
-            ->whereDate('check_in', '<=', $date)
-            ->whereDate('check_out', '>', $date)
-            ->pluck('unit_id')
-            ->unique();
+            ->whereDate('check_in', '<=', $date)->whereDate('check_out', '>', $date)
+            ->pluck('unit_id')->unique();
+
+        $lastCheckout = Booking::whereIn('unit_id', $unitIds)
+            ->whereDate('check_out', '<=', $date)->whereNotIn('status', ['cancelled'])
+            ->get(['id', 'unit_id', 'check_out'])
+            ->groupBy('unit_id')->map(fn ($g) => $g->sortByDesc('check_out')->first());
+
+        $nextArrival = Booking::whereIn('unit_id', $unitIds)
+            ->whereIn('status', ['confirmed', 'pending'])->whereDate('check_in', '>=', $date)
+            ->orderBy('check_in')->get(['id', 'unit_id', 'check_in'])
+            ->groupBy('unit_id')->map->first();
+
+        $turnovers = UnitTurnover::whereIn('unit_id', $unitIds)->get()
+            ->groupBy('unit_id')->map(fn ($g) => $g->sortByDesc('id')->first());
+
+        $blocked = BlockedDate::whereIn('unit_id', $unitIds)
+            ->whereDate('blocked_from', '<=', $date)->whereDate('blocked_to', '>=', $date)
+            ->pluck('unit_id')->unique();
 
         $inspections = $round
             ? UnitInspection::where('inspection_round_id', $round->id)
@@ -528,50 +630,75 @@ class InspectionController extends Controller
                 ->get()->keyBy('unit_id')
             : collect();
 
-        return $units->map(function ($u) use ($occupied, $inspections) {
-            $insp  = $inspections->get($u->id);
-            $state = 'pending';
+        return $units->map(function ($u) use ($occupied, $lastCheckout, $nextArrival, $turnovers, $blocked, $inspections, $building) {
+            $insp = $inspections->get($u->id);
+            $to   = $turnovers->get($u->id);
+            $out  = $lastCheckout->get($u->id);
+            $arr  = $nextArrival->get($u->id);
+            $active = $to && in_array($to->status, UnitTurnover::ACTIVE_STATUSES, true);
 
-            if ($insp && $insp->status === 'completed') {
-                $state = $insp->overall_result === 'concerns' ? 'concern' : 'ok';
-            } elseif ($insp && $insp->status === 'in_progress') {
-                $state = 'in_progress';
-            } elseif ($occupied->contains($u->id)) {
-                $state = 'occupied';
-            } elseif ($u->status !== 'available') {
-                $state = 'offline';
-            }
+            $needsCleaning = $out
+                && ! ($to && $to->ready_at && $to->ready_at->gte(Carbon::parse($out->check_out)->endOfDay()));
+
+            // The round's own inspection wins once QC has touched the unit today.
+            $state = match (true) {
+                $blocked->contains($u->id) || ($to && $to->status === 'blocked') => 'blocked',
+                $insp && $insp->status === 'completed'   => $insp->overall_result === 'concerns' ? 'concern' : 'ok',
+                $insp && $insp->status === 'in_progress' => 'qa_in_progress',
+                $occupied->contains($u->id)              => 'occupied',
+                $active && $to->status === 'cleaning_in_progress' => 'cleaning',
+                $active && $to->status === 'cleaning_completed'   => 'ready_for_qa',
+                $needsCleaning                           => 'needs_cleaning',
+                $u->status !== 'available'               => 'offline',
+                default                                  => 'ready',
+            };
 
             return [
-                'unit_id'        => $u->id,
-                'unit_number'    => $u->unit_number,
-                'floor'          => $u->floor,
-                'unit_type'      => $u->unitType->name,
-                'state'          => $state,
-                'inspection_id'  => $insp?->id,
-                'concern_count'  => $insp?->concern_count ?? 0,
+                'unit_id'       => $u->id,
+                'unit_number'   => $u->unit_number,
+                'floor'         => $u->floor,
+                'unit_type'     => $u->unitType->name,
+                'state'         => $state,
+                'inspection_id' => $insp?->id,
+                'turnover_id'   => $active ? $to->id : null,
+                'concern_count' => $insp?->concern_count ?? 0,
+                'checkout'      => $out ? $this->timeLabel($out->check_out, $building?->standard_checkout_time) : null,
+                'arrival'       => $arr ? $this->timeLabel($arr->check_in, $building?->standard_checkin_time) : null,
             ];
         })->all();
     }
 
+    private function timeLabel($date, $time): array
+    {
+        return [
+            'date' => Carbon::parse($date)->toISOString(),
+            'time' => $time ? Carbon::parse($time)->format('g:i A') : null,
+        ];
+    }
+
     private function countStates(array $rows): array
     {
-        $states = collect($rows)->pluck('state');
+        $by = collect($rows)->countBy('state');
 
-        $inspected = $states->filter(fn ($s) => in_array($s, ['ok', 'concern']))->count();
-        $pending   = $states->filter(fn ($s) => in_array($s, self::BLOCKING_STATES))->count();
-        $occupied  = $states->filter(fn ($s) => in_array($s, ['occupied', 'offline']))->count();
+        // Units QC still owes work on today.
+        $pending   = ($by['ready_for_qa'] ?? 0) + ($by['qa_in_progress'] ?? 0);
+        $inspected = ($by['ok'] ?? 0) + ($by['concern'] ?? 0);
 
-        $concerns = collect($rows)
-            ->filter(fn ($r) => $r['state'] === 'concern')
-            ->sum('concern_count');
+        $concerns = collect($rows)->where('state', 'concern')->sum('concern_count');
 
         return [
-            'inspected'   => $inspected,
-            'pending'     => $pending,
-            'occupied'    => $occupied,
-            'inspectable' => count($rows) - $occupied,
-            'concerns'    => $concerns,
+            'inspected'      => $inspected,
+            'pending'        => $pending,
+            'inspectable'    => $inspected + $pending,
+            'concerns'       => $concerns,
+            // Readiness breakdown for the landing-card chips.
+            'ready_for_qa'   => $by['ready_for_qa'] ?? 0,
+            'cleaning'       => $by['cleaning'] ?? 0,
+            'needs_cleaning' => $by['needs_cleaning'] ?? 0,
+            'qa_in_progress' => $by['qa_in_progress'] ?? 0,
+            'guest_ready'    => ($by['ok'] ?? 0) + ($by['ready'] ?? 0),
+            'blocked'        => ($by['blocked'] ?? 0) + ($by['offline'] ?? 0),
+            'occupied'       => $by['occupied'] ?? 0,
         ];
     }
 

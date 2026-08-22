@@ -21,7 +21,7 @@ const stateMeta = {
     qa_in_progress:       { label: 'QA in progress', cls: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400', dot: 'bg-orange-500', icon: Clock },
     ready:                { label: 'Guest ready',    cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500', icon: CheckCircle },
     occupied:             { label: 'Occupied',       cls: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400', dot: 'bg-indigo-500', icon: BedDouble },
-    blocked:              { label: 'Blocked / OOO',  cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', dot: 'bg-red-500', icon: Wrench },
+    blocked:              { label: 'Blocked',  cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', dot: 'bg-red-500', icon: Wrench },
 }
 const tabOrder = ['needs_cleaning', 'cleaning_in_progress', 'cleaning_completed', 'qa_in_progress', 'ready', 'occupied', 'blocked']
 

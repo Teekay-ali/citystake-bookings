@@ -52,6 +52,21 @@ function spacesOf(card) {
         ? card.spaces
         : [{ section: 'common', status: null }, { section: 'outdoor', status: null }]
 }
+// Readiness breakdown chips shown under the units progress bar (req 3).
+const readinessDefs = [
+    { key: 'ready_for_qa',   label: 'Ready for QA',   cls: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400' },
+    { key: 'cleaning',       label: 'Cleaning',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
+    { key: 'needs_cleaning', label: 'Needs cleaning', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },
+    { key: 'qa_in_progress', label: 'In QA',          cls: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400' },
+    { key: 'guest_ready',    label: 'Guest ready',    cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
+    { key: 'blocked',        label: 'In repair',      cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400' },
+    { key: 'occupied',       label: 'Occupied',       cls: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400' },
+]
+function readinessChips(card) {
+    const r = { ...(card.readiness ?? {}), occupied: card.occupied }
+    return readinessDefs.filter(d => (r[d.key] ?? 0) > 0).map(d => ({ ...d, count: r[d.key] }))
+}
+
 function spaceCls(sp) {
     if (sp.status === 'completed' && sp.result === 'fail') return 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'
     if (sp.status === 'completed') return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
@@ -119,7 +134,13 @@ function spaceCls(sp) {
                              :class="card.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-500'"
                              :style="{ width: progress(card) + '%' }" />
                     </div>
-                    <p v-if="card.occupied" class="text-[11px] text-gray-400 mt-1">{{ card.occupied }} occupied · not inspectable today</p>
+                    <!-- Readiness breakdown chips -->
+                    <div v-if="readinessChips(card).length" class="flex flex-wrap items-center gap-1.5 mt-2.5">
+                        <span v-for="chip in readinessChips(card)" :key="chip.key"
+                              :class="chip.cls" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium tabular-nums">
+                            {{ chip.count }} {{ chip.label }}
+                        </span>
+                    </div>
 
                     <!-- Property spaces -->
                     <div class="mt-3.5 pt-3.5 border-t border-gray-100 dark:border-gray-800">

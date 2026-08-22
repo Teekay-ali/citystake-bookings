@@ -19,6 +19,7 @@ const form = useForm({
     description: '',
     amenities: [],
     standard_checkout_time: '12:00',
+    standard_checkin_time: '14:00',
     late_checkout_fee_per_hour: 10000,
     is_active: true,
     caution_fee_amount: 70000,
@@ -321,6 +322,25 @@ const submit = () => {
                                 <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Default: 12:00 PM</p>
                                 <p v-if="form.errors.standard_checkout_time" class="mt-1 text-sm text-red-600 dark:text-red-400">
                                     {{ form.errors.standard_checkout_time }}
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Standard Check-in Time <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    v-model="form.standard_checkin_time"
+                                    type="time"
+                                    :class="[
+                                        'w-full px-4 py-3 bg-white dark:bg-gray-950 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-all',
+                                        form.errors.standard_checkin_time
+                                            ? 'border-2 border-red-300 dark:border-red-700 focus:ring-red-500'
+                                            : 'border border-gray-200 dark:border-gray-800 focus:ring-gray-900 dark:focus:ring-white'
+                                    ]"
+                                />
+                                <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Default: 2:00 PM · shown on housekeeping &amp; inspection cards</p>
+                                <p v-if="form.errors.standard_checkin_time" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                    {{ form.errors.standard_checkin_time }}
                                 </p>
                             </div>
                             <div>

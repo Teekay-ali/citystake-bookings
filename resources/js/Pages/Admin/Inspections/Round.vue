@@ -6,6 +6,7 @@ import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import {
     ArrowLeft, Building2, CheckCircle, AlertTriangle, ClipboardCheck, ArrowRight,
     User, Clock, BedDouble, Wrench, Sofa, Trees, Trash2, DoorClosed, ChevronDown,
+    Sparkles, Search, LogIn,
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -37,13 +38,38 @@ const CIRC = 2 * Math.PI * R
 const dash = computed(() => `${CIRC * pct.value / 100} ${CIRC}`)
 
 const stateMeta = {
-    pending:     { label: 'Pending',     cls: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400' },
-    in_progress: { label: 'In progress', cls: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' },
-    ok:          { label: 'Pass',        cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
-    concern:     { label: 'Fail',        cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' },
-    occupied:    { label: 'Occupied',    cls: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400' },
-    offline:     { label: 'Maintenance', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400' },
+    needs_cleaning: { label: 'Needs cleaning', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400', dot: 'bg-gray-400', icon: DoorClosed },
+    cleaning:       { label: 'Cleaning',       cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400', dot: 'bg-amber-500', icon: Sparkles },
+    ready_for_qa:   { label: 'Ready for QA',   cls: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400', dot: 'bg-sky-500', icon: ClipboardCheck },
+    qa_in_progress: { label: 'QA in progress', cls: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400', dot: 'bg-orange-500', icon: Clock },
+    ok:             { label: 'Pass',           cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500', icon: CheckCircle },
+    concern:        { label: 'Fail',           cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', dot: 'bg-red-500', icon: AlertTriangle },
+    ready:          { label: 'Guest ready',    cls: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500', icon: CheckCircle },
+    occupied:       { label: 'Occupied',       cls: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400', dot: 'bg-indigo-500', icon: BedDouble },
+    blocked:        { label: 'Blocked',  cls: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', dot: 'bg-red-500', icon: Wrench },
+    offline:        { label: 'Maintenance',    cls: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400', dot: 'bg-gray-400', icon: Wrench },
 }
+
+// ── Quick filter + search over the unit list ──
+const activeTab = ref('all')
+const search    = ref('')
+const tabOrder  = ['ready_for_qa', 'qa_in_progress', 'cleaning', 'needs_cleaning', 'concern', 'ok', 'ready', 'occupied', 'blocked', 'offline']
+const stateCounts = computed(() => {
+    const c = {}
+    props.units.forEach(u => { c[u.state] = (c[u.state] || 0) + 1 })
+    return c
+})
+const tabs = computed(() => [
+    { key: 'all', label: 'All', count: props.units.length },
+    ...tabOrder.filter(s => stateCounts.value[s]).map(s => ({ key: s, label: stateMeta[s].label, count: stateCounts.value[s] })),
+])
+const filteredUnits = computed(() => props.units.filter(u => {
+    if (activeTab.value !== 'all' && u.state !== activeTab.value) return false
+    if (search.value && !`${u.unit_number} ${u.unit_type}`.toLowerCase().includes(search.value.toLowerCase())) return false
+    return true
+}))
+const isActionable = (u) => ['ready_for_qa', 'qa_in_progress'].includes(u.state)
+const fmtShort = (iso) => iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''
 
 function inspectUnit(unit) {
     if (!isActive.value) return
@@ -51,9 +77,9 @@ function inspectUnit(unit) {
 }
 function onUnitClick(unit) {
     if (props.round.status === 'cancelled') return
-    if (['ok', 'concern', 'in_progress'].includes(unit.state) && unit.inspection_id) {
+    if (['ok', 'concern', 'qa_in_progress'].includes(unit.state) && unit.inspection_id) {
         router.get(route('manage.inspections.show', unit.inspection_id))
-    } else if (unit.state === 'pending') {
+    } else if (unit.state === 'ready_for_qa') {
         inspectUnit(unit)
     }
 }
@@ -145,42 +171,60 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                         </div>
                     </button>
 
-                    <div v-show="unitsOpen" class="divide-y divide-gray-100 dark:divide-gray-800">
-                        <div v-for="unit in units" :key="unit.unit_id"
-                             @click="onUnitClick(unit)"
-                             :class="['ok', 'concern', 'in_progress', 'pending'].includes(unit.state) && round.status !== 'cancelled' ? 'cursor-pointer hover:bg-gray-50/60 dark:hover:bg-gray-800/40' : ''"
-                             class="flex items-center justify-between gap-3 px-5 py-3 transition-colors">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold"
-                                      :class="unit.state === 'concern' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                            : unit.state === 'ok' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'">
-                                    <CheckCircle v-if="unit.state === 'ok'" class="w-4 h-4" />
-                                    <AlertTriangle v-else-if="unit.state === 'concern'" class="w-4 h-4" />
-                                    <BedDouble v-else-if="unit.state === 'occupied'" class="w-4 h-4" />
-                                    <Wrench v-else-if="unit.state === 'offline'" class="w-4 h-4" />
-                                    <template v-else>{{ unit.unit_number }}</template>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">Unit {{ unit.unit_number }}</p>
-                                    <p class="text-xs text-gray-400 truncate">{{ unit.unit_type }}<span v-if="unit.state === 'concern' && unit.concern_count"> · {{ unit.concern_count }} fail{{ unit.concern_count !== 1 ? 's' : '' }}</span></p>
-                                </div>
+                    <div v-show="unitsOpen">
+                        <!-- Search + quick-filter tabs -->
+                        <div class="px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800 space-y-2.5">
+                            <div class="relative">
+                                <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                                <input v-model="search" type="text" placeholder="Search unit…"
+                                       class="w-full h-9 pl-9 pr-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white" />
                             </div>
-
-                            <div class="flex items-center gap-2 shrink-0">
-                                <span class="text-[11px] font-medium px-2 py-1 rounded-lg" :class="stateMeta[unit.state].cls">{{ stateMeta[unit.state].label }}</span>
-                                <template v-if="isActive">
-                                    <span v-if="unit.state === 'pending'" class="inline-flex items-center gap-1 text-xs font-semibold text-gray-900 dark:text-white">
-                                        Inspect <ArrowRight class="w-3.5 h-3.5" />
-                                    </span>
-                                    <span v-else-if="unit.state === 'in_progress'" class="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                        Resume <ArrowRight class="w-3.5 h-3.5" />
-                                    </span>
-                                </template>
+                            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                                <button v-for="t in tabs" :key="t.key" @click="activeTab = t.key"
+                                        :class="activeTab === t.key ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-transparent' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'"
+                                        class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all">
+                                    {{ t.label }}
+                                    <span :class="activeTab === t.key ? 'bg-white/20 dark:bg-gray-900/10' : 'bg-gray-100 dark:bg-gray-800'" class="px-1 rounded tabular-nums">{{ t.count }}</span>
+                                </button>
                             </div>
                         </div>
 
-                        <div v-if="units.length === 0" class="px-5 py-10 text-center text-sm text-gray-400">No units in this property.</div>
+                        <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                            <div v-for="unit in filteredUnits" :key="unit.unit_id"
+                                 @click="onUnitClick(unit)"
+                                 :class="(isActionable(unit) || ['ok', 'concern'].includes(unit.state)) && round.status !== 'cancelled' ? 'cursor-pointer hover:bg-gray-50/60 dark:hover:bg-gray-800/40' : ''"
+                                 class="flex items-center justify-between gap-3 px-5 py-3 transition-colors">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center" :class="stateMeta[unit.state].cls">
+                                        <component :is="stateMeta[unit.state].icon" class="w-4 h-4" />
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">Unit {{ unit.unit_number }}</p>
+                                        <p class="text-xs text-gray-400 truncate">{{ unit.unit_type }}<span v-if="unit.state === 'concern' && unit.concern_count"> · {{ unit.concern_count }} fail{{ unit.concern_count !== 1 ? 's' : '' }}</span></p>
+                                        <div v-if="unit.checkout || unit.arrival" class="flex items-center gap-3 mt-0.5 text-[11px] text-gray-400">
+                                            <span v-if="unit.checkout" class="inline-flex items-center gap-1"><DoorClosed class="w-3 h-3" /> Out {{ fmtShort(unit.checkout.date) }}<template v-if="unit.checkout.time"> · {{ unit.checkout.time }}</template></span>
+                                            <span v-if="unit.arrival" class="inline-flex items-center gap-1"><LogIn class="w-3 h-3" /> In {{ fmtShort(unit.arrival.date) }}<template v-if="unit.arrival.time"> · {{ unit.arrival.time }}</template></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <span class="text-[11px] font-medium px-2 py-1 rounded-lg" :class="stateMeta[unit.state].cls">{{ stateMeta[unit.state].label }}</span>
+                                    <template v-if="isActive">
+                                        <span v-if="unit.state === 'ready_for_qa'" class="inline-flex items-center gap-1 text-xs font-semibold text-gray-900 dark:text-white">
+                                            Inspect <ArrowRight class="w-3.5 h-3.5" />
+                                        </span>
+                                        <span v-else-if="unit.state === 'qa_in_progress'" class="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400">
+                                            Resume <ArrowRight class="w-3.5 h-3.5" />
+                                        </span>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div v-if="filteredUnits.length === 0" class="px-5 py-10 text-center text-sm text-gray-400">
+                                {{ units.length ? 'No units match this view.' : 'No units in this property.' }}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

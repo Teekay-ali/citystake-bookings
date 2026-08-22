@@ -58,6 +58,7 @@ class BuildingController extends Controller
             'amenities' => 'nullable|array',
             'monthly_emergency_limit' => 'required|numeric|min:0',
             'standard_checkout_time'    => 'required|date_format:H:i',
+            'standard_checkin_time'     => 'required|date_format:H:i',
             'late_checkout_fee_per_hour'=> 'required|numeric|min:0',
             'is_active' => 'boolean',
         ]);
@@ -100,6 +101,7 @@ class BuildingController extends Controller
             'amenities' => 'nullable|array',
             'monthly_emergency_limit' => 'required|numeric|min:0',
             'standard_checkout_time'    => 'required|date_format:H:i',
+            'standard_checkin_time'     => 'required|date_format:H:i',
             'late_checkout_fee_per_hour'=> 'required|numeric|min:0',
             'is_active' => 'boolean',
         ]);

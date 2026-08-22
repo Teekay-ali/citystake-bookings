@@ -81,13 +81,13 @@ class UnitTurnoverService
     }
 
     /**
-     * Pull a unit out of service: block the given dates and mark the turnover
-     * blocked. (Optional maintenance request + notifications land in Phase D/G.)
+     * Pull a unit out of service: block the given dates and, if the unit has an
+     * active turnover, mark it blocked. Reflects on Properties → Blocked Dates.
      */
-    public function block(UnitTurnover $turnover, string $from, string $to, string $reason, User $by): UnitTurnover
+    public function blockUnit(Unit $unit, string $from, string $to, string $reason, User $by): BlockedDate
     {
         $blocked = BlockedDate::create([
-            'unit_id'     => $turnover->unit_id,
+            'unit_id'      => $unit->id,
             'blocked_from' => $from,
             'blocked_to'   => $to,
             'reason'       => $reason,
@@ -95,12 +95,12 @@ class UnitTurnoverService
             'created_by'   => $by->id,
         ]);
 
-        $turnover->update([
+        $this->activeFor($unit)?->update([
             'status'          => 'blocked',
             'blocked_date_id' => $blocked->id,
         ]);
 
-        return $turnover;
+        return $blocked;
     }
 
     /** The current in-flight turnover for a unit, if any. */

@@ -317,6 +317,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->pr
     Route::get('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'show'])->name('inspections.show');
     Route::post('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'update'])->name('inspections.update');
     Route::post('/inspections/{inspection}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'complete'])->name('inspections.complete');
+    Route::post('/inspections/{inspection}/block', [\App\Http\Controllers\Admin\InspectionController::class, 'blockUnit'])->name('inspections.block');
 
     // Procurement
     Route::get('/procurement', [ProcurementController::class, 'index'])->name('procurement.index');
