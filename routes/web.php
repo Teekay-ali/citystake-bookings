@@ -406,6 +406,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class])->prefix('manage')->name('m
     Route::get('changelogs', [ChangelogController::class, 'index'])->name('changelogs.index');
     Route::post('changelogs', [ChangelogController::class, 'store'])->name('changelogs.store');
     Route::post('changelogs/mark-read', [ChangelogController::class, 'markRead'])->name('changelogs.mark-read');
+    Route::post('changelogs/audience', [ChangelogController::class, 'updateAudience'])->name('changelogs.audience');
     Route::post('changelogs/{changelog}/publish', [ChangelogController::class, 'publish'])->name('changelogs.publish');
     Route::delete('changelogs/{changelog}', [ChangelogController::class, 'destroy'])->name('changelogs.destroy');
 

@@ -3,7 +3,7 @@ import { Head, useForm, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
 import RichTextEditor from '@/Components/RichTextEditor.vue'
-import { Plus, Send, Trash2, CheckCircle, Clock, X } from 'lucide-vue-next'
+import { Plus, Send, Trash2, CheckCircle, Clock, X, Eye, Check } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 // Plain-text preview from stored HTML for the compact list row
@@ -16,11 +16,36 @@ function preview(html) {
 defineOptions({ layout: ManageLayout })
 
 const props = defineProps({
-    changelogs: Array,
+    changelogs:    Array,
+    audienceRoles: { type: Array, default: () => [] },
+    allRoles:      { type: Array, default: () => [] },
 })
 
 const showForm = ref(false)
 const selected = ref(null)
+
+// ── Audience: which roles see platform updates ──
+const roleLabels = {
+    'super-admin': 'Super Admin', 'manager': 'Manager', 'accountant': 'Accountant',
+    'ceo': 'CEO', 'head-of-procurement': 'Procurement Officer', 'receptionist': 'Receptionist',
+    'staff': 'Staff', 'quality-control': 'Quality Control',
+}
+const roleLabel = (n) => roleLabels[n] ?? n.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+
+const showAudience = ref(false)
+const audienceForm = useForm({ roles: [...props.audienceRoles] })
+
+function toggleRole(name) {
+    if (name === 'super-admin') return // always included
+    const i = audienceForm.roles.indexOf(name)
+    i === -1 ? audienceForm.roles.push(name) : audienceForm.roles.splice(i, 1)
+}
+function saveAudience() {
+    audienceForm.post(route('manage.changelogs.audience'), {
+        preserveScroll: true,
+        onSuccess: () => { showAudience.value = false },
+    })
+}
 
 function openDetail(entry) {
     selected.value = entry
@@ -79,11 +104,58 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
                     <h1 class="text-xl font-semibold text-gray-900 dark:text-white tracking-tight">Platform Updates</h1>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Track and publish changes to admin staff</p>
                 </div>
-                <button @click="showForm = !showForm"
-                        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">
-                    <Plus class="w-4 h-4" />
-                    New Entry
-                </button>
+                <div class="flex items-center gap-2">
+                    <button @click="showAudience = !showAudience"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <Eye class="w-4 h-4" />
+                        Audience
+                    </button>
+                    <button @click="showForm = !showForm"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">
+                        <Plus class="w-4 h-4" />
+                        New Entry
+                    </button>
+                </div>
+            </div>
+
+            <!-- Audience settings -->
+            <div v-if="showAudience" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 mb-6">
+                <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Who sees platform updates</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">These roles get the in-app update popup and the notification email. Super Admin is always included.</p>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <button v-for="r in allRoles" :key="r" type="button"
+                            @click="toggleRole(r)"
+                            :disabled="r === 'super-admin'"
+                            :class="[
+                                audienceForm.roles.includes(r) || r === 'super-admin'
+                                    ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800/60'
+                                    : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700',
+                                r === 'super-admin' ? 'opacity-60 cursor-not-allowed' : '',
+                            ]"
+                            class="flex items-center gap-2.5 px-3 py-2.5 border rounded-lg text-left transition-all">
+                        <span :class="[
+                            'w-4 h-4 rounded flex items-center justify-center border shrink-0',
+                            (audienceForm.roles.includes(r) || r === 'super-admin')
+                                ? 'bg-gray-900 dark:bg-white border-gray-900 dark:border-white'
+                                : 'border-gray-300 dark:border-gray-600',
+                        ]">
+                            <Check v-if="audienceForm.roles.includes(r) || r === 'super-admin'" class="w-3 h-3 text-white dark:text-gray-900" />
+                        </span>
+                        <span class="text-sm text-gray-900 dark:text-white truncate">{{ roleLabel(r) }}</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 mt-4">
+                    <button @click="showAudience = false"
+                            class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="saveAudience" :disabled="audienceForm.processing"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 transition-all">
+                        Save audience
+                    </button>
+                </div>
             </div>
 
             <!-- Create form -->

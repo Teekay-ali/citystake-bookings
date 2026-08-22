@@ -45,4 +45,24 @@ class Changelog extends Model
             ->latest('published_at')
             ->get();
     }
+
+    /** Roles allowed to see platform updates. Configurable; super-admin + ceo by default. */
+    public const AUDIENCE_SETTING = 'changelog_audience_roles';
+    public const AUDIENCE_DEFAULT = ['super-admin', 'ceo'];
+
+    public static function audienceRoles(): array
+    {
+        return self::audienceRolesFrom(Setting::get(self::AUDIENCE_SETTING, self::AUDIENCE_DEFAULT));
+    }
+
+    /** Normalize an audience list: super-admin always included, no duplicates. */
+    public static function audienceRolesFrom($roles): array
+    {
+        return array_values(array_unique(array_merge(['super-admin'], (array) $roles)));
+    }
+
+    public static function canBeSeenBy(User $user): bool
+    {
+        return $user->hasAnyRole(self::audienceRoles());
+    }
 }

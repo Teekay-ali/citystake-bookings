@@ -153,7 +153,7 @@ class HandleInertiaRequests extends Middleware
                 )->count()
                 : 0,
 
-            'unreadChangelogs' => fn () => ($user && $isManageRoute && $user->is_admin)
+            'unreadChangelogs' => fn () => ($user && $isManageRoute && \App\Models\Changelog::canBeSeenBy($user))
                 ? \App\Models\Changelog::published()
                     ->whereNotIn('id', $user->changelogReads()->pluck('changelog_id'))
                     ->latest('published_at')

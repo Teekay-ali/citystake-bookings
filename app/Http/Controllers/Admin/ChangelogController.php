@@ -7,11 +7,13 @@ use App\Services\NotificationService;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Changelog;
+use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\ChangelogPublishedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class ChangelogController extends Controller
 {
@@ -36,8 +38,28 @@ class ChangelogController extends Controller
             ]);
 
         return Inertia::render('Admin/Changelogs/Index', [
-            'changelogs' => $changelogs,
+            'changelogs'    => $changelogs,
+            'audienceRoles' => Changelog::audienceRoles(),
+            'allRoles'      => Role::orderBy('name')->pluck('name'),
         ]);
+    }
+
+    /** Choose which roles see platform updates (super-admin is always included). */
+    public function updateAudience(Request $request)
+    {
+        abort_unless(auth()->user()->can('manage-changelogs'), 403);
+
+        $data = $request->validate([
+            'roles'   => 'required|array|min:1',
+            'roles.*' => 'string|exists:roles,name',
+        ]);
+
+        $roles = Changelog::audienceRolesFrom($data['roles']);
+        Setting::set(Changelog::AUDIENCE_SETTING, $roles);
+
+        AuditLog::log('changelog.audience_updated', null, null, ['roles' => $roles]);
+
+        return back()->with('success', 'Platform-update audience saved.');
     }
 
     public function store(Request $request)
@@ -93,8 +115,9 @@ class ChangelogController extends Controller
         AuditLog::log('changelog.published', $changelog, null, ['title' => $changelog->title]);
 
         if ($changelog->send_email) {
-            $recipients = User::where('is_admin', true)
-                ->where('is_active', true)
+            // Email only the roles configured to see platform updates.
+            $recipients = User::where('is_active', true)
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', Changelog::audienceRoles()))
                 ->get();
 
             NotificationService::send($recipients, new ChangelogPublishedNotification($changelog));
