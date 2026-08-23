@@ -39,7 +39,7 @@ const canComplete = computed(() => allAnswered.value && failsResolved.value)
 
 const completeLabel = computed(() => {
     if (!allAnswered.value) return `${total.value - answered.value} item${total.value - answered.value !== 1 ? 's' : ''} left`
-    if (!failsResolved.value) return 'Resolve fails'
+    if (!failsResolved.value) return 'Add note/photo to fails'
     return 'Mark completed'
 })
 
