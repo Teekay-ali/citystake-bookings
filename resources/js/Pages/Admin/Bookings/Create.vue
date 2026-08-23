@@ -655,7 +655,7 @@ const inputCls = (hasError) => [
                                         class="flex-1 py-1.5 rounded-md text-xs font-medium transition-all">{{ t[1] }}</button>
                             </div>
                             <div v-if="form.payment_timing === 'deposit'" class="mt-2">
-                                <input v-model.number="form.deposit_amount" type="number" min="1" :max="pricing.total || undefined" step="1000"
+                                <input v-model.number="form.deposit_amount" type="number" min="1" :max="pricing.total || undefined" step="1"
                                        placeholder="Deposit amount ₦" :class="inputCls(false)" />
                                 <p v-if="form.errors.deposit_amount" class="mt-1 text-xs text-red-600">{{ form.errors.deposit_amount }}</p>
                             </div>

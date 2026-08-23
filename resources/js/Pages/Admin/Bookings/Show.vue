@@ -1170,7 +1170,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                 <form @submit.prevent="submitRecordPayment" class="space-y-3">
                     <div>
                         <label class="block text-xs text-gray-500 mb-1">Amount ₦</label>
-                        <input v-model.number="recordForm.amount" type="number" min="1" :max="balanceDue" step="1000" :class="inputCls()" />
+                        <input v-model.number="recordForm.amount" type="number" min="1" :max="balanceDue" step="1" :class="inputCls()" />
                         <p v-if="recordForm.errors.amount" class="mt-1 text-xs text-red-600">{{ recordForm.errors.amount }}</p>
                     </div>
                     <div>
