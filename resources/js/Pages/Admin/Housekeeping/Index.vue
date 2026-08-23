@@ -49,14 +49,17 @@ const modal = ref({ show: false, kind: null, unit: null, processing: false })
 
 function askRequest(u) { modal.value = { show: true, kind: 'request', unit: u, processing: false } }
 function askCleaned(u) { modal.value = { show: true, kind: 'cleaned', unit: u, processing: false } }
+function askCancel(u)  { modal.value = { show: true, kind: 'cancel',  unit: u, processing: false } }
 function closeModal()  { modal.value = { ...modal.value, show: false } }
 
 const modalCopy = computed(() => {
     const u = modal.value.unit
     if (!u) return {}
-    return modal.value.kind === 'request'
-        ? { title: 'Request cleaning?', message: `Unit ${u.unit_number} will be marked as cleaning in progress.`, confirm: 'Request cleaning' }
-        : { title: 'Mark as cleaned?',  message: `Unit ${u.unit_number} will move to Ready for QA and quality control will be notified.`, confirm: 'Mark cleaned' }
+    return {
+        request: { title: 'Request cleaning?', message: `Unit ${u.unit_number} will be marked as cleaning in progress.`, confirm: 'Request cleaning' },
+        cleaned: { title: 'Mark as cleaned?',  message: `Unit ${u.unit_number} will move to Ready for QA and quality control will be notified.`, confirm: 'Mark cleaned' },
+        cancel:  { title: 'Cancel cleaning?',  message: `The cleaning turnover for unit ${u.unit_number} will be discarded. You can request cleaning again anytime.`, confirm: 'Cancel cleaning' },
+    }[modal.value.kind] ?? {}
 })
 
 function confirmModal() {
@@ -65,8 +68,10 @@ function confirmModal() {
     const opts = { preserveScroll: true, onFinish: () => { modal.value.processing = false; closeModal() } }
     if (kind === 'request') {
         router.post(route('manage.housekeeping.request-cleaning'), { unit_id: unit.unit_id, booking_id: unit.booking_id }, opts)
-    } else {
+    } else if (kind === 'cleaned') {
         router.post(route('manage.housekeeping.mark-cleaned'), { turnover_id: unit.turnover_id }, opts)
+    } else {
+        router.post(route('manage.housekeeping.cancel'), { turnover_id: unit.turnover_id }, opts)
     }
 }
 
@@ -142,15 +147,21 @@ function fmtDate(iso) {
                 </div>
 
                 <!-- Action -->
-                <div v-if="['needs_cleaning', 'cleaning'].includes(u.state)" class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <div v-if="['needs_cleaning', 'cleaning', 'ready_for_qa'].includes(u.state)" class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                     <button v-if="u.state === 'needs_cleaning'" @click="askRequest(u)"
                             class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 transition-all">
                         <Sparkles class="w-3.5 h-3.5" /> Request cleaning
                     </button>
-                    <button v-else @click="askCleaned(u)"
-                            class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 transition-all">
-                        <CheckCircle class="w-3.5 h-3.5" /> Mark cleaned
-                    </button>
+                    <template v-else>
+                        <button v-if="u.state === 'cleaning'" @click="askCleaned(u)"
+                                class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 transition-all">
+                            <CheckCircle class="w-3.5 h-3.5" /> Mark cleaned
+                        </button>
+                        <button @click="askCancel(u)"
+                                class="w-full mt-1.5 text-xs font-medium text-gray-400 hover:text-red-500 transition-colors">
+                            Cancel cleaning
+                        </button>
+                    </template>
                 </div>
             </div>
         </div>

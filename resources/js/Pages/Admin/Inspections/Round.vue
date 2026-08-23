@@ -78,9 +78,11 @@ function inspectUnit(unit) {
 }
 function onUnitClick(unit) {
     if (props.round.status === 'cancelled') return
-    if (['ok', 'concern', 'qa_in_progress'].includes(unit.state) && unit.inspection_id) {
+    if (['ok', 'concern', 'ready'].includes(unit.state) && unit.inspection_id) {
         router.get(route('manage.inspections.show', unit.inspection_id))
-    } else if (['pending', 'ready_for_qa'].includes(unit.state)) {
+    } else if (['pending', 'ready_for_qa', 'qa_in_progress'].includes(unit.state)) {
+        // Resume routes through start() so a cross-day inspection rebases into
+        // this round and finishes here.
         inspectUnit(unit)
     }
 }
@@ -89,6 +91,17 @@ function openSection(section) {
 }
 function completeRound() {
     router.post(route('manage.inspections.round.complete', props.round.id))
+}
+
+// ── Return a blocked unit to service ──
+const returnModal = ref({ show: false, unit: null, processing: false })
+function askReturn(unit) { returnModal.value = { show: true, unit, processing: false } }
+function confirmReturn() {
+    returnModal.value.processing = true
+    router.post(route('manage.inspections.return-to-service'), { unit_id: returnModal.value.unit.unit_id }, {
+        preserveScroll: true,
+        onFinish: () => { returnModal.value = { show: false, unit: null, processing: false } },
+    })
 }
 
 const showDiscard = ref(false)
@@ -193,7 +206,7 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                         <div class="divide-y divide-gray-100 dark:divide-gray-800">
                             <div v-for="unit in filteredUnits" :key="unit.unit_id"
                                  @click="onUnitClick(unit)"
-                                 :class="(isActionable(unit) || ['ok', 'concern'].includes(unit.state)) && round.status !== 'cancelled' ? 'cursor-pointer hover:bg-gray-50/60 dark:hover:bg-gray-800/40' : ''"
+                                 :class="(isActionable(unit) || (['ok', 'concern', 'ready'].includes(unit.state) && unit.inspection_id)) && round.status !== 'cancelled' ? 'cursor-pointer hover:bg-gray-50/60 dark:hover:bg-gray-800/40' : ''"
                                  class="flex items-center justify-between gap-3 px-5 py-3 transition-colors">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center" :class="stateMeta[unit.state].cls">
@@ -219,6 +232,10 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                                             Resume <ArrowRight class="w-3.5 h-3.5" />
                                         </span>
                                     </template>
+                                    <button v-if="unit.state === 'blocked' && round.status !== 'cancelled'" @click.stop="askReturn(unit)"
+                                            class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                                        Return to service
+                                    </button>
                                 </div>
                             </div>
 
@@ -356,6 +373,17 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                 <ClipboardCheck class="w-4 h-4" /> {{ remainingLabel }}
             </button>
         </div>
+
+        <!-- Return to service -->
+        <ConfirmationModal
+            :show="returnModal.show"
+            :processing="returnModal.processing"
+            title="Return unit to service?"
+            :message="`This clears the maintenance block on unit ${returnModal.unit?.unit_number ?? ''}, making it bookable again. It will need cleaning and inspection before it's guest-ready.`"
+            confirm-text="Return to service"
+            cancel-text="Cancel"
+            @confirm="confirmReturn"
+            @close="returnModal.show = false" />
 
         <!-- Discard confirmation -->
         <ConfirmationModal

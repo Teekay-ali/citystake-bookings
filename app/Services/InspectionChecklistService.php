@@ -149,15 +149,16 @@ class InspectionChecklistService
 
     /**
      * Overall pass rate (0–100) for a completed inspectable: passed ÷ (passed +
-     * failed), with N/A excluded. 100 when nothing was failed.
+     * failed), with N/A excluded. Null when nothing was actually assessed (all
+     * N/A) so it never reads as a perfect 100%.
      */
-    public function score(Model $inspectable): int
+    public function score(Model $inspectable): ?int
     {
         $pass = $inspectable->itemResults()->where('result', 'pass')->count();
         $fail = $inspectable->itemResults()->where('result', 'fail')->count();
         $assessed = $pass + $fail;
 
-        return $assessed > 0 ? (int) round($pass / $assessed * 100) : 100;
+        return $assessed > 0 ? (int) round($pass / $assessed * 100) : null;
     }
 
     /**

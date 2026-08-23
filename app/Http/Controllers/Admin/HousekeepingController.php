@@ -152,6 +152,20 @@ class HousekeepingController extends Controller
         return back()->with('success', "Unit {$turnover->unit?->unit_number} marked cleaned. QC has been notified.");
     }
 
+    public function cancelCleaning(Request $request)
+    {
+        abort_unless(auth()->user()->can('request-cleaning'), 403);
+
+        $data = $request->validate(['turnover_id' => 'required|exists:unit_turnovers,id']);
+
+        $turnover = UnitTurnover::with('unit')->findOrFail($data['turnover_id']);
+        abort_unless(in_array($turnover->building_id, $this->scopedBuildingIds()), 403);
+
+        $this->turnovers->cancelTurnover($turnover);
+
+        return back()->with('success', "Cleaning for unit {$turnover->unit?->unit_number} cancelled.");
+    }
+
     /** Combine a booking date with the building's standard time for display. */
     private function fmt($date, $time): array
     {

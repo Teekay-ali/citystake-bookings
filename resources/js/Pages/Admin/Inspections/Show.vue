@@ -76,7 +76,7 @@ function complete() {
 // ── Block unit for maintenance ──
 const showBlock = ref(false)
 const today = new Date().toISOString().slice(0, 10)
-const blockForm = useForm({ blocked_from: today, blocked_to: today, reason: '', raise_maintenance: false })
+const blockForm = useForm({ blocked_from: today, blocked_to: today, reason: '', raise_maintenance: false, acknowledge_conflict: false })
 function submitBlock() {
     blockForm.post(route('manage.inspections.block', props.inspection.id), {
         onSuccess: () => { showBlock.value = false; blockForm.reset() },
@@ -235,6 +235,16 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                            class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-gray-900 focus:ring-gray-900 dark:focus:ring-white" />
                     <span class="text-sm text-gray-700 dark:text-gray-300">Also raise a maintenance request</span>
                 </label>
+
+                <!-- Booking-conflict warning -->
+                <div v-if="blockForm.errors.acknowledge_conflict" class="mt-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-800">
+                    <p class="text-xs text-amber-700 dark:text-amber-400">{{ blockForm.errors.acknowledge_conflict }}</p>
+                    <label class="mt-2 flex items-center gap-2.5 cursor-pointer">
+                        <input v-model="blockForm.acknowledge_conflict" type="checkbox"
+                               class="w-4 h-4 rounded border-amber-300 dark:border-amber-700 text-amber-600 focus:ring-amber-500" />
+                        <span class="text-sm font-medium text-amber-800 dark:text-amber-300">Block anyway</span>
+                    </label>
+                </div>
 
                 <div class="flex items-center justify-end gap-2 mt-5">
                     <button @click="showBlock = false" type="button"

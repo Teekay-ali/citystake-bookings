@@ -5,7 +5,8 @@
     <title>Inspection Report</title>
     @php
         $hasConcerns = $inspection->overall_result === 'concerns';
-        $scoreColor = $score >= 90 ? '#0d9268' : ($score >= 70 ? '#c07d0a' : '#d23a2c');
+        $scoreLabel = $score === null ? 'N/A' : $score . '%';
+        $scoreColor = $score === null ? '#868c95' : ($score >= 90 ? '#0d9268' : ($score >= 70 ? '#c07d0a' : '#d23a2c'));
         $resultColor = $hasConcerns ? '#c07d0a' : '#0d9268';
         $roleLabels = ['super-admin'=>'Super Admin','ceo'=>'CEO','manager'=>'Manager','accountant'=>'Accountant','head-of-procurement'=>'Procurement Officer','receptionist'=>'Receptionist','quality-control'=>'Quality Control','staff'=>'Staff'];
         $roleLabel = $inspectorRole ? ($roleLabels[$inspectorRole] ?? ucfirst(str_replace('-', ' ', $inspectorRole))) : 'Inspector';
@@ -53,7 +54,7 @@
             <h1>Inspection Report</h1>
         </td>
         <td style="text-align: right; width: 90px;">
-            <div class="score-badge"><span class="n">{{ $score }}%</span></div>
+            <div class="score-badge"><span class="n">{{ $scoreLabel }}</span></div>
         </td>
     </tr>
 </table>
@@ -64,7 +65,7 @@
     <tr><td class="k">Unit</td><td class="v">Unit {{ $inspection->unit?->unit_number }} · {{ $inspection->unit?->unitType?->name }}</td>
         <td class="k">Inspector</td><td class="v">{{ $inspection->inspector?->name ?? '—' }}</td></tr>
     <tr><td class="k">Completed</td><td class="v">{{ optional($inspection->completed_at)->format('d M Y, g:i A') ?? '—' }}</td>
-        <td class="k">Score</td><td class="v" style="color: {{ $scoreColor }};">{{ $score }}% (passed items)</td></tr>
+        <td class="k">Score</td><td class="v" style="color: {{ $scoreColor }};">{{ $scoreLabel }}{{ $score === null ? '' : ' (passed items)' }}</td></tr>
 </table>
 
 @foreach ($groups as $group)

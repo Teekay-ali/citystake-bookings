@@ -263,16 +263,27 @@ class InspectionController extends Controller
         $unit = Unit::with('unitType')->findOrFail($data['unit_id']);
         abort_unless($unit->unitType->building_id === $round->building_id, 403);
 
-        $inspection = UnitInspection::firstOrCreate(
-            ['inspection_round_id' => $round->id, 'unit_id' => $unit->id],
-            [
-                'building_id'  => $round->building_id,
-                'inspector_id' => auth()->id(),
-                'created_by'   => auth()->id(),
-                'status'       => 'in_progress',
-                'started_at'   => now(),
-            ]
-        );
+        // Resume the unit's open inspection if one exists (even from an earlier
+        // day's round) and carry it into the round being worked, so it finishes
+        // here. Otherwise start a fresh one.
+        $inspection = UnitInspection::where('unit_id', $unit->id)
+            ->where('status', 'in_progress')->latest('id')->first();
+
+        if ($inspection) {
+            if ($inspection->inspection_round_id !== $round->id) {
+                $inspection->update(['inspection_round_id' => $round->id]);
+            }
+        } else {
+            $inspection = UnitInspection::create([
+                'inspection_round_id' => $round->id,
+                'unit_id'             => $unit->id,
+                'building_id'         => $round->building_id,
+                'inspector_id'        => auth()->id(),
+                'created_by'          => auth()->id(),
+                'status'              => 'in_progress',
+                'started_at'          => now(),
+            ]);
+        }
 
         // Lay down the checklist rows (bedroom items multiplied per bedroom).
         $inspection->load('unit.unitType');
@@ -368,6 +379,20 @@ class InspectionController extends Controller
         return redirect()->route('manage.inspections.index')->with('success', 'Inspection saved.');
     }
 
+    /** Bring a blocked unit back into service (clears active blocks + turnover). */
+    public function returnToService(Request $request)
+    {
+        abort_unless(auth()->user()->can('conduct-inspections'), 403);
+
+        $data = $request->validate(['unit_id' => 'required|exists:units,id']);
+        $unit = Unit::with('unitType')->findOrFail($data['unit_id']);
+        abort_unless(in_array($unit->unitType->building_id, $this->scopedBuildingIds()), 403);
+
+        $this->turnovers->returnToService($unit);
+
+        return back()->with('success', "Unit {$unit->unit_number} returned to service.");
+    }
+
     /** One-click branded PDF report for a completed inspection. */
     public function report(UnitInspection $inspection)
     {
@@ -413,14 +438,31 @@ class InspectionController extends Controller
         abort_unless(in_array($inspection->building_id, $this->scopedBuildingIds()), 403);
 
         $data = $request->validate([
-            'blocked_from'      => 'required|date',
-            'blocked_to'        => 'required|date|after_or_equal:blocked_from',
-            'reason'            => 'required|string|max:255',
-            'raise_maintenance' => 'boolean',
+            'blocked_from'        => 'required|date',
+            'blocked_to'          => 'required|date|after_or_equal:blocked_from',
+            'reason'              => 'required|string|max:255',
+            'raise_maintenance'   => 'boolean',
+            'acknowledge_conflict' => 'boolean',
         ]);
 
         $inspection->loadMissing('unit', 'building');
         $unit = $inspection->unit;
+
+        // Warn if guests already hold this unit during the blocked window.
+        if (empty($data['acknowledge_conflict'])) {
+            $conflicts = Booking::where('unit_id', $unit->id)
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->whereDate('check_in', '<=', $data['blocked_to'])
+                ->whereDate('check_out', '>', $data['blocked_from'])
+                ->count();
+
+            if ($conflicts > 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'acknowledge_conflict' => "This unit has {$conflicts} booking"
+                        . ($conflicts !== 1 ? 's' : '') . ' in that range. Tick “block anyway” to proceed.',
+                ]);
+            }
+        }
 
         $blocked = $this->turnovers->blockUnit(
             $unit, $data['blocked_from'], $data['blocked_to'], $data['reason'], auth()->user()
@@ -700,7 +742,9 @@ class InspectionController extends Controller
                 'floor'         => $u->floor,
                 'unit_type'     => $u->unitType->name,
                 'state'         => $state,
-                'inspection_id' => $insp?->id,
+                // Fall back to the turnover's inspection so an in-progress
+                // inspection started on an earlier day is still viewable/resumable.
+                'inspection_id' => $insp?->id ?? $to?->unit_inspection_id,
                 'turnover_id'   => $active ? $to->id : null,
                 'concern_count' => $insp?->concern_count ?? 0,
                 'checkout'      => $out ? $this->timeLabel($out->check_out, $building?->standard_checkout_time) : null,

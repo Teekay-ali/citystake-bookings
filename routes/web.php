@@ -249,6 +249,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->pr
     Route::get('/housekeeping', [App\Http\Controllers\Admin\HousekeepingController::class, 'index'])->name('housekeeping.index');
     Route::post('/housekeeping/request-cleaning', [App\Http\Controllers\Admin\HousekeepingController::class, 'requestCleaning'])->name('housekeeping.request-cleaning');
     Route::post('/housekeeping/mark-cleaned', [App\Http\Controllers\Admin\HousekeepingController::class, 'markCleaned'])->name('housekeeping.mark-cleaned');
+    Route::post('/housekeeping/cancel', [App\Http\Controllers\Admin\HousekeepingController::class, 'cancelCleaning'])->name('housekeeping.cancel');
     // Backward compat redirect
     Route::redirect('/analytics/occupancy', '/manage/analytics?tab=occupancy')->name('analytics.occupancy');
 
@@ -320,6 +321,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->pr
     Route::post('/inspections/{inspection}', [\App\Http\Controllers\Admin\InspectionController::class, 'update'])->name('inspections.update');
     Route::post('/inspections/{inspection}/complete', [\App\Http\Controllers\Admin\InspectionController::class, 'complete'])->name('inspections.complete');
     Route::post('/inspections/{inspection}/block', [\App\Http\Controllers\Admin\InspectionController::class, 'blockUnit'])->name('inspections.block');
+    Route::post('/inspections/return-to-service', [\App\Http\Controllers\Admin\InspectionController::class, 'returnToService'])->name('inspections.return-to-service');
     Route::get('/inspections/{inspection}/report', [\App\Http\Controllers\Admin\InspectionController::class, 'report'])->name('inspections.report');
 
     // Procurement

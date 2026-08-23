@@ -28,3 +28,9 @@ Schedule::command('notifications:prune')->dailyAt('03:00');
 
 // Prune page-visit records older than 90 days
 Schedule::command('page-visits:prune')->dailyAt('03:10');
+
+// Close inspection rounds left open from a previous day
+Schedule::command('inspections:close-stale-rounds')->dailyAt('02:00');
+
+// Prune orphaned inspection photo files
+Schedule::command('inspections:prune-photos')->weeklyOn(1, '03:30');

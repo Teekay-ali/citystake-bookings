@@ -9,6 +9,7 @@ use App\Models\UnitInspection;
 use App\Models\UnitTurnover;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
@@ -22,21 +23,24 @@ class UnitTurnoverService
     /** Front desk requests cleaning for a just-vacated unit. */
     public function requestCleaning(Unit $unit, ?Booking $booking, User $by): UnitTurnover
     {
-        if (UnitTurnover::where('unit_id', $unit->id)->active()->exists()) {
-            throw new RuntimeException('This unit already has a turnover in progress.');
-        }
+        return DB::transaction(function () use ($unit, $booking, $by) {
+            // Serialize concurrent starts on the same unit so we never double-create.
+            Unit::whereKey($unit->id)->lockForUpdate()->first();
 
-        $buildingId = $unit->unitType?->building_id ?? $unit->building_id;
+            if (UnitTurnover::where('unit_id', $unit->id)->active()->exists()) {
+                throw new RuntimeException('This unit already has a turnover in progress.');
+            }
 
-        return UnitTurnover::create([
-            'unit_id'               => $unit->id,
-            'building_id'           => $buildingId,
-            'booking_id'            => $booking?->id,
-            'status'                => 'cleaning_in_progress',
-            'checked_out_at'        => $booking?->check_out ?? now(),
-            'cleaning_requested_at' => now(),
-            'cleaning_requested_by' => $by->id,
-        ]);
+            return UnitTurnover::create([
+                'unit_id'               => $unit->id,
+                'building_id'           => $unit->unitType?->building_id ?? $unit->building_id,
+                'booking_id'            => $booking?->id,
+                'status'                => 'cleaning_in_progress',
+                'checked_out_at'        => $booking?->check_out ?? now(),
+                'cleaning_requested_at' => now(),
+                'cleaning_requested_by' => $by->id,
+            ]);
+        });
     }
 
     /** Cleaning is done; the unit is ready for QA. */
@@ -111,22 +115,26 @@ class UnitTurnoverService
      */
     public function beginQa(Unit $unit, UnitInspection $inspection): void
     {
-        $active = $this->activeFor($unit);
+        DB::transaction(function () use ($unit, $inspection) {
+            Unit::whereKey($unit->id)->lockForUpdate()->first();
 
-        if ($active) {
-            if ($active->status === 'cleaning_completed') {
-                $this->startQa($active, $inspection);
+            $active = $this->activeFor($unit);
+
+            if ($active) {
+                if ($active->status === 'cleaning_completed') {
+                    $this->startQa($active, $inspection);
+                }
+                return; // already in QA (resume), or mid-clean — nothing to open
             }
-            return; // already in QA (resume), or mid-clean — nothing to open
-        }
 
-        UnitTurnover::create([
-            'unit_id'            => $unit->id,
-            'building_id'        => $unit->unitType?->building_id ?? $unit->building_id,
-            'status'             => 'qa_in_progress',
-            'qa_started_at'      => now(),
-            'unit_inspection_id' => $inspection->id,
-        ]);
+            UnitTurnover::create([
+                'unit_id'            => $unit->id,
+                'building_id'        => $unit->unitType?->building_id ?? $unit->building_id,
+                'status'             => 'qa_in_progress',
+                'qa_started_at'      => now(),
+                'unit_inspection_id' => $inspection->id,
+            ]);
+        });
     }
 
     /**
@@ -144,7 +152,9 @@ class UnitTurnoverService
             && ! ($turnover && $turnover->ready_at && $turnover->ready_at->gte(Carbon::parse($lastCheckout)->endOfDay()));
 
         return match (true) {
-            $blocked || ($turnover && $turnover->status === 'blocked') => 'blocked',
+            // Driven by an active blocked-date so it auto-recovers once the
+            // block expires or is removed (the turnover status is just history).
+            $blocked                                                  => 'blocked',
             $occupied                                                  => 'occupied',
             $active && $turnover->status === 'cleaning_in_progress'    => 'cleaning',
             $active && $turnover->status === 'cleaning_completed'      => 'ready_for_qa',
@@ -154,6 +164,25 @@ class UnitTurnoverService
             ! $available                                              => 'offline',
             default                                                   => 'pending',
         };
+    }
+
+    /** Bring a blocked unit back into service: clear active blocks + close the turnover. */
+    public function returnToService(Unit $unit): void
+    {
+        BlockedDate::where('unit_id', $unit->id)
+            ->whereDate('blocked_to', '>=', Carbon::today())
+            ->delete();
+
+        UnitTurnover::where('unit_id', $unit->id)->where('status', 'blocked')
+            ->update(['status' => 'cancelled']);
+    }
+
+    /** Discard an in-flight turnover (mis-request / mistake). */
+    public function cancelTurnover(UnitTurnover $turnover): void
+    {
+        if (in_array($turnover->status, UnitTurnover::ACTIVE_STATUSES, true)) {
+            $turnover->update(['status' => 'cancelled']);
+        }
     }
 
     /** The current in-flight turnover for a unit, if any. */
