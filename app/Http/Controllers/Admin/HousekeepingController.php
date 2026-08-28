@@ -53,11 +53,14 @@ class HousekeepingController extends Controller
             ->orderBy('check_in')->get(['id', 'unit_id', 'guest_name', 'check_in'])
             ->groupBy('unit_id')->map->first();
 
+        // A guest has departed when the booking was explicitly checked out
+        // (checked_out_at) or its checkout date has passed. Latest departure wins.
         $lastCheckout = Booking::whereIn('unit_id', $unitIds)
-            ->whereDate('check_out', '<=', $today)
             ->whereNotIn('status', ['cancelled'])
-            ->get(['id', 'unit_id', 'guest_name', 'check_out'])
-            ->groupBy('unit_id')->map(fn ($g) => $g->sortByDesc('check_out')->first());
+            ->where(fn ($q) => $q->whereNotNull('checked_out_at')->orWhereDate('check_out', '<=', $today))
+            ->get(['id', 'unit_id', 'guest_name', 'check_out', 'checked_out_at'])
+            ->groupBy('unit_id')
+            ->map(fn ($g) => $g->sortByDesc(fn ($b) => $b->checked_out_at ?? $b->check_out)->first());
 
         $turnovers = UnitTurnover::whereIn('unit_id', $unitIds)->get()
             ->groupBy('unit_id')->map(fn ($g) => $g->sortByDesc('id')->first());
@@ -75,8 +78,9 @@ class HousekeepingController extends Controller
             $arrival  = $nextArrival->get($u->id);
             $active   = $to && in_array($to->status, UnitTurnover::ACTIVE_STATUSES, true);
 
+            $departedAt = $out ? ($out->checked_out_at ?? $out->check_out) : null;
             $state = $this->turnovers->readinessState(
-                (bool) $occ, (bool) $blocked->get($u->id), $to, $out?->check_out, $u->status === 'available'
+                (bool) $occ, (bool) $blocked->get($u->id), $to, $departedAt, $u->status === 'available'
             );
 
             return [
@@ -92,7 +96,14 @@ class HousekeepingController extends Controller
                 'arrival'      => $arrival ? $this->fmt($arrival->check_in, $building?->standard_checkin_time) : null,
                 'guest_out'    => $out?->guest_name,
                 'guest_next'   => $arrival?->guest_name,
-                'requested_at' => $to?->cleaning_requested_at?->toISOString(),
+                // When the unit entered its current state — powers the "aging" label.
+                'since'        => match ($state) {
+                    'needs_cleaning' => $departedAt ? Carbon::parse($departedAt)->toISOString() : null,
+                    'cleaning'       => $to?->cleaning_requested_at?->toISOString(),
+                    'ready_for_qa'   => $to?->cleaning_completed_at?->toISOString(),
+                    'qa_in_progress' => $to?->qa_started_at?->toISOString(),
+                    default          => null,
+                },
             ];
         })->values();
 

@@ -10,6 +10,10 @@ use App\Models\FinancialTransaction;
 use App\Models\MaintenanceReport;
 use App\Models\ProcurementRequest;
 use App\Models\Task;
+use App\Models\Unit;
+use App\Models\UnitTurnover;
+use App\Models\BlockedDate;
+use App\Services\UnitTurnoverService;
 use App\Traits\ScopedByBuilding;
 use Carbon\Carbon;
 use Inertia\Inertia;
@@ -17,6 +21,12 @@ use Inertia\Inertia;
 class HomeController extends Controller
 {
     use ScopedByBuilding;
+
+    private const OCCUPYING_STATUSES = ['confirmed', 'checked_in', 'paused'];
+
+    public function __construct(private UnitTurnoverService $turnovers)
+    {
+    }
 
     public function index()
     {
@@ -57,7 +67,10 @@ class HomeController extends Controller
             ]);
 
         // ── Receptionist data ─────────────────────────────────
-        if ($user->can('manage-availability')) {
+        // Front-desk cards (check-ins/outs, occupancy) are for booking staff.
+        // QC may hold manage-availability (to reach Housekeeping) but shouldn't
+        // get the reception dashboard, so also require booking duties.
+        if ($user->can('manage-availability') && $user->can('manage-bookings')) {
             $data['todayCheckins'] = Booking::whereIn('building_id', $buildingIds)
                 ->whereDate('check_in', $today)
                 ->whereIn('status', ['confirmed', 'checked_in'])
@@ -227,6 +240,102 @@ class HomeController extends Controller
             ];
         }
 
+        // ── Quality Control dashboard ─────────────────────────
+        // A live overview of where every unit sits in the turnover lifecycle,
+        // plus the QC worklist (units cleaned and waiting to be inspected).
+        if ($user->can('conduct-inspections')) {
+            $data['qc'] = $this->qualityControl($buildingIds, $today);
+        }
+
         return Inertia::render('Admin/Home', $data);
+    }
+
+    /**
+     * Turnover-lifecycle overview for QC: a state breakdown across all scoped
+     * units and the queue of units ready for inspection. Uses the shared
+     * readinessState resolver so it never drifts from the housekeeping board.
+     */
+    private function qualityControl(array $buildingIds, Carbon $today): array
+    {
+        $units = Unit::whereHas('unitType', fn ($q) => $q->whereIn('building_id', $buildingIds))
+            ->with('unitType:id,name,building_id')
+            ->orderBy('unit_number')
+            ->get();
+        $unitIds = $units->pluck('id');
+
+        $occupied = Booking::whereIn('unit_id', $unitIds)
+            ->whereIn('status', self::OCCUPYING_STATUSES)
+            ->whereDate('check_in', '<=', $today)->whereDate('check_out', '>', $today)
+            ->pluck('unit_id')->unique();
+
+        $lastCheckout = Booking::whereIn('unit_id', $unitIds)
+            ->whereNotIn('status', ['cancelled'])
+            ->where(fn ($q) => $q->whereNotNull('checked_out_at')->orWhereDate('check_out', '<=', $today))
+            ->get(['id', 'unit_id', 'check_out', 'checked_out_at'])
+            ->groupBy('unit_id')
+            ->map(fn ($g) => $g->sortByDesc(fn ($b) => $b->checked_out_at ?? $b->check_out)->first());
+
+        $nextArrival = Booking::whereIn('unit_id', $unitIds)
+            ->whereIn('status', ['confirmed', 'pending'])->whereDate('check_in', '>=', $today)
+            ->orderBy('check_in')->get(['id', 'unit_id', 'guest_name', 'check_in'])
+            ->groupBy('unit_id')->map->first();
+
+        $turnovers = UnitTurnover::whereIn('unit_id', $unitIds)->get()
+            ->groupBy('unit_id')->map(fn ($g) => $g->sortByDesc('id')->first());
+
+        $blocked = BlockedDate::whereIn('unit_id', $unitIds)
+            ->whereDate('blocked_from', '<=', $today)->whereDate('blocked_to', '>=', $today)
+            ->pluck('unit_id')->unique();
+
+        $buildings = Building::whereIn('id', $buildingIds)->pluck('name', 'id');
+
+        $rows = $units->map(function ($u) use ($occupied, $lastCheckout, $nextArrival, $turnovers, $blocked, $buildings) {
+            $to  = $turnovers->get($u->id);
+            $out = $lastCheckout->get($u->id);
+            $arr = $nextArrival->get($u->id);
+            $active = $to && in_array($to->status, UnitTurnover::ACTIVE_STATUSES, true);
+            $departedAt = $out ? ($out->checked_out_at ?? $out->check_out) : null;
+
+            $state = $this->turnovers->readinessState(
+                $occupied->contains($u->id), $blocked->contains($u->id), $to, $departedAt, $u->status === 'available'
+            );
+
+            return [
+                'unit_id'     => $u->id,
+                'unit_number' => $u->unit_number,
+                'unit_type'   => $u->unitType->name,
+                'building'    => $buildings[$u->unitType->building_id] ?? null,
+                'state'       => $state,
+                'turnover_id' => $active ? $to->id : null,
+                'since'       => match ($state) {
+                    'ready_for_qa'   => $to?->cleaning_completed_at?->toISOString(),
+                    'qa_in_progress' => $to?->qa_started_at?->toISOString(),
+                    default          => null,
+                },
+                'arrival'     => $arr?->check_in?->toISOString(),
+            ];
+        });
+
+        $by = $rows->countBy('state');
+
+        // The QC worklist: units cleaned and awaiting inspection, then those mid-QA.
+        // Soonest next arrival first so the most time-critical turnovers surface.
+        $queue = $rows->whereIn('state', ['ready_for_qa', 'qa_in_progress'])
+            ->sortBy(fn ($u) => ($u['state'] === 'qa_in_progress' ? '0' : '1') . '|' . ($u['arrival'] ?? '9999'))
+            ->take(8)->values();
+
+        return [
+            'counts' => [
+                'ready_for_qa'   => (int) ($by['ready_for_qa'] ?? 0),
+                'qa_in_progress' => (int) ($by['qa_in_progress'] ?? 0),
+                'needs_cleaning' => (int) ($by['needs_cleaning'] ?? 0),
+                'cleaning'       => (int) ($by['cleaning'] ?? 0),
+                'ready'          => (int) ($by['ready'] ?? 0),
+                'blocked'        => (int) ($by['blocked'] ?? 0),
+                'occupied'       => (int) ($by['occupied'] ?? 0),
+                'total'          => $rows->count(),
+            ],
+            'queue' => $queue,
+        ];
     }
 }

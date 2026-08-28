@@ -24,7 +24,7 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, WithStyles
         $this->accessibleBuildingIds = $accessibleBuildingIds;
     }
 
-    public function query()
+    public function query(): \Illuminate\Database\Eloquent\Builder
     {
         $query = Booking::with(['building', 'unitType', 'unit', 'user']);
 
@@ -107,7 +107,7 @@ class BookingsExport implements FromQuery, WithHeadings, WithMapping, WithStyles
         ];
     }
 
-    public function styles(Worksheet $sheet)
+    public function styles(Worksheet $sheet): ?array
     {
         return [
             1 => [

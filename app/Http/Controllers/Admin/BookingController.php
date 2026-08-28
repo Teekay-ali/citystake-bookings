@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\BookingInstallment;
 use App\Models\CautionFeeCharge;
 use App\Models\Unit;
+use App\Models\UnitTurnover;
 use App\Notifications\BookingModifiedNotification;
 use App\Notifications\CautionChargeNotification;
 use App\Notifications\CautionRefundProcessedNotification;
@@ -462,7 +463,26 @@ class BookingController extends Controller
             'installments.recordedBy',
         ]);
 
+        // Once a guest has departed, offer front desk a quick cleaning request
+        // for the vacated unit (unless one is already in flight or done).
+        $cleaning = null;
+        if ($booking->unit_id && $booking->checked_out_at && $user->can('request-cleaning')) {
+            $active = UnitTurnover::where('unit_id', $booking->unit_id)->active()->latest('id')->first();
+            $cleaned = UnitTurnover::where('unit_id', $booking->unit_id)
+                ->where('status', 'ready')
+                ->where('ready_at', '>=', $booking->checked_out_at)
+                ->exists();
+            $cleaning = [
+                'unit_id'     => $booking->unit_id,
+                'unit_number' => $booking->unit?->unit_number,
+                'requested'   => (bool) $active,
+                'done'        => $cleaned,
+                'needed'      => ! $active && ! $cleaned,
+            ];
+        }
+
         return Inertia::render('Admin/Bookings/Show', [
+            'cleaning' => $cleaning,
             'booking' => array_merge($booking->toArray(), [
                 'checked_in_by_name'  => $booking->checkedInBy?->name,
                 'checked_out_by_name' => $booking->checkedOutBy?->name,

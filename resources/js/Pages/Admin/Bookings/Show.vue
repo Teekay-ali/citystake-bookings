@@ -5,18 +5,19 @@ import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import Modal from '@/Components/Modal.vue'
 import CautionChargesModal from './Partials/CautionChargesModal.vue'
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useAppToast } from '@/Composables/useAppToast'
 import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
     Clock, CheckCircle, ChevronRight,
-    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft, Pencil, CreditCard,
+    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft, Pencil, CreditCard, Sparkles,
 } from 'lucide-vue-next'
 
 const props = defineProps({
     booking: Object,
     promptPhotoId: { type: Boolean, default: false },
+    cleaning: { type: Object, default: null },
 })
 
 const page  = usePage()
@@ -62,6 +63,28 @@ function confirmCheckOut() {
     isCheckingOut.value = true
     router.post(route('manage.bookings.check-out', props.booking.booking_reference), {}, {
         onFinish: () => { isCheckingOut.value = false; showCheckOutModal.value = false },
+    })
+}
+
+// ── Request cleaning (after checkout) ──────────────────────────
+// Prompt front desk to send the vacated unit to housekeeping. The modal is
+// dismissible; a standing button stays available on the page if dismissed.
+const cleaningRequested = ref(false)
+const cleaningNeeded    = computed(() => props.cleaning?.needed && !cleaningRequested.value)
+const showCleaningModal = ref(false)
+const isRequestingClean = ref(false)
+// Open once after mount (starting the ref true never fires Modal's show-watch).
+onMounted(() => { if (props.cleaning?.needed) showCleaningModal.value = true })
+function requestCleaning() {
+    if (isRequestingClean.value) return
+    isRequestingClean.value = true
+    router.post(route('manage.housekeeping.request-cleaning'), {
+        unit_id: props.cleaning.unit_id,
+        booking_id: props.booking.id,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => { cleaningRequested.value = true; showCleaningModal.value = false },
+        onFinish: () => { isRequestingClean.value = false },
     })
 }
 
@@ -617,6 +640,26 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                             </div>
                         </div>
 
+                        <!-- Housekeeping hand-off after checkout -->
+                        <div v-if="cleaningNeeded"
+                             class="flex flex-wrap items-center gap-2 mt-4 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20">
+                            <Sparkles class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <p class="text-xs text-amber-700 dark:text-amber-300 min-w-0 flex-1">
+                                Unit {{ cleaning.unit_number }} is vacant and needs cleaning.
+                            </p>
+                            <button @click="showCleaningModal = true" :disabled="isRequestingClean"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-60">
+                                <Sparkles class="w-3.5 h-3.5" /> Request cleaning
+                            </button>
+                        </div>
+                        <div v-else-if="cleaning && (cleaning.requested || cleaningRequested)"
+                             class="flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+                            <CheckCircle class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <p class="text-xs text-blue-700 dark:text-blue-300">
+                                Cleaning has been requested for unit {{ cleaning.unit_number }}.
+                            </p>
+                        </div>
+
                         <!-- Key facts -->
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                             <div>
@@ -1144,6 +1187,33 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
         </div>
 
         <!-- Modals -->
+        <Modal :show="showCleaningModal" max-width="sm" @close="showCleaningModal = false">
+            <div class="p-6">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/15">
+                        <Sparkles class="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Send unit for cleaning?</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Unit {{ cleaning?.unit_number }} · turnover</p>
+                    </div>
+                </div>
+                <p class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+                    The guest has checked out. Request housekeeping to clean unit
+                    {{ cleaning?.unit_number }} so it can be inspected and made guest-ready.
+                </p>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button @click="showCleaningModal = false"
+                            class="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        Not now
+                    </button>
+                    <button @click="requestCleaning" :disabled="isRequestingClean"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60">
+                        <Sparkles class="h-4 w-4" /> Request cleaning
+                    </button>
+                </div>
+            </div>
+        </Modal>
         <ConfirmationModal
             :show="showCheckOutModal" :processing="isCheckingOut"
             title="Confirm Guest Checkout?"

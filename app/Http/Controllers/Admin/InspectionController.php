@@ -694,10 +694,13 @@ class InspectionController extends Controller
             ->whereDate('check_in', '<=', $date)->whereDate('check_out', '>', $date)
             ->pluck('unit_id')->unique();
 
+        // Departure = explicit checkout (checked_out_at) or the checkout date passed.
         $lastCheckout = Booking::whereIn('unit_id', $unitIds)
-            ->whereDate('check_out', '<=', $date)->whereNotIn('status', ['cancelled'])
-            ->get(['id', 'unit_id', 'check_out'])
-            ->groupBy('unit_id')->map(fn ($g) => $g->sortByDesc('check_out')->first());
+            ->whereNotIn('status', ['cancelled'])
+            ->where(fn ($q) => $q->whereNotNull('checked_out_at')->orWhereDate('check_out', '<=', $date))
+            ->get(['id', 'unit_id', 'check_out', 'checked_out_at'])
+            ->groupBy('unit_id')
+            ->map(fn ($g) => $g->sortByDesc(fn ($b) => $b->checked_out_at ?? $b->check_out)->first());
 
         $nextArrival = Booking::whereIn('unit_id', $unitIds)
             ->whereIn('status', ['confirmed', 'pending'])->whereDate('check_in', '>=', $date)
@@ -726,8 +729,9 @@ class InspectionController extends Controller
 
             // Shared base state, then overlay this round's own inspection verdict
             // (blocked still wins over everything).
+            $departedAt = $out ? ($out->checked_out_at ?? $out->check_out) : null;
             $base = $this->turnovers->readinessState(
-                $occupied->contains($u->id), $blocked->contains($u->id), $to, $out?->check_out, $u->status === 'available'
+                $occupied->contains($u->id), $blocked->contains($u->id), $to, $departedAt, $u->status === 'available'
             );
             $state = match (true) {
                 $base === 'blocked'                      => 'blocked',

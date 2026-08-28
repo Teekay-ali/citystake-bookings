@@ -143,13 +143,13 @@ class UnitTurnoverService
      * Returns: occupied | blocked | offline | needs_cleaning | cleaning |
      *          ready_for_qa | qa_in_progress | ready | pending
      */
-    public function readinessState(bool $occupied, bool $blocked, ?UnitTurnover $turnover, $lastCheckout, bool $available): string
+    public function readinessState(bool $occupied, bool $blocked, ?UnitTurnover $turnover, $departedAt, bool $available): string
     {
         $active = $turnover && in_array($turnover->status, UnitTurnover::ACTIVE_STATUSES, true);
 
-        // Checked out and not cleaned-and-passed since → needs cleaning.
-        $needsCleaning = $lastCheckout
-            && ! ($turnover && $turnover->ready_at && $turnover->ready_at->gte(Carbon::parse($lastCheckout)->endOfDay()));
+        // Guest has left and the unit hasn't been cleaned-and-passed since → needs cleaning.
+        $needsCleaning = $departedAt
+            && ! ($turnover && $turnover->ready_at && $turnover->ready_at->gte(Carbon::parse($departedAt)));
 
         return match (true) {
             // Driven by an active blocked-date so it auto-recovers once the
