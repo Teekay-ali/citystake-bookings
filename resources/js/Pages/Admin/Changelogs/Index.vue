@@ -3,7 +3,7 @@ import { Head, useForm, router } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
 import Modal from '@/Components/Modal.vue'
 import RichTextEditor from '@/Components/RichTextEditor.vue'
-import { Plus, Send, Trash2, CheckCircle, Clock, X, Eye, Check } from 'lucide-vue-next'
+import { Plus, Send, Trash2, CheckCircle, Clock, X, Eye, Check, Pencil } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 // Plain-text preview from stored HTML for the compact list row
@@ -66,13 +66,47 @@ const form = useForm({
     send_email: true,
 })
 
+// Which draft is being edited (null = creating a new entry).
+const editingId = ref(null)
+
+function newEntry() {
+    editingId.value = null
+    form.reset()
+    form.clearErrors()
+    showForm.value = true
+}
+
+function editDraft(entry) {
+    editingId.value = entry.id
+    form.clearErrors()
+    form.title      = entry.title
+    form.body       = entry.body
+    form.version    = entry.version ?? ''
+    form.type       = entry.type
+    form.send_email = entry.send_email
+    showForm.value  = true
+}
+
+function cancelForm() {
+    showForm.value = false
+    editingId.value = null
+    form.reset()
+    form.clearErrors()
+}
+
 function submit() {
-    form.post(route('manage.changelogs.store'), {
+    const done = {
         onSuccess: () => {
             form.reset()
+            editingId.value = null
             showForm.value = false
         },
-    })
+    }
+    if (editingId.value) {
+        form.put(route('manage.changelogs.update', editingId.value), done)
+    } else {
+        form.post(route('manage.changelogs.store'), done)
+    }
 }
 
 function publish(id) {
@@ -110,7 +144,7 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
                         <Eye class="w-4 h-4" />
                         Audience
                     </button>
-                    <button @click="showForm = !showForm"
+                    <button @click="showForm ? cancelForm() : newEntry()"
                             class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">
                         <Plus class="w-4 h-4" />
                         New Entry
@@ -160,7 +194,7 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
 
             <!-- Create form -->
             <div v-if="showForm" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 mb-6">
-                <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">New Changelog Entry</h2>
+                <h2 class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">{{ editingId ? 'Edit Draft' : 'New Changelog Entry' }}</h2>
 
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
@@ -202,9 +236,9 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
                     <div class="flex gap-2 pt-1">
                         <button @click="submit" :disabled="form.processing"
                                 class="px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 disabled:opacity-50 transition-colors">
-                            Save Draft
+                            {{ editingId ? 'Save Changes' : 'Save Draft' }}
                         </button>
-                        <button @click="showForm = false"
+                        <button @click="cancelForm"
                                 class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                             Cancel
                         </button>
@@ -238,6 +272,12 @@ const labelClass  = 'block text-xs font-medium text-gray-500 dark:text-gray-400 
                     </div>
 
                     <div class="flex items-center gap-1 shrink-0">
+                        <button v-if="!entry.is_published"
+                                @click.stop="editDraft(entry)"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <Pencil class="w-3.5 h-3.5" />
+                            Edit
+                        </button>
                         <button v-if="!entry.is_published"
                                 @click.stop="publish(entry.id)"
                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors">

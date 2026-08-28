@@ -101,6 +101,33 @@ class ChangelogController extends Controller
         return back()->with('success', 'Changelog entry saved as draft.');
     }
 
+    public function update(Request $request, Changelog $changelog)
+    {
+        abort_unless(auth()->user()->can('manage-changelogs'), 403);
+
+        // Once published (and possibly emailed), the entry is a record — editing
+        // it would misrepresent what people already saw. Drafts only.
+        if ($changelog->isPublished()) {
+            return back()->with('error', 'Published updates can\'t be edited. Delete and recreate if needed.');
+        }
+
+        $validated = $request->validate([
+            'title'      => 'required|string|max:255',
+            'body'       => 'required|string|max:20000',
+            'version'    => 'nullable|string|max:50',
+            'type'       => 'required|in:feature,fix,improvement,security',
+            'send_email' => 'boolean',
+        ]);
+
+        $validated['body'] = $this->sanitizeBody($validated['body']);
+
+        $changelog->update($validated);
+
+        AuditLog::log('changelog.updated', $changelog, null, ['title' => $changelog->title]);
+
+        return back()->with('success', 'Draft updated.');
+    }
+
     /**
      * Sanitize editor HTML to a safe allowlist (defends against stored XSS).
      */

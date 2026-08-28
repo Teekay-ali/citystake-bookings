@@ -420,6 +420,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->pr
     // Changelogs
     Route::get('changelogs', [ChangelogController::class, 'index'])->name('changelogs.index');
     Route::post('changelogs', [ChangelogController::class, 'store'])->name('changelogs.store');
+    Route::put('changelogs/{changelog}', [ChangelogController::class, 'update'])->name('changelogs.update');
     Route::post('changelogs/mark-read', [ChangelogController::class, 'markRead'])->name('changelogs.mark-read');
     Route::post('changelogs/audience', [ChangelogController::class, 'updateAudience'])->name('changelogs.audience');
     Route::post('changelogs/{changelog}/publish', [ChangelogController::class, 'publish'])->name('changelogs.publish');
