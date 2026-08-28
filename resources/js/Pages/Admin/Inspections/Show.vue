@@ -43,6 +43,14 @@ const completeLabel = computed(() => {
     return 'Mark completed'
 })
 
+const unanswered = computed(() => allItems.value.filter(i => !i.result).length)
+
+// Pass every still-blank item at once. Deliberately leaves any Fail/N-A
+// already recorded intact so a marked fail (and its note/photo) is never wiped.
+function passRemaining() {
+    allItems.value.forEach(i => { if (!i.result) i.result = 'pass' })
+}
+
 const saveState = ref('idle')
 let timer = null
 function resultsPayload() {
@@ -161,6 +169,17 @@ const card = 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gr
                 <div class="h-1.5 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
                     <div class="h-full rounded-full bg-gray-900 dark:bg-white transition-all"
                          :style="{ width: (total ? answered / total * 100 : 0) + '%' }" />
+                </div>
+
+                <!-- Pass the remaining unchecked items in one tap. Fails/N-As stay put. -->
+                <div v-if="!readOnly && unanswered > 0" class="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ unanswered }} item{{ unanswered !== 1 ? 's' : '' }} still unchecked
+                    </p>
+                    <button @click="passRemaining"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all">
+                        <Check class="w-3.5 h-3.5" /> Pass remaining
+                    </button>
                 </div>
             </div>
 
