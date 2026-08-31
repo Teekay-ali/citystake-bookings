@@ -59,7 +59,8 @@ const toggleBuilding = (id) => {
     expandedBuildings.value[id] = !expandedBuildings.value[id]
 }
 watch(() => props.buildings, (buildings) => {
-    buildings.forEach(b => { expandedBuildings.value[b.id] = true })
+    // Start every property collapsed; staff expand the ones they need.
+    buildings.forEach(b => { expandedBuildings.value[b.id] ??= false })
 }, { immediate: true })
 
 // ── Delete handlers ───────────────────────────────────────────
