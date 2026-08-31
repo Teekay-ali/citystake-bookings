@@ -6,6 +6,7 @@ import ConfirmationModal from '@/Components/ConfirmationModal.vue'
 import {
     Sparkles, Search, CheckCircle, Clock, LogIn, BedDouble, Wrench, DoorClosed,
     ClipboardCheck, X, ChevronRight, AlertTriangle, Timer, MoreVertical,
+    LayoutGrid, List, Building2,
 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -75,6 +76,11 @@ function arrivalLabel(u) {
 
 const atRisk = computed(() => props.units.filter(isUrgent))
 
+// ── List / grid view (remembered per browser) ──
+const view = ref('list')
+try { const v = localStorage.getItem('hk_view'); if (v === 'grid' || v === 'list') view.value = v } catch {}
+function setView(v) { view.value = v; try { localStorage.setItem('hk_view', v) } catch {} }
+
 // ── Filter + sort (urgent → attention order → unit no.) ──
 const rows = computed(() => props.units
     .filter(u => {
@@ -87,6 +93,19 @@ const rows = computed(() => props.units
     .sort((a, b) => (isUrgent(b) - isUrgent(a))
         || (stateMeta[a.state].prio - stateMeta[b.state].prio)
         || String(a.unit_number).localeCompare(String(b.unit_number), undefined, { numeric: true })))
+
+// Grid view groups the (already sorted) rows by building.
+const grouped = computed(() => {
+    const map = new Map()
+    rows.value.forEach(u => {
+        const key = u.building_name || 'Other'
+        if (!map.has(key)) map.set(key, [])
+        map.get(key).push(u)
+    })
+    return [...map.entries()]
+        .map(([name, units]) => ({ name, units }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+})
 
 const canCancel = (u) => ['cleaning', 'ready_for_qa'].includes(u.state)
 
@@ -184,6 +203,20 @@ function confirmModal() {
                     <option value="">All buildings</option>
                     <option v-for="b in buildings" :key="b.id" :value="b.name">{{ b.name }}</option>
                 </select>
+
+                <!-- List / grid toggle -->
+                <div class="shrink-0 inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-800 p-0.5">
+                    <button @click="setView('list')" title="List view"
+                            :class="view === 'list' ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+                            class="p-1.5 rounded-md transition-colors">
+                        <List class="w-4 h-4" />
+                    </button>
+                    <button @click="setView('grid')" title="Grid view"
+                            :class="view === 'grid' ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+                            class="p-1.5 rounded-md transition-colors">
+                        <LayoutGrid class="w-4 h-4" />
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -229,14 +262,15 @@ function confirmModal() {
             </button>
         </div>
 
-        <!-- Worklist -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
-            <div v-if="!rows.length" class="py-16 text-center">
-                <Sparkles class="w-9 h-9 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-                <p class="text-gray-500 dark:text-gray-400">Nothing here — every unit in this view is settled.</p>
-            </div>
+        <!-- Empty state (shared by both views) -->
+        <div v-if="!rows.length" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none py-16 text-center">
+            <Sparkles class="w-9 h-9 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+            <p class="text-gray-500 dark:text-gray-400">Nothing here — every unit in this view is settled.</p>
+        </div>
 
-            <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
+        <!-- List view -->
+        <div v-else-if="view === 'list'" class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none overflow-hidden">
+            <div class="divide-y divide-gray-100 dark:divide-gray-800">
                 <div v-for="u in rows" :key="u.unit_id"
                      :class="isUrgent(u) ? 'border-l-2 border-amber-400 bg-amber-50/30 dark:bg-amber-500/[0.04]' : 'border-l-2 border-transparent'"
                      class="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors">
@@ -284,6 +318,55 @@ function confirmModal() {
                                 class="p-1.5 rounded-lg transition-all" :aria-expanded="openMenu === u.unit_id" aria-haspopup="true" title="Actions">
                             <MoreVertical class="w-4 h-4" />
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid view: unit cards grouped by property -->
+        <div v-else class="space-y-6">
+            <div v-for="group in grouped" :key="group.name">
+                <div class="flex items-center gap-2 mb-2.5 px-0.5">
+                    <Building2 class="w-4 h-4 text-gray-400" />
+                    <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ group.name }}</h2>
+                    <span class="text-xs text-gray-400 tabular-nums">{{ group.units.length }}</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    <div v-for="u in group.units" :key="u.unit_id"
+                         :class="isUrgent(u) ? 'border-amber-300 dark:border-amber-700/60 bg-amber-50/40 dark:bg-amber-500/[0.05]' : 'border-gray-200/80 dark:border-gray-800'"
+                         class="relative bg-white dark:bg-gray-900 border rounded-xl p-3.5 shadow-sm shadow-gray-200/40 dark:shadow-none">
+
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center" :class="stateMeta[u.state].chip">
+                                <BedDouble class="w-4 h-4" />
+                            </span>
+                            <button v-if="menuItems(u).length" @click.stop="toggleMenu(u, $event)"
+                                    :class="openMenu === u.unit_id ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'"
+                                    class="-mr-1 -mt-0.5 p-1.5 rounded-lg transition-all" :aria-expanded="openMenu === u.unit_id" aria-haspopup="true" title="Actions">
+                                <MoreVertical class="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <p class="mt-2.5 text-sm font-semibold text-gray-900 dark:text-white">Unit {{ u.unit_number }}</p>
+                        <p class="text-xs text-gray-400 truncate">{{ u.unit_type }}</p>
+
+                        <span :class="stateMeta[u.state].chip" class="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium">
+                            <span :class="stateMeta[u.state].dot" class="w-1.5 h-1.5 rounded-full" />
+                            {{ stateMeta[u.state].label }}
+                        </span>
+
+                        <div class="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-800 space-y-1">
+                            <p v-if="agingLabel(u)" class="text-[11px] text-gray-400 inline-flex items-center gap-1">
+                                <Timer class="w-3 h-3 shrink-0" /> {{ agingLabel(u) }}
+                            </p>
+                            <p v-if="u.arrival" class="text-[11px] inline-flex items-center gap-1"
+                               :class="isUrgent(u) ? 'text-amber-700 dark:text-amber-400 font-medium' : 'text-gray-500 dark:text-gray-400'">
+                                <LogIn class="w-3 h-3 shrink-0" /> Arrives {{ arrivalLabel(u) }}
+                            </p>
+                            <p v-if="u.guest_next" class="text-[11px] text-gray-400 truncate">{{ u.guest_next }}</p>
+                            <p v-if="!agingLabel(u) && !u.arrival" class="text-[11px] text-gray-300 dark:text-gray-600">No pending activity</p>
+                        </div>
                     </div>
                 </div>
             </div>
