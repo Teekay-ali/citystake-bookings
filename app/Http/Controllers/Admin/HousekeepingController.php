@@ -107,10 +107,18 @@ class HousekeepingController extends Controller
             ];
         })->values();
 
+        $user = auth()->user();
+
         return Inertia::render('Admin/Housekeeping/Index', [
             'units'     => $rows,
             'buildings' => $buildings->values(),
             'counts'    => $rows->countBy('state'),
+            // Drives which row-menu actions each staff member is offered.
+            'can'       => [
+                'block'            => $user->can('manage-blocked-dates'),
+                'view_bookings'    => $user->can('view-bookings'),
+                'view_inspections' => $user->can('view-inspections'),
+            ],
         ]);
     }
 
