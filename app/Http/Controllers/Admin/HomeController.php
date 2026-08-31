@@ -247,6 +247,13 @@ class HomeController extends Controller
             $data['qc'] = $this->qualityControl($buildingIds, $today);
         }
 
+        // ── Housekeeping dashboard ────────────────────────────
+        // The dedicated housekeeper: drives cleaning but isn't reception
+        // (manage-bookings) or QC (conduct-inspections), who have their own homes.
+        if ($user->can('request-cleaning') && ! $user->can('manage-bookings') && ! $user->can('conduct-inspections')) {
+            $data['housekeeping'] = $this->housekeeping($buildingIds, $today);
+        }
+
         return Inertia::render('Admin/Home', $data);
     }
 
@@ -255,7 +262,11 @@ class HomeController extends Controller
      * units and the queue of units ready for inspection. Uses the shared
      * readinessState resolver so it never drifts from the housekeeping board.
      */
-    private function qualityControl(array $buildingIds, Carbon $today): array
+    /**
+     * The current turnover state of every scoped unit, using the shared
+     * readinessState resolver so QC and housekeeping never drift from the board.
+     */
+    private function unitStateRows(array $buildingIds, Carbon $today): \Illuminate\Support\Collection
     {
         $units = Unit::whereHas('unitType', fn ($q) => $q->whereIn('building_id', $buildingIds))
             ->with('unitType:id,name,building_id')
@@ -289,7 +300,7 @@ class HomeController extends Controller
 
         $buildings = Building::whereIn('id', $buildingIds)->pluck('name', 'id');
 
-        $rows = $units->map(function ($u) use ($occupied, $lastCheckout, $nextArrival, $turnovers, $blocked, $buildings) {
+        return $units->map(function ($u) use ($occupied, $lastCheckout, $nextArrival, $turnovers, $blocked, $buildings) {
             $to  = $turnovers->get($u->id);
             $out = $lastCheckout->get($u->id);
             $arr = $nextArrival->get($u->id);
@@ -307,16 +318,24 @@ class HomeController extends Controller
                 'building'    => $buildings[$u->unitType->building_id] ?? null,
                 'state'       => $state,
                 'turnover_id' => $active ? $to->id : null,
+                'booking_id'  => $out?->id,
                 'since'       => match ($state) {
+                    'needs_cleaning' => $departedAt ? Carbon::parse($departedAt)->toISOString() : null,
+                    'cleaning'       => $to?->cleaning_requested_at?->toISOString(),
                     'ready_for_qa'   => $to?->cleaning_completed_at?->toISOString(),
                     'qa_in_progress' => $to?->qa_started_at?->toISOString(),
                     default          => null,
                 },
                 'arrival'     => $arr?->check_in?->toISOString(),
+                'guest_next'  => $arr?->guest_name,
             ];
         });
+    }
 
-        $by = $rows->countBy('state');
+    private function qualityControl(array $buildingIds, Carbon $today): array
+    {
+        $rows = $this->unitStateRows($buildingIds, $today);
+        $by   = $rows->countBy('state');
 
         // The QC worklist: units cleaned and awaiting inspection, then those mid-QA.
         // Soonest next arrival first so the most time-critical turnovers surface.
@@ -336,6 +355,58 @@ class HomeController extends Controller
                 'total'          => $rows->count(),
             ],
             'queue' => $queue,
+        ];
+    }
+
+    /**
+     * Housekeeping dashboard: the cleaning worklist, an at-a-glance pipeline,
+     * today's throughput, and a 7-day completions trend for the charts.
+     */
+    private function housekeeping(array $buildingIds, Carbon $today): array
+    {
+        $rows = $this->unitStateRows($buildingIds, $today);
+        $by   = $rows->countBy('state');
+
+        // The cleaning worklist: dirty units first, then those mid-clean, each
+        // ordered by soonest arrival so the most time-critical turnover surfaces.
+        $worklist = $rows->whereIn('state', ['needs_cleaning', 'cleaning'])
+            ->sortBy(fn ($u) => ($u['state'] === 'needs_cleaning' ? '0' : '1') . '|' . ($u['arrival'] ?? '9999'))
+            ->take(10)->values();
+
+        // Units arriving today that aren't guest-ready yet — turn these first.
+        $atRisk = $rows->filter(fn ($u) => $u['arrival']
+            && Carbon::parse($u['arrival'])->isSameDay($today)
+            && in_array($u['state'], ['needs_cleaning', 'cleaning', 'ready_for_qa'], true))->count();
+
+        // 7-day completions trend (cleaning_completed_at), for the bar chart.
+        $start = $today->copy()->subDays(6);
+        $completed = UnitTurnover::whereIn('building_id', $buildingIds)
+            ->whereNotNull('cleaning_completed_at')
+            ->whereDate('cleaning_completed_at', '>=', $start)
+            ->get(['cleaning_completed_at'])
+            ->groupBy(fn ($t) => $t->cleaning_completed_at->toDateString());
+
+        $trend = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $d = $today->copy()->subDays($i);
+            $trend[] = [
+                'label' => $d->format('D'),
+                'count' => (int) ($completed->get($d->toDateString())?->count() ?? 0),
+            ];
+        }
+
+        return [
+            'counts' => [
+                'needs_cleaning' => (int) ($by['needs_cleaning'] ?? 0),
+                'cleaning'       => (int) ($by['cleaning'] ?? 0),
+                'ready_for_qa'   => (int) ($by['ready_for_qa'] ?? 0),
+                'ready'          => (int) ($by['ready'] ?? 0),
+                'cleaned_today'  => (int) ($completed->get($today->toDateString())?->count() ?? 0),
+                'at_risk'        => $atRisk,
+                'total'          => $rows->count(),
+            ],
+            'worklist' => $worklist,
+            'trend'    => $trend,
         ];
     }
 }

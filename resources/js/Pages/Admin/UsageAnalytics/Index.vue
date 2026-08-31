@@ -70,6 +70,7 @@ const topOptions = computed(() => ({
     theme: { mode: isDark.value ? 'dark' : 'light' },
     colors: ['#10b981'],
     plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '62%', distributed: false } },
+    stroke: { show: false },
     dataLabels: { enabled: true, style: { fontSize: '11px', colors: [isDark.value ? '#e5e7eb' : '#374151'] }, offsetX: 18 },
     grid: { borderColor: grid(), xaxis: { lines: { show: false } } },
     xaxis: {
@@ -88,6 +89,7 @@ const hourOptions = computed(() => ({
     theme: { mode: isDark.value ? 'dark' : 'light' },
     colors: ['#f59e0b'],
     plotOptions: { bar: { borderRadius: 3, columnWidth: '60%' } },
+    stroke: { show: false },
     dataLabels: { enabled: false },
     grid: { borderColor: grid(), yaxis: { lines: { show: true } }, padding: { top: -10 } },
     xaxis: {

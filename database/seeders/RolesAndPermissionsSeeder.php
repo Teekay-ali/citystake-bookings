@@ -45,6 +45,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'conduct-inspections',
             'manage-inspections',
 
+            // Housekeeping (unit turnover / cleaning)
+            'request-cleaning',
+
             // Maintenance
             'view-maintenance',
             'submit-maintenance',
@@ -107,6 +110,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'confirm-checkin', 'manage-availability',
                 'request-late-checkout', 'approve-late-checkout',
                 'manage-blocked-dates',
+                'request-cleaning',
                 'view-properties', 'manage-properties',
                 'view-vendors', 'manage-vendors',
                 'submit-complaints', 'manage-complaints', 'view-complaints',
@@ -135,6 +139,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-bookings',
                 'manage-adjustments',
                 'view-properties', 'manage-properties', 'create-properties',
+                'request-cleaning',
                 'view-vendors',
                 'submit-complaints', 'view-complaints',
                 'submit-maintenance', 'approve-maintenance-ceo', 'view-maintenance',
@@ -176,6 +181,15 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view-stock', 'log-stock-usage',
                 'view-tasks',
                 'view-properties',
+                'request-cleaning',
+            ],
+
+            'housekeeping' => [
+                'request-cleaning',
+                'view-properties',
+                'view-tasks',
+                'submit-maintenance', 'view-maintenance',
+                'view-stock', 'log-stock-usage',
             ],
 
             'staff' => [
