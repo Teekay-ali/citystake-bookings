@@ -240,7 +240,7 @@ function submit() {
                         </p>
                         <div v-else class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
-                                <input v-model.number="form.manual_discount" type="number" min="0" step="1000" placeholder="Total discount ₦" :class="inputCls" />
+                                <input v-model.number="form.manual_discount" type="number" min="0" step="1" placeholder="Total discount ₦" :class="inputCls" />
                                 <p v-if="form.errors.manual_discount" class="mt-1 text-xs text-red-600">{{ form.errors.manual_discount }}</p>
                             </div>
                             <div>

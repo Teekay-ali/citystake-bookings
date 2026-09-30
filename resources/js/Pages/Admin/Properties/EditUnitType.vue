@@ -297,7 +297,7 @@ const deleteUnit = (unit) => {
                                         v-model.number="form.base_price_per_night"
                                         type="number"
                                         min="0"
-                                        step="1000"
+                                        step="1"
                                         required
                                         placeholder="50000"
                                         :class="[

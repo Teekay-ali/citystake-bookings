@@ -250,7 +250,7 @@ const submit = () => {
                                     v-model.number="form.caution_fee_amount"
                                     type="number"
                                     min="0"
-                                    step="1000"
+                                    step="1"
                                     class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
                                 />
                                 <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -285,7 +285,7 @@ const submit = () => {
                                     v-model.number="form.monthly_emergency_limit"
                                     type="number"
                                     min="0"
-                                    step="1000"
+                                    step="1"
                                     class="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white"
                                 />
                                 <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">

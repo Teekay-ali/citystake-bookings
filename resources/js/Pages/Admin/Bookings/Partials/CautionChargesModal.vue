@@ -148,7 +148,7 @@ function confirmVoid(charge) {
                 <div class="grid grid-cols-1 gap-2" :class="isOther ? 'sm:grid-cols-[1fr_10rem]' : ''">
                     <input v-if="isOther" v-model="form.description" type="text" :placeholder="descPlaceholder"
                            class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all" />
-                    <NumberField v-model="form.amount" prefix="₦" :min="0" :max="available" :step="1000" :invalid="overBudget" />
+                    <NumberField v-model="form.amount" prefix="₦" :min="0" :max="available" :step="1" :invalid="overBudget" />
                 </div>
 
                 <div class="flex items-center justify-between gap-3">
