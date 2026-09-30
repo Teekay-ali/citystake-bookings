@@ -428,7 +428,7 @@ const monthGroups = computed(() => {
                                              cell.bar.status === 'checked_in' ? 'bg-blue-500 dark:bg-blue-600' : 'bg-indigo-500 dark:bg-indigo-600'
                                          ]">
                                         <span v-if="!cell.bar.paid" class="w-1.5 h-1.5 rounded-full bg-amber-300 shrink-0" title="Payment pending"></span>
-                                        <span class="text-[10px] font-medium text-white truncate">{{ cell.bar.guest }}</span>
+                                        <span class="text-[10px] font-medium text-white truncate">{{ cell.bar.guest || 'Occupied' }}</span>
                                     </div>
 
                                     <!-- Available cell hover hint -->
@@ -477,8 +477,8 @@ const monthGroups = computed(() => {
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Guest</p>
-                            <p class="text-sm text-gray-900 dark:text-white">{{ selectedBooking.guest_name }}</p>
-                            <p class="text-xs text-gray-400">{{ selectedBooking.guest_phone }}</p>
+                            <p class="text-sm text-gray-900 dark:text-white">{{ selectedBooking.guest_name || 'Occupied' }}</p>
+                            <p v-if="selectedBooking.guest_phone" class="text-xs text-gray-400">{{ selectedBooking.guest_phone }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Unit</p>

@@ -61,21 +61,30 @@ class AvailabilityController extends Controller
             ->get()
             ->groupBy('unit_id');
 
-        // Financial details (amount) are only exposed to booking-privileged roles.
-        // Others (e.g. quality control browsing occupancy for inspections) get
-        // occupancy info but never the money.
+        // Financial details and guest identity are only exposed to booking-
+        // privileged roles. Others (e.g. quality control browsing occupancy for
+        // inspections) see that a unit is occupied, but never the guest or money.
         $canViewBookings = $user->can('view-bookings');
 
-        // Shape data - units carry their bookings + blocked ranges for the window
-        $buildings->each(function ($building) use ($bookingsByUnit, $blockedByUnit, $canViewBookings) {
-            $building->unitTypes->each(function ($unitType) use ($bookingsByUnit, $blockedByUnit, $canViewBookings) {
-                $unitType->units->each(function ($unit) use ($bookingsByUnit, $blockedByUnit, $unitType, $canViewBookings) {
-                    $unit->bookings = ($bookingsByUnit->get($unit->id) ?? collect())
-                        ->map(fn($b) => [
+        // Shape an explicit payload (never serialize whole Eloquent models): keeps
+        // the response lean and stops unrelated unit/building columns leaking.
+        $shaped = $buildings->map(fn ($building) => [
+            'id'         => $building->id,
+            'name'       => $building->name,
+            'unit_types' => $building->unitTypes->map(fn ($unitType) => [
+                'id'    => $unitType->id,
+                'name'  => $unitType->name,
+                'units' => $unitType->units->map(fn ($unit) => [
+                    'id'           => $unit->id,
+                    'unit_number'  => $unit->unit_number,
+                    'status'       => $unit->status,
+                    'is_available' => (bool) $unit->is_available,
+                    'bookings'     => ($bookingsByUnit->get($unit->id) ?? collect())
+                        ->map(fn ($b) => [
                             'id'             => $b->id,
                             'reference'      => $canViewBookings ? $b->booking_reference : null,
-                            'guest_name'     => $b->guest_name,
-                            'guest_phone'    => $b->guest_phone,
+                            'guest_name'     => $canViewBookings ? $b->guest_name : null,
+                            'guest_phone'    => $canViewBookings ? $b->guest_phone : null,
                             'unit_type'      => $unitType->name,
                             'unit_number'    => $unit->unit_number,
                             'check_in'       => $b->check_in->toDateString(),
@@ -84,17 +93,16 @@ class AvailabilityController extends Controller
                             'status'         => $b->status,
                             'payment_status' => $canViewBookings ? $b->payment_status : null,
                             'total_amount'   => $canViewBookings ? $b->total_amount : null,
-                        ])->values();
-
-                    $unit->blocked = ($blockedByUnit->get($unit->id) ?? collect())
-                        ->map(fn($bd) => [
+                        ])->values(),
+                    'blocked' => ($blockedByUnit->get($unit->id) ?? collect())
+                        ->map(fn ($bd) => [
                             'from'   => $bd->blocked_from->toDateString(),
                             'to'     => $bd->blocked_to->toDateString(),
                             'reason' => $bd->reason,
-                        ])->values();
-                });
-            });
-        });
+                        ])->values(),
+                ])->values(),
+            ])->values(),
+        ])->values();
 
         $allBuildings = Building::where('is_active', true)
             ->when(! $user->hasGlobalAccess(), fn($q) => $q->whereIn('id', $user->accessibleBuildingIds()))
@@ -102,7 +110,7 @@ class AvailabilityController extends Controller
             ->get();
 
         return Inertia::render('Admin/Availability/Index', [
-            'buildings'    => $buildings,
+            'buildings'    => $shaped,
             'allBuildings' => $allBuildings,
             'startDate'    => $startDate->toDateString(),
             'today'        => Carbon::today()->toDateString(),

@@ -20,6 +20,7 @@ class UnitTypeFactory extends Factory
             'bedroom_type'         => '2-bed',
             'max_guests'           => 4,
             'base_price_per_night' => 50000,
+            'is_active'            => true,
         ];
     }
 }
