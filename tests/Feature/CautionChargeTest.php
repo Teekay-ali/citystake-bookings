@@ -73,6 +73,17 @@ class CautionChargeTest extends TestCase
         $this->assertSame(0, FinancialTransaction::where('reference_id', $booking->id)->count());
     }
 
+    public function test_a_charge_requires_valid_input(): void
+    {
+        $booking = $this->booking(100000);
+
+        // Missing amount + invalid category are rejected by the form request.
+        $this->charge($booking, ['category' => 'invalid', 'description' => ''])
+            ->assertSessionHasErrors(['category', 'description', 'amount']);
+
+        $this->assertSame(0, CautionFeeCharge::where('booking_id', $booking->id)->count());
+    }
+
     public function test_a_booking_without_a_caution_fee_cannot_be_charged(): void
     {
         $booking = $this->booking(0);

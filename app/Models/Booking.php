@@ -15,6 +15,12 @@ class Booking extends Model
 {
     use HasFactory, SoftDeletes, HasBuildingScope;
 
+    /** Methods a guest can pay a booking with at the counter (no cash). */
+    public const COUNTER_PAYMENT_METHODS = ['pos', 'bank_transfer'];
+
+    /** All methods staff can record a booking payment with (weekly plans allow cash). */
+    public const PAYMENT_METHODS = ['pos', 'bank_transfer', 'cash'];
+
     protected $appends = ['display_status'];
 
     protected $fillable = [

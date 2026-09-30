@@ -50,7 +50,7 @@ class GroupBookingController extends Controller
             'lead_name'            => 'required|string|max:255',
             'lead_email'           => 'nullable|email|max:255',
             'lead_phone'           => 'nullable|string|max:30',
-            'payment_method'       => 'required|in:pos,bank_transfer',
+            'payment_method'       => 'required|in:' . implode(',', Booking::COUNTER_PAYMENT_METHODS),
             'payment_reference'    => 'nullable|string|max:255',
             'discount_mode'        => 'required|in:auto,manual,none',
             'manual_discount'      => 'nullable|numeric|min:0|required_if:discount_mode,manual',

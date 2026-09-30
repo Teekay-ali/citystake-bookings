@@ -30,6 +30,10 @@ use App\Mail\GuestCheckedOut;
 use App\Mail\BookingConfirmation;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
+use App\Http\Requests\Booking\RecordPaymentRequest;
+use App\Http\Requests\Booking\PayInstallmentRequest;
+use App\Http\Requests\Booking\StoreCautionChargeRequest;
+use App\Http\Requests\Booking\VoidCautionChargeRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -188,7 +192,7 @@ class BookingController extends Controller
             'guest_email' => 'required|email|max:255',
             'guest_phone' => 'required|string|max:20',
             'special_requests' => 'nullable|string|max:1000',
-            'payment_method' => 'required|in:pos,bank_transfer',
+            'payment_method' => 'required|in:' . implode(',', Booking::COUNTER_PAYMENT_METHODS),
             'payment_reference' => 'nullable|string|max:255',
             // Pricing overrides (Block A)
             'discount_mode'          => 'nullable|in:auto,manual,none',
@@ -764,7 +768,7 @@ class BookingController extends Controller
         return response()->json($units);
     }
 
-    public function recordPayment(Request $request, Booking $booking)
+    public function recordPayment(RecordPaymentRequest $request, Booking $booking)
     {
         abort_unless(auth()->user()->can('manage-bookings'), 403);
 
@@ -783,11 +787,7 @@ class BookingController extends Controller
             return back()->with('error', 'This booking is already fully paid.');
         }
 
-        $validated = $request->validate([
-            'amount'            => 'required|numeric|min:1',
-            'payment_method'    => 'required|in:pos,bank_transfer',
-            'payment_reference' => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $applied = $this->applyBookingPayment(
             $booking,
@@ -823,7 +823,7 @@ class BookingController extends Controller
             'checkin_notes'     => 'nullable|string|max:500',
             // Optionally collect the outstanding balance as part of checking in.
             'collect_payment'   => 'nullable|boolean',
-            'payment_method'    => 'nullable|required_if:collect_payment,true|in:pos,bank_transfer',
+            'payment_method'    => 'nullable|required_if:collect_payment,true|in:' . implode(',', Booking::COUNTER_PAYMENT_METHODS),
             'payment_reference' => 'nullable|string|max:255',
         ]);
 
@@ -1257,7 +1257,7 @@ class BookingController extends Controller
         return $this->payments->recordPayment($booking, $amount, $method, $reference, $description);
     }
 
-    public function payInstallment(Request $request, Booking $booking, BookingInstallment $installment)
+    public function payInstallment(PayInstallmentRequest $request, Booking $booking, BookingInstallment $installment)
     {
         $user = auth()->user();
         abort_unless($user->can('manage-bookings') || $user->can('confirm-checkin'), 403);
@@ -1270,10 +1270,7 @@ class BookingController extends Controller
             return back()->with('error', 'That week is already paid.');
         }
 
-        $validated = $request->validate([
-            'payment_method'    => 'required|in:pos,bank_transfer,cash',
-            'payment_reference' => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $this->payments->settleInstallment($installment, $validated['payment_method'], $validated['payment_reference'] ?? null);
 
@@ -1297,7 +1294,7 @@ class BookingController extends Controller
 
     // ── In-stay charges against the caution fee (food, damages, etc.) ──
 
-    public function storeCautionCharge(Request $request, Booking $booking)
+    public function storeCautionCharge(StoreCautionChargeRequest $request, Booking $booking)
     {
         $user = auth()->user();
         abort_unless($user->can('manage-bookings'), 403);
@@ -1312,11 +1309,7 @@ class BookingController extends Controller
             return back()->with('error', 'The caution fee has already been settled; no further charges can be added.');
         }
 
-        $validated = $request->validate([
-            'category'    => 'required|in:food,damage,other',
-            'description' => 'required|string|max:255',
-            'amount'      => 'required|numeric|min:0.01',
-        ]);
+        $validated = $request->validated();
 
         $available = $booking->caution_available;
         if ((float) $validated['amount'] > $available) {
@@ -1342,7 +1335,7 @@ class BookingController extends Controller
             . number_format($booking->fresh()->caution_available, 0) . ' remaining.');
     }
 
-    public function voidCautionCharge(Request $request, Booking $booking, CautionFeeCharge $charge)
+    public function voidCautionCharge(VoidCautionChargeRequest $request, Booking $booking, CautionFeeCharge $charge)
     {
         $user = auth()->user();
         abort_unless($user->can('manage-bookings'), 403);
@@ -1355,9 +1348,7 @@ class BookingController extends Controller
             return back()->with('error', 'This charge has already been voided.');
         }
 
-        $validated = $request->validate([
-            'reason' => 'required|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $this->payments->voidCautionCharge($charge, $validated['reason'], $user);
 
