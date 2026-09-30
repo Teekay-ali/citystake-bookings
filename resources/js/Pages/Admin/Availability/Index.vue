@@ -87,9 +87,11 @@ watch(() => props.filters, (f) => {
     rangeDays.value  = f.days ?? 30
 })
 
+// Building filter is client-side (data for every building is already loaded),
+// so toggling is instant. The id still rides along on range/date changes so it
+// survives those server round-trips and stays shareable in the URL.
 function selectBuilding(id) {
     buildingId.value = id === buildingId.value ? '' : id
-    applyFilters()
 }
 
 function setRange(d) {
@@ -111,10 +113,14 @@ function applyFilters(extra = {}) {
     })
 }
 
-// ── Collapsed buildings ───────────────────────────────────────
-const collapsed = ref({})
+// ── Collapsed buildings (remembered per browser) ──────────────
+const COLLAPSE_KEY = 'availability_collapsed'
+const collapsed = ref((() => {
+    try { return JSON.parse(localStorage.getItem(COLLAPSE_KEY)) || {} } catch { return {} }
+})())
 function toggleBuilding(id) {
     collapsed.value[id] = !collapsed.value[id]
+    try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify(collapsed.value)) } catch {}
 }
 
 // ── Precomputed cell grid ─────────────────────────────────────
@@ -175,6 +181,41 @@ const decoratedBuildings = computed(() =>
         })),
     }))
 )
+
+// Client-side building filter (instant — no server round-trip).
+const visibleBuildings = computed(() =>
+    buildingId.value
+        ? decoratedBuildings.value.filter(b => String(b.id) === String(buildingId.value))
+        : decoratedBuildings.value
+)
+
+// At-a-glance KPIs for the current view (respect the building filter).
+const OCCUPIED_KINDS = ['occupied', 'checked_in']
+const stats = computed(() => {
+    const units = visibleBuildings.value.flatMap(b => b.unit_types.flatMap(ut => ut.units))
+    const totalUnits = units.length
+    const dayCount = dates.value.length
+    const today = todayStr.value
+
+    let occupiedCells = 0, freeToday = 0, arrivals = 0, departures = 0
+    units.forEach(u => {
+        u.cells.forEach(c => { if (OCCUPIED_KINDS.includes(c.kind)) occupiedCells++ })
+        const todayCell = u.cells.find(c => c.date === today)
+        if (todayCell && todayCell.kind === 'available') freeToday++
+        ;(u.bookings ?? []).forEach(b => {
+            if (b.check_in === today) arrivals++
+            if (b.check_out === today) departures++
+        })
+    })
+
+    return {
+        totalUnits,
+        occupancy: totalUnits && dayCount ? Math.round((occupiedCells / (totalUnits * dayCount)) * 100) : 0,
+        freeToday,
+        arrivals,
+        departures,
+    }
+})
 
 const cellBg = {
     available: 'bg-white dark:bg-gray-950 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 cursor-pointer group',
@@ -321,6 +362,30 @@ const monthGroups = computed(() => {
             </button>
         </div>
 
+        <!-- ── KPIs ── -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
+            <div class="rounded-lg border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
+                <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Occupancy</p>
+                <p class="text-lg font-semibold tabular-nums text-gray-900 dark:text-white">{{ stats.occupancy }}%</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">over {{ rangeDays }} days</p>
+            </div>
+            <div class="rounded-lg border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
+                <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Free today</p>
+                <p class="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{{ stats.freeToday }}</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">of {{ stats.totalUnits }} units</p>
+            </div>
+            <div class="rounded-lg border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
+                <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Arrivals today</p>
+                <p class="text-lg font-semibold tabular-nums text-blue-600 dark:text-blue-400">{{ stats.arrivals }}</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">check-ins</p>
+            </div>
+            <div class="rounded-lg border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
+                <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Departures today</p>
+                <p class="text-lg font-semibold tabular-nums text-amber-600 dark:text-amber-400">{{ stats.departures }}</p>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">check-outs</p>
+            </div>
+        </div>
+
         <!-- ── Legend ── -->
         <div class="shrink-0">
             <!-- Mobile: compact toggle -->
@@ -372,7 +437,7 @@ const monthGroups = computed(() => {
                 </thead>
 
                 <tbody>
-                <template v-for="building in decoratedBuildings" :key="building.id">
+                <template v-for="building in visibleBuildings" :key="building.id">
 
                     <!-- Building row -->
                     <tr class="cursor-pointer" @click="toggleBuilding(building.id)">
@@ -443,7 +508,7 @@ const monthGroups = computed(() => {
                 </template>
 
                 <!-- Empty state -->
-                <tr v-if="decoratedBuildings.length === 0">
+                <tr v-if="visibleBuildings.length === 0">
                     <td :colspan="days + 1" class="py-20 text-center text-sm text-gray-400">
                         No buildings found.
                     </td>

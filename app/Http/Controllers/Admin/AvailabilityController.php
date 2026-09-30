@@ -31,10 +31,8 @@ class AvailabilityController extends Controller
             $buildingsQuery->whereIn('id', $user->accessibleBuildingIds());
         }
 
-        if ($request->filled('building_id')) {
-            $buildingsQuery->where('id', $request->building_id);
-        }
-
+        // All accessible buildings are always returned for the window; the
+        // building filter is applied client-side so toggling is instant.
         $buildings = $buildingsQuery->get();
 
         $unitIds = $buildings->flatMap(
