@@ -37,6 +37,10 @@ class BookingController extends Controller
 {
     use ScopedByBuilding;
 
+    public function __construct(private \App\Services\PaymentService $payments)
+    {
+    }
+
     public function index(Request $request)
     {
         abort_unless(auth()->user()->can('view-bookings'), 403);
@@ -357,7 +361,7 @@ class BookingController extends Controller
                     foreach ($booking->buildWeeklySchedule() as $row) {
                         $booking->installments()->create($row);
                     }
-                    $this->settleInstallment($booking->installments()->orderBy('week_number')->first(), $validated['payment_method'], $validated['payment_reference'] ?? null);
+                    $this->payments->settleInstallment($booking->installments()->orderBy('week_number')->first(), $validated['payment_method'], $validated['payment_reference'] ?? null);
                     $booking->update(['amount_received' => $booking->fresh()->installments_paid, 'payment_status' => 'partial']);
                 });
             } else {
@@ -1077,25 +1081,7 @@ class BookingController extends Controller
             return back()->with('error', 'Late checkout fee has already been settled.');
         }
 
-        \DB::transaction(function () use ($booking) {
-            $booking->update([
-                'late_checkout_settled_at' => now(),
-                'late_checkout_status'     => 'settled',
-            ]);
-
-            FinancialTransaction::create([
-                'building_id'      => $booking->building_id,
-                'recorded_by'      => auth()->id(),
-                'type'             => 'income',
-                'category'         => 'late_checkout',
-                'reference_type'   => Booking::class,
-                'reference_id'     => $booking->id,
-                'description'      => "Late checkout fee - {$booking->guest_name} ({$booking->booking_reference})",
-                'amount'           => $booking->late_checkout_fee,
-                'payment_method'   => 'cash',
-                'transaction_date' => now()->toDateString(),
-            ]);
-        });
+        $this->payments->settleLateCheckout($booking);
 
         return back()->with('success', 'Late checkout fee marked as settled.');
     }
@@ -1292,38 +1278,7 @@ class BookingController extends Controller
      */
     private function applyBookingPayment(Booking $booking, float $amount, string $method, ?string $reference, string $description): float
     {
-        return $booking->recordPayment($amount, $method, $reference, $description);
-    }
-
-    private function settleInstallment(BookingInstallment $installment, string $method, ?string $reference = null): void
-    {
-        if ($installment->paid_at) return;
-
-        $booking = $installment->booking;
-
-        // Write the income and mark the installment paid atomically so the
-        // transaction and the installment can never disagree.
-        \DB::transaction(function () use ($installment, $booking, $method, $reference) {
-            $txn = FinancialTransaction::create([
-                'building_id'      => $booking->building_id,
-                'recorded_by'      => auth()->id(),
-                'type'             => 'income',
-                'category'         => 'booking',
-                'reference_type'   => Booking::class,
-                'reference_id'     => $booking->id,
-                'description'      => "Weekly payment (week {$installment->week_number}) - {$booking->booking_reference} · {$booking->guest_name}",
-                'amount'           => $installment->amount,
-                'payment_method'   => $method,
-                'payment_reference'=> $reference,
-                'transaction_date' => now()->toDateString(),
-            ]);
-
-            $installment->update([
-                'paid_at'                  => now(),
-                'recorded_by'              => auth()->id(),
-                'financial_transaction_id' => $txn->id,
-            ]);
-        });
+        return $this->payments->recordPayment($booking, $amount, $method, $reference, $description);
     }
 
     public function payInstallment(Request $request, Booking $booking, BookingInstallment $installment)
@@ -1344,7 +1299,7 @@ class BookingController extends Controller
             'payment_reference' => 'nullable|string|max:255',
         ]);
 
-        $this->settleInstallment($installment, $validated['payment_method'], $validated['payment_reference'] ?? null);
+        $this->payments->settleInstallment($installment, $validated['payment_method'], $validated['payment_reference'] ?? null);
 
         // Roll up: mark fully paid once every installment is settled.
         $booking->refresh()->load('installments');

@@ -223,41 +223,9 @@ class Booking extends Model
      */
     public function recordPayment(float $amount, string $method, ?string $reference, string $description): float
     {
-        $amount = round(min($amount, max(0, (float) $this->total_amount - (float) $this->amount_received)), 2);
-        if ($amount <= 0) {
-            return 0.0;
-        }
-
-        // Book the income and roll the booking forward atomically, so we never
-        // record a payment transaction without also crediting the booking.
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($amount, $method, $reference, $description) {
-            FinancialTransaction::create([
-                'building_id'      => $this->building_id,
-                'recorded_by'      => auth()->id(),
-                'type'             => 'income',
-                'category'         => 'booking',
-                'reference_type'   => self::class,
-                'reference_id'     => $this->id,
-                'description'      => $description,
-                'amount'           => $amount,
-                'payment_method'   => $method,
-                'payment_reference'=> $reference,
-                'transaction_date' => now()->toDateString(),
-            ]);
-
-            $received  = round((float) $this->amount_received + $amount, 2);
-            $fullyPaid = $received >= (float) $this->total_amount - 0.01;
-
-            $this->update([
-                'amount_received'    => $received,
-                'payment_status'     => $fullyPaid ? 'paid' : 'partial',
-                'paid_at'            => $fullyPaid ? ($this->paid_at ?? now()) : $this->paid_at,
-                'payment_method'     => $this->payment_method ?? $method,
-                'paystack_reference' => $this->paystack_reference ?? $reference,
-            ]);
-
-            return $amount;
-        });
+        // Payment logic lives in PaymentService; this is a convenience passthrough
+        // for callers that already hold a Booking instance.
+        return app(\App\Services\PaymentService::class)->recordPayment($this, $amount, $method, $reference, $description);
     }
 
 
