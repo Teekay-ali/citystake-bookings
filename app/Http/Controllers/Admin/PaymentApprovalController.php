@@ -220,7 +220,7 @@ class PaymentApprovalController extends Controller
 
         AuditLog::log("payment_approval.{$validated['decision']}", $paymentApproval,
             ['status' => 'pending'],
-            ['status' => $validated['decision'], 'comment' => $validated['ceo_comment']]
+            ['status' => $validated['decision'], 'comment' => $validated['ceo_comment'] ?? null]
         );
 
         return back()->with('success', 'Decision recorded.');
