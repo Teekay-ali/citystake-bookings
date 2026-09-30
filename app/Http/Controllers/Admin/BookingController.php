@@ -353,11 +353,13 @@ class BookingController extends Controller
 
             // Weekly plan: generate the schedule and settle week 1 now (before check-in).
             if ($weekly) {
-                foreach ($booking->buildWeeklySchedule() as $row) {
-                    $booking->installments()->create($row);
-                }
-                $this->settleInstallment($booking->installments()->orderBy('week_number')->first(), $validated['payment_method'], $validated['payment_reference'] ?? null);
-                $booking->update(['amount_received' => $booking->fresh()->installments_paid, 'payment_status' => 'partial']);
+                \DB::transaction(function () use ($booking, $validated) {
+                    foreach ($booking->buildWeeklySchedule() as $row) {
+                        $booking->installments()->create($row);
+                    }
+                    $this->settleInstallment($booking->installments()->orderBy('week_number')->first(), $validated['payment_method'], $validated['payment_reference'] ?? null);
+                    $booking->update(['amount_received' => $booking->fresh()->installments_paid, 'payment_status' => 'partial']);
+                });
             } else {
                 // Non-weekly: collect the full total, a deposit, or nothing now.
                 $timing = $validated['payment_timing'] ?? 'full';
@@ -1075,23 +1077,25 @@ class BookingController extends Controller
             return back()->with('error', 'Late checkout fee has already been settled.');
         }
 
-        $booking->update([
-            'late_checkout_settled_at' => now(),
-            'late_checkout_status'     => 'settled',
-        ]);
+        \DB::transaction(function () use ($booking) {
+            $booking->update([
+                'late_checkout_settled_at' => now(),
+                'late_checkout_status'     => 'settled',
+            ]);
 
-        FinancialTransaction::create([
-            'building_id'      => $booking->building_id,
-            'recorded_by'      => auth()->id(),
-            'type'             => 'income',
-            'category'         => 'late_checkout',
-            'reference_type'   => Booking::class,
-            'reference_id'     => $booking->id,
-            'description'      => "Late checkout fee - {$booking->guest_name} ({$booking->booking_reference})",
-            'amount'           => $booking->late_checkout_fee,
-            'payment_method'   => 'cash',
-            'transaction_date' => now()->toDateString(),
-        ]);
+            FinancialTransaction::create([
+                'building_id'      => $booking->building_id,
+                'recorded_by'      => auth()->id(),
+                'type'             => 'income',
+                'category'         => 'late_checkout',
+                'reference_type'   => Booking::class,
+                'reference_id'     => $booking->id,
+                'description'      => "Late checkout fee - {$booking->guest_name} ({$booking->booking_reference})",
+                'amount'           => $booking->late_checkout_fee,
+                'payment_method'   => 'cash',
+                'transaction_date' => now()->toDateString(),
+            ]);
+        });
 
         return back()->with('success', 'Late checkout fee marked as settled.');
     }
@@ -1239,29 +1243,31 @@ class BookingController extends Controller
 
         $totalKept = $alreadyUsed + $deduction;
 
-        $booking->update([
-            'caution_fee_refunded'         => true,
-            'caution_fee_refunded_at'      => now(),
-            'caution_fee_refunded_by'      => auth()->id(),
-            'caution_fee_deduction'        => $totalKept > 0 ? $totalKept : null,
-            'caution_fee_deduction_reason' => $reason,
-        ]);
-
-        if ($deduction > 0) {
-            FinancialTransaction::create([
-                'building_id'      => $booking->building_id,
-                'recorded_by'      => auth()->id(),
-                'type'             => 'income',
-                'category'         => 'caution_fee_deduction',
-                'reference_type'   => Booking::class,
-                'reference_id'     => $booking->id,
-                'description'      => "Caution fee deduction - {$booking->guest_name} ({$booking->booking_reference})"
-                    . ($reason ? ": {$reason}" : ''),
-                'amount'           => $deduction,
-                'payment_method'   => 'cash',
-                'transaction_date' => now()->toDateString(),
+        \DB::transaction(function () use ($booking, $totalKept, $reason, $deduction) {
+            $booking->update([
+                'caution_fee_refunded'         => true,
+                'caution_fee_refunded_at'      => now(),
+                'caution_fee_refunded_by'      => auth()->id(),
+                'caution_fee_deduction'        => $totalKept > 0 ? $totalKept : null,
+                'caution_fee_deduction_reason' => $reason,
             ]);
-        }
+
+            if ($deduction > 0) {
+                FinancialTransaction::create([
+                    'building_id'      => $booking->building_id,
+                    'recorded_by'      => auth()->id(),
+                    'type'             => 'income',
+                    'category'         => 'caution_fee_deduction',
+                    'reference_type'   => Booking::class,
+                    'reference_id'     => $booking->id,
+                    'description'      => "Caution fee deduction - {$booking->guest_name} ({$booking->booking_reference})"
+                        . ($reason ? ": {$reason}" : ''),
+                    'amount'           => $deduction,
+                    'payment_method'   => 'cash',
+                    'transaction_date' => now()->toDateString(),
+                ]);
+            }
+        });
 
         AuditLog::log('booking.caution_fee_processed', $booking,
             ['caution_fee_refunded' => false],
@@ -1294,25 +1300,30 @@ class BookingController extends Controller
         if ($installment->paid_at) return;
 
         $booking = $installment->booking;
-        $txn = FinancialTransaction::create([
-            'building_id'      => $booking->building_id,
-            'recorded_by'      => auth()->id(),
-            'type'             => 'income',
-            'category'         => 'booking',
-            'reference_type'   => Booking::class,
-            'reference_id'     => $booking->id,
-            'description'      => "Weekly payment (week {$installment->week_number}) - {$booking->booking_reference} · {$booking->guest_name}",
-            'amount'           => $installment->amount,
-            'payment_method'   => $method,
-            'payment_reference'=> $reference,
-            'transaction_date' => now()->toDateString(),
-        ]);
 
-        $installment->update([
-            'paid_at'                  => now(),
-            'recorded_by'              => auth()->id(),
-            'financial_transaction_id' => $txn->id,
-        ]);
+        // Write the income and mark the installment paid atomically so the
+        // transaction and the installment can never disagree.
+        \DB::transaction(function () use ($installment, $booking, $method, $reference) {
+            $txn = FinancialTransaction::create([
+                'building_id'      => $booking->building_id,
+                'recorded_by'      => auth()->id(),
+                'type'             => 'income',
+                'category'         => 'booking',
+                'reference_type'   => Booking::class,
+                'reference_id'     => $booking->id,
+                'description'      => "Weekly payment (week {$installment->week_number}) - {$booking->booking_reference} · {$booking->guest_name}",
+                'amount'           => $installment->amount,
+                'payment_method'   => $method,
+                'payment_reference'=> $reference,
+                'transaction_date' => now()->toDateString(),
+            ]);
+
+            $installment->update([
+                'paid_at'                  => now(),
+                'recorded_by'              => auth()->id(),
+                'financial_transaction_id' => $txn->id,
+            ]);
+        });
     }
 
     public function payInstallment(Request $request, Booking $booking, BookingInstallment $installment)

@@ -228,32 +228,36 @@ class Booking extends Model
             return 0.0;
         }
 
-        FinancialTransaction::create([
-            'building_id'      => $this->building_id,
-            'recorded_by'      => auth()->id(),
-            'type'             => 'income',
-            'category'         => 'booking',
-            'reference_type'   => self::class,
-            'reference_id'     => $this->id,
-            'description'      => $description,
-            'amount'           => $amount,
-            'payment_method'   => $method,
-            'payment_reference'=> $reference,
-            'transaction_date' => now()->toDateString(),
-        ]);
+        // Book the income and roll the booking forward atomically, so we never
+        // record a payment transaction without also crediting the booking.
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($amount, $method, $reference, $description) {
+            FinancialTransaction::create([
+                'building_id'      => $this->building_id,
+                'recorded_by'      => auth()->id(),
+                'type'             => 'income',
+                'category'         => 'booking',
+                'reference_type'   => self::class,
+                'reference_id'     => $this->id,
+                'description'      => $description,
+                'amount'           => $amount,
+                'payment_method'   => $method,
+                'payment_reference'=> $reference,
+                'transaction_date' => now()->toDateString(),
+            ]);
 
-        $received  = round((float) $this->amount_received + $amount, 2);
-        $fullyPaid = $received >= (float) $this->total_amount - 0.01;
+            $received  = round((float) $this->amount_received + $amount, 2);
+            $fullyPaid = $received >= (float) $this->total_amount - 0.01;
 
-        $this->update([
-            'amount_received'    => $received,
-            'payment_status'     => $fullyPaid ? 'paid' : 'partial',
-            'paid_at'            => $fullyPaid ? ($this->paid_at ?? now()) : $this->paid_at,
-            'payment_method'     => $this->payment_method ?? $method,
-            'paystack_reference' => $this->paystack_reference ?? $reference,
-        ]);
+            $this->update([
+                'amount_received'    => $received,
+                'payment_status'     => $fullyPaid ? 'paid' : 'partial',
+                'paid_at'            => $fullyPaid ? ($this->paid_at ?? now()) : $this->paid_at,
+                'payment_method'     => $this->payment_method ?? $method,
+                'paystack_reference' => $this->paystack_reference ?? $reference,
+            ]);
 
-        return $amount;
+            return $amount;
+        });
     }
 
 
