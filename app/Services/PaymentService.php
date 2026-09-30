@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Booking;
 use App\Models\BookingInstallment;
+use App\Models\CautionFeeCharge;
 use App\Models\FinancialTransaction;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -109,6 +111,88 @@ class PaymentService
                 'payment_method'   => 'cash',
                 'transaction_date' => now()->toDateString(),
             ]);
+        });
+    }
+
+    // ── Caution fee ─────────────────────────────────────────────
+
+    /** Draw an in-stay charge against the caution fee: book income + record the charge. */
+    public function chargeCaution(Booking $booking, string $category, string $description, float $amount, User $by): CautionFeeCharge
+    {
+        $charge = null;
+
+        DB::transaction(function () use (&$charge, $booking, $category, $description, $amount, $by) {
+            $txn = FinancialTransaction::create([
+                'building_id'      => $booking->building_id,
+                'recorded_by'      => $by->id,
+                'type'             => 'income',
+                'category'         => CautionFeeCharge::INCOME_CATEGORY[$category],
+                'reference_type'   => Booking::class,
+                'reference_id'     => $booking->id,
+                'description'      => CautionFeeCharge::CATEGORIES[$category]
+                    . " - {$booking->guest_name} ({$booking->booking_reference}): {$description}",
+                'amount'           => $amount,
+                'payment_method'   => 'caution_fee',
+                'transaction_date' => now()->toDateString(),
+            ]);
+
+            $charge = $booking->cautionCharges()->create([
+                'category'                 => $category,
+                'description'              => $description,
+                'amount'                   => $amount,
+                'recorded_by'              => $by->id,
+                'financial_transaction_id' => $txn->id,
+            ]);
+        });
+
+        return $charge;
+    }
+
+    /** Void a caution charge: reverse the recognised income and flag the charge. */
+    public function voidCautionCharge(CautionFeeCharge $charge, string $reason, User $by): void
+    {
+        DB::transaction(function () use ($charge, $reason, $by) {
+            $charge->financialTransaction?->delete();
+
+            $charge->update([
+                'voided_at'                => now(),
+                'voided_by'                => $by->id,
+                'void_reason'              => $reason,
+                'financial_transaction_id' => null,
+            ]);
+        });
+    }
+
+    /**
+     * Settle the caution fee at checkout: mark it processed and, when the guest
+     * forfeits part of the remaining balance, book that deduction as income.
+     */
+    public function settleCautionRefund(Booking $booking, float $totalKept, float $deduction, ?string $reason, User $by): void
+    {
+        DB::transaction(function () use ($booking, $totalKept, $deduction, $reason, $by) {
+            $booking->update([
+                'caution_fee_refunded'         => true,
+                'caution_fee_refunded_at'      => now(),
+                'caution_fee_refunded_by'      => $by->id,
+                'caution_fee_deduction'        => $totalKept > 0 ? $totalKept : null,
+                'caution_fee_deduction_reason' => $reason,
+            ]);
+
+            if ($deduction > 0) {
+                FinancialTransaction::create([
+                    'building_id'      => $booking->building_id,
+                    'recorded_by'      => $by->id,
+                    'type'             => 'income',
+                    'category'         => 'caution_fee_deduction',
+                    'reference_type'   => Booking::class,
+                    'reference_id'     => $booking->id,
+                    'description'      => "Caution fee deduction - {$booking->guest_name} ({$booking->booking_reference})"
+                        . ($reason ? ": {$reason}" : ''),
+                    'amount'           => $deduction,
+                    'payment_method'   => 'cash',
+                    'transaction_date' => now()->toDateString(),
+                ]);
+            }
         });
     }
 }

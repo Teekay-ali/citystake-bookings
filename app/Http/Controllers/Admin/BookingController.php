@@ -1229,31 +1229,7 @@ class BookingController extends Controller
 
         $totalKept = $alreadyUsed + $deduction;
 
-        \DB::transaction(function () use ($booking, $totalKept, $reason, $deduction) {
-            $booking->update([
-                'caution_fee_refunded'         => true,
-                'caution_fee_refunded_at'      => now(),
-                'caution_fee_refunded_by'      => auth()->id(),
-                'caution_fee_deduction'        => $totalKept > 0 ? $totalKept : null,
-                'caution_fee_deduction_reason' => $reason,
-            ]);
-
-            if ($deduction > 0) {
-                FinancialTransaction::create([
-                    'building_id'      => $booking->building_id,
-                    'recorded_by'      => auth()->id(),
-                    'type'             => 'income',
-                    'category'         => 'caution_fee_deduction',
-                    'reference_type'   => Booking::class,
-                    'reference_id'     => $booking->id,
-                    'description'      => "Caution fee deduction - {$booking->guest_name} ({$booking->booking_reference})"
-                        . ($reason ? ": {$reason}" : ''),
-                    'amount'           => $deduction,
-                    'payment_method'   => 'cash',
-                    'transaction_date' => now()->toDateString(),
-                ]);
-            }
-        });
+        $this->payments->settleCautionRefund($booking, $totalKept, (float) $deduction, $reason, $user);
 
         AuditLog::log('booking.caution_fee_processed', $booking,
             ['caution_fee_refunded' => false],
@@ -1348,30 +1324,9 @@ class BookingController extends Controller
                 'Charge exceeds the remaining caution fee (₦' . number_format($available, 0) . ' available).');
         }
 
-        $charge = null;
-        \DB::transaction(function () use (&$charge, $booking, $validated, $user) {
-            $txn = FinancialTransaction::create([
-                'building_id'      => $booking->building_id,
-                'recorded_by'      => $user->id,
-                'type'             => 'income',
-                'category'         => CautionFeeCharge::INCOME_CATEGORY[$validated['category']],
-                'reference_type'   => Booking::class,
-                'reference_id'     => $booking->id,
-                'description'      => CautionFeeCharge::CATEGORIES[$validated['category']]
-                    . " - {$booking->guest_name} ({$booking->booking_reference}): {$validated['description']}",
-                'amount'           => $validated['amount'],
-                'payment_method'   => 'caution_fee',
-                'transaction_date' => now()->toDateString(),
-            ]);
-
-            $charge = $booking->cautionCharges()->create([
-                'category'                 => $validated['category'],
-                'description'              => $validated['description'],
-                'amount'                   => $validated['amount'],
-                'recorded_by'              => $user->id,
-                'financial_transaction_id' => $txn->id,
-            ]);
-        });
+        $charge = $this->payments->chargeCaution(
+            $booking, $validated['category'], $validated['description'], (float) $validated['amount'], $user
+        );
 
         AuditLog::log('booking.caution_charge_added', $booking, [], [
             'category' => $charge->category,
@@ -1404,17 +1359,7 @@ class BookingController extends Controller
             'reason' => 'required|string|max:255',
         ]);
 
-        \DB::transaction(function () use ($charge, $validated, $user) {
-            // Reverse the recognised income.
-            $charge->financialTransaction?->delete();
-
-            $charge->update([
-                'voided_at'                => now(),
-                'voided_by'                => $user->id,
-                'void_reason'              => $validated['reason'],
-                'financial_transaction_id' => null,
-            ]);
-        });
+        $this->payments->voidCautionCharge($charge, $validated['reason'], $user);
 
         AuditLog::log('booking.caution_charge_voided', $booking, [], [
             'charge_id' => $charge->id,

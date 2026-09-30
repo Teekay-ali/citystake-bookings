@@ -80,4 +80,35 @@ class PaymentServiceTest extends TestCase
         $this->assertEquals(15000, $txn->amount);
         $this->assertSame('income', $txn->type);
     }
+
+    public function test_settling_caution_refund_with_a_deduction_books_income(): void
+    {
+        $booking = Booking::factory()->create(['caution_fee' => 100000]);
+        $by      = User::factory()->create();
+
+        $this->service->settleCautionRefund($booking, 30000, 30000, 'Damage', $by);
+
+        $booking->refresh();
+        $this->assertTrue((bool) $booking->caution_fee_refunded);
+        $this->assertEquals(30000, $booking->caution_fee_deduction);
+
+        $txn = FinancialTransaction::where('reference_id', $booking->id)
+            ->where('category', 'caution_fee_deduction')->first();
+        $this->assertNotNull($txn);
+        $this->assertEquals(30000, $txn->amount);
+        $this->assertSame('income', $txn->type);
+    }
+
+    public function test_a_full_caution_refund_books_no_income(): void
+    {
+        $booking = Booking::factory()->create(['caution_fee' => 100000]);
+        $by      = User::factory()->create();
+
+        $this->service->settleCautionRefund($booking, 0, 0, null, $by);
+
+        $booking->refresh();
+        $this->assertTrue((bool) $booking->caution_fee_refunded);
+        $this->assertNull($booking->caution_fee_deduction);
+        $this->assertSame(0, FinancialTransaction::where('reference_id', $booking->id)->count());
+    }
 }
