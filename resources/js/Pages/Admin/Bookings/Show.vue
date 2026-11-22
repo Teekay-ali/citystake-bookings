@@ -1178,10 +1178,11 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                         </p>
                     </div>
 
-                    <!-- Cancel -->
-                    <div v-if="!['cancelled', 'completed', 'checked_in', 'paused'].includes(booking.status) && can('manage-bookings')">
+                    <!-- Cancel (danger action) -->
+                    <div v-if="!['cancelled', 'completed', 'checked_in', 'paused'].includes(booking.status) && can('manage-bookings')"
+                         class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                         <button @click="showCancelModal = true"
-                                class="w-full py-2.5 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg bg-white dark:bg-gray-900 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center">
+                                class="w-full py-2.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all flex items-center justify-center">
                             Cancel Booking
                         </button>
                     </div>
@@ -1243,18 +1244,17 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                     </div>
                 </div>
                 <p class="mt-4 text-sm text-gray-600 dark:text-gray-300">
-                    This frees up the unit and marks the booking cancelled. The record is kept and
-                    appears under the <span class="font-medium">Cancelled</span> filter. This can't be undone.
+                    This frees up the unit and marks the booking cancelled. <span class="font-medium text-red-600">This action can't be undone.</span>
                 </p>
                 <div class="mt-4">
                     <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                        Reason <span class="text-gray-400">(optional — recorded in the audit trail)</span>
+                        Reason <span class="text-gray-400">(optional)</span>
                     </label>
                     <textarea v-model="cancelReason" rows="2" maxlength="500"
                               placeholder="e.g. Guest requested cancellation"
                               class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/60"></textarea>
                 </div>
-                <div class="mt-6 flex justify-end gap-2">
+                <div class="mt-6 flex justify-between gap-2">
                     <button @click="showCancelModal = false" :disabled="isCancelling"
                             class="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60">
                         Keep booking
