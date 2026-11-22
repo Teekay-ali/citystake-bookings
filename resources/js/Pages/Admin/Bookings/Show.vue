@@ -11,7 +11,7 @@ import {
     ArrowLeft, LogIn, LogOut, Download, XCircle, Trash2,
     User, Phone, Mail, MessageSquare, PauseCircle,
     Clock, CheckCircle, ChevronRight,
-    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft, Pencil, CreditCard, Sparkles,
+    Building2, Calendar, Shield, Receipt, AlertTriangle, Flag, Briefcase, Layers, ArrowRightLeft, Pencil, CreditCard, Sparkles, Loader2,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -91,13 +91,24 @@ function requestCleaning() {
 // ── Cancel ─────────────────────────────────────────────────────
 const showCancelModal = ref(false)
 const isCancelling    = ref(false)
+const cancelReason    = ref('')
 function cancelBooking() {
+    if (isCancelling.value) return
     isCancelling.value = true
-    router.post(route('manage.bookings.cancel', props.booking.booking_reference), {}, {
-        onSuccess: () => { showCancelModal.value = false },
-        onError:   () => toast.error('Failed to cancel booking.'),
-        onFinish:  () => { isCancelling.value = false },
-    })
+    try {
+        router.post(route('manage.bookings.cancel', props.booking.booking_reference),
+            { reason: cancelReason.value || null },
+            {
+                preserveScroll: true,
+                onSuccess: () => { showCancelModal.value = false; cancelReason.value = '' },
+                onError:   () => toast.error('Failed to cancel booking.'),
+                // Always clears the spinner, even if the request never starts.
+                onFinish:  () => { isCancelling.value = false },
+            })
+    } catch (e) {
+        isCancelling.value = false
+        toast.error('Could not start the cancellation.')
+    }
 }
 
 // Photo ID is collapsed unless it still needs attention
@@ -1168,7 +1179,7 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
                     </div>
 
                     <!-- Cancel -->
-                    <div v-if="booking.status !== 'cancelled' && booking.status !== 'completed' && booking.status !== 'checked_in' && can('manage-bookings')">
+                    <div v-if="!['cancelled', 'completed', 'checked_in', 'paused'].includes(booking.status) && can('manage-bookings')">
                         <button @click="showCancelModal = true"
                                 class="w-full py-2.5 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg bg-white dark:bg-gray-900 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center">
                             Cancel Booking
@@ -1220,12 +1231,43 @@ const sectionLabel = 'text-xs font-semibold text-gray-400 dark:text-gray-500 upp
             message="This will mark the guest as checked out and complete the booking. This action cannot be undone."
             confirm-text="Yes, Check Out" cancel-text="Not Yet" variant="default"
             @confirm="confirmCheckOut" @close="showCheckOutModal = false" />
-        <ConfirmationModal
-            :show="showCancelModal" :processing="isCancelling"
-            title="Cancel This Booking?"
-            message="Are you sure you want to cancel this booking? This will free up the unit and notify the guest. This action cannot be undone."
-            confirm-text="Yes, Cancel Booking" cancel-text="Keep Booking" variant="danger"
-            @confirm="cancelBooking" @close="showCancelModal = false" />
+        <Modal :show="showCancelModal" max-width="sm" @close="showCancelModal = false">
+            <div class="p-6">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/15">
+                        <XCircle class="h-5 w-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Cancel this booking?</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ booking.booking_reference }} · {{ booking.guest_name }}</p>
+                    </div>
+                </div>
+                <p class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+                    This frees up the unit and marks the booking cancelled. The record is kept and
+                    appears under the <span class="font-medium">Cancelled</span> filter. This can't be undone.
+                </p>
+                <div class="mt-4">
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                        Reason <span class="text-gray-400">(optional — recorded in the audit trail)</span>
+                    </label>
+                    <textarea v-model="cancelReason" rows="2" maxlength="500"
+                              placeholder="e.g. Guest requested cancellation"
+                              class="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/60"></textarea>
+                </div>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button @click="showCancelModal = false" :disabled="isCancelling"
+                            class="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60">
+                        Keep booking
+                    </button>
+                    <button @click="cancelBooking" :disabled="isCancelling"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
+                        <Loader2 v-if="isCancelling" class="h-4 w-4 animate-spin" />
+                        <XCircle v-else class="h-4 w-4" />
+                        Cancel booking
+                    </button>
+                </div>
+            </div>
+        </Modal>
 
         <CautionChargesModal :show="showCautionModal" :booking="booking" @close="showCautionModal = false" />
 

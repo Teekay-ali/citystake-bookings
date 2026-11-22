@@ -34,6 +34,14 @@ class HomeController extends Controller
         $today       = Carbon::today();
         $buildingIds = $this->scopedBuildingIds();
 
+        // The owner gets a purpose-built home; the permission-based dashboards
+        // below (accountant/procurement/QC) are borrowed from other roles and
+        // don't belong on the CEO's landing, so they're skipped for the CEO.
+        // Honour "view as role" preview so a super-admin sees the CEO home too.
+        $isCeo = \App\Support\RolePreview::active()
+            ? \App\Support\RolePreview::role() === 'ceo'
+            : $user->hasRole('ceo');
+
         $data = [
             'user'       => [
                 'name'     => $user->name,
@@ -183,7 +191,7 @@ class HomeController extends Controller
         }
 
         // ── Accountant data ───────────────────────────────────
-        if ($user->can('manage-financials')) {
+        if ($user->can('manage-financials') && ! $isCeo) {
             $data['pendingPayments'] = [
                 'maintenance' => MaintenanceReport::whereIn('building_id', $buildingIds)
                     ->where('status', 'ceo_approved')->count(),
@@ -205,7 +213,7 @@ class HomeController extends Controller
         }
 
         // ── Procurement Officer dashboard ─────────────────────
-        if ($user->can('approve-procurement-officer')) {
+        if ($user->can('approve-procurement-officer') && ! $isCeo) {
             $counts = ProcurementRequest::whereIn('building_id', $buildingIds)
                 ->selectRaw('status, COUNT(*) c, SUM(total_amount) s')
                 ->groupBy('status')->get()->keyBy('status');
@@ -243,7 +251,7 @@ class HomeController extends Controller
         // ── Quality Control dashboard ─────────────────────────
         // A live overview of where every unit sits in the turnover lifecycle,
         // plus the QC worklist (units cleaned and waiting to be inspected).
-        if ($user->can('conduct-inspections')) {
+        if ($user->can('conduct-inspections') && ! $isCeo) {
             $data['qc'] = $this->qualityControl($buildingIds, $today);
         }
 
@@ -254,7 +262,40 @@ class HomeController extends Controller
             $data['housekeeping'] = $this->housekeeping($buildingIds, $today);
         }
 
+        // ── Owner (CEO) home ──────────────────────────────────
+        if ($isCeo) {
+            $data['owner'] = $this->ownerOverview($buildingIds);
+        }
+
         return Inertia::render('Admin/Home', $data);
+    }
+
+    /**
+     * The owner's landing: this month's revenue and net, plus the spend sitting
+     * at the CEO step of each approval chain — the decisions only they can make.
+     */
+    private function ownerOverview(array $buildingIds): array
+    {
+        $now = now();
+
+        $income  = (float) FinancialTransaction::whereIn('building_id', $buildingIds)->where('type', 'income')
+            ->whereYear('transaction_date', $now->year)->whereMonth('transaction_date', $now->month)->sum('amount');
+        $expense = (float) FinancialTransaction::whereIn('building_id', $buildingIds)->where('type', 'expense')
+            ->whereYear('transaction_date', $now->year)->whereMonth('transaction_date', $now->month)->sum('amount');
+
+        $maintenance = MaintenanceReport::whereIn('building_id', $buildingIds)->where('status', 'accountant_approved');
+        $procurement = ProcurementRequest::whereIn('building_id', $buildingIds)->where('status', 'accountant_approved');
+
+        return [
+            'revenue_month' => $income,
+            'net_month'     => $income - $expense,
+            'approvals'     => [
+                'maintenance_count' => (clone $maintenance)->count(),
+                'maintenance_value' => (float) (clone $maintenance)->sum(\DB::raw('COALESCE(actual_cost, estimated_cost, 0)')),
+                'procurement_count' => (clone $procurement)->count(),
+                'procurement_value' => (float) (clone $procurement)->sum('total_amount'),
+            ],
+        ];
     }
 
     /**

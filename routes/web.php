@@ -189,6 +189,7 @@ Route::middleware(['auth', EnsureUserIsStaff::class, TrackPageVisit::class])->pr
     Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])->name('bookings.check-in');
     Route::post('/bookings/{booking}/check-out', [AdminBookingController::class, 'checkOut'])->name('bookings.check-out');
     Route::post('/bookings/{booking}/pause', [AdminBookingController::class, 'pauseBooking'])->name('bookings.pause');
+    Route::post('/bookings/{booking}/cancel', [AdminBookingController::class, 'cancel'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/resume', [AdminBookingController::class, 'resumeBooking'])->name('bookings.resume');
     Route::post('/bookings/{booking}/modify', [AdminBookingController::class, 'modifyBooking'])->name('bookings.modify');
     Route::post('/bookings/{booking}/caution-fee/request', [AdminBookingController::class, 'requestCautionRefund'])->name('bookings.caution-fee.request');

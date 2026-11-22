@@ -2,6 +2,7 @@
 import { Link, router } from '@inertiajs/vue3'
 import { computed } from 'vue'
 import VueApexCharts from 'vue3-apexcharts'
+import StatCard from '@/Components/StatCard.vue'
 import { AlertTriangle, DoorClosed, Sparkles, ClipboardCheck, CheckCircle2, BedDouble, Timer, LogIn } from 'lucide-vue-next'
 import { useDarkMode } from '@/Composables/useDarkMode'
 import { axisColor, ago, arrivesLabel } from './helpers'
@@ -85,34 +86,16 @@ function hkCleaned(u) {
 
         <!-- Stat cards -->
         <h2 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Cleaning today</h2>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <Link :href="route('manage.housekeeping.index')"
-                  class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
-                  :class="housekeeping.counts.needs_cleaning > 0 ? 'ring-1 ring-rose-300/60 dark:ring-rose-700/40' : ''">
-                <p class="text-xs font-medium text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <DoorClosed class="w-3.5 h-3.5" /> Needs cleaning
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ housekeeping.counts.needs_cleaning }}</p>
-            </Link>
-            <Link :href="route('manage.housekeeping.index')"
-                  class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all">
-                <p class="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Sparkles class="w-3.5 h-3.5" /> In cleaning
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ housekeeping.counts.cleaning }}</p>
-            </Link>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-sky-600 dark:text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <ClipboardCheck class="w-3.5 h-3.5" /> Handed to QA
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ housekeeping.counts.ready_for_qa }}</p>
-            </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <CheckCircle2 class="w-3.5 h-3.5" /> Cleaned today
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ housekeeping.counts.cleaned_today }}</p>
-            </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-6">
+            <StatCard label="Needs cleaning" :icon="DoorClosed" label-class="text-rose-600 dark:text-rose-400"
+                      :href="route('manage.housekeeping.index')" :value="housekeeping.counts.needs_cleaning"
+                      accent="rose" :active="housekeeping.counts.needs_cleaning > 0" />
+            <StatCard label="In cleaning" :icon="Sparkles" label-class="text-amber-600 dark:text-amber-400"
+                      :href="route('manage.housekeeping.index')" :value="housekeeping.counts.cleaning" />
+            <StatCard label="Handed to QA" :icon="ClipboardCheck" label-class="text-sky-600 dark:text-sky-400"
+                      :value="housekeeping.counts.ready_for_qa" />
+            <StatCard label="Cleaned today" :icon="CheckCircle2" label-class="text-emerald-600 dark:text-emerald-400"
+                      :value="housekeeping.counts.cleaned_today" />
         </div>
 
         <!-- Charts -->

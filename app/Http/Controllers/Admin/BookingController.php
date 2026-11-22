@@ -7,6 +7,7 @@ use App\Models\BookingInstallment;
 use App\Models\CautionFeeCharge;
 use App\Models\Unit;
 use App\Models\UnitTurnover;
+use App\Notifications\BookingCancelledNotification;
 use App\Notifications\BookingModifiedNotification;
 use App\Notifications\CautionChargeNotification;
 use App\Notifications\CautionRefundProcessedNotification;
@@ -1012,6 +1013,66 @@ class BookingController extends Controller
         );
 
         return back()->with('success', "Booking resumed. New stay: {$newCheckIn->format('M j')} → {$newCheckOut->format('M j, Y')}.");
+    }
+
+    /**
+     * Cancel a booking from the admin side. Soft cancel (status → cancelled) so
+     * the record and its audit trail survive; the cancelled booking stays
+     * visible in the bookings list under the Cancelled filter.
+     */
+    public function cancel(Request $request, Booking $booking)
+    {
+        $user = auth()->user();
+        abort_unless($user->can('manage-bookings'), 403);
+        if (! $user->hasGlobalAccess()) {
+            abort_unless(in_array($booking->building_id, $user->accessibleBuildingIds() ?? []), 403);
+        }
+
+        if (in_array($booking->status, ['cancelled', 'completed', 'checked_in', 'paused'], true)) {
+            return back()->with('error', 'This booking can no longer be cancelled.');
+        }
+
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $previousStatus = $booking->status;
+
+        \DB::transaction(function () use ($booking, $validated) {
+            $booking->update([
+                'status'                    => 'cancelled',
+                'cancelled_at'              => now(),
+                'cancellation_reason'       => $validated['reason'] ?? null,
+                // A cancelled booking voids any late-checkout arrangement.
+                'late_checkout_requested'   => false,
+                'late_checkout_status'      => null,
+                'late_checkout_fee'         => null,
+                'late_checkout_approved_by' => null,
+                'late_checkout_approved_at' => null,
+                'late_checkout_settled_at'  => null,
+            ]);
+        });
+
+        // Rich audit entry so the trail shows exactly which booking was cancelled,
+        // by whom, and why.
+        AuditLog::log('booking.cancelled', $booking,
+            ['status' => $previousStatus],
+            [
+                'status'      => 'cancelled',
+                'reference'   => $booking->booking_reference,
+                'guest'       => $booking->guest_name,
+                'building_id' => $booking->building_id,
+                'reason'      => $validated['reason'] ?? null,
+                'by'          => $user->name,
+            ]
+        );
+
+        // Database-only notification (no email → no sync-queue/SMTP hang).
+        $recipients = NotificationService::getUsersByRoles(['manager', 'receptionist', 'super-admin'], $booking->building_id);
+        NotificationService::send($recipients, new BookingCancelledNotification($booking));
+
+        return redirect()->route('manage.bookings.show', $booking->booking_reference)
+            ->with('success', "Booking {$booking->booking_reference} cancelled.");
     }
 
     public function requestLateCheckout(Booking $booking)

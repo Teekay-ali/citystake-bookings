@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
+import StatCard from '@/Components/StatCard.vue'
 import { ClipboardList, ShoppingCart, Clock, Banknote, CheckCircle2 } from 'lucide-vue-next'
 import { formatAmount } from './helpers'
 
@@ -10,36 +11,18 @@ defineProps({ procurement: Object })
     <div>
         <!-- Stat cards -->
         <h2 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Overview</h2>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-            <Link :href="route('manage.procurement.index') + '?status=pending'"
-                  class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
-                  :class="procurement.to_review > 0 ? 'ring-1 ring-amber-300/60 dark:ring-amber-700/40' : ''">
-                <p class="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <ClipboardList class="w-3.5 h-3.5" /> Awaiting your review
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ procurement.to_review }}</p>
-            </Link>
-            <Link :href="route('manage.procurement.index') + '?status=ceo_approved'"
-                  class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
-                  :class="procurement.to_purchase > 0 ? 'ring-1 ring-violet-300/60 dark:ring-violet-700/40' : ''">
-                <p class="text-xs font-medium text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <ShoppingCart class="w-3.5 h-3.5" /> Ready to purchase
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ procurement.to_purchase }}</p>
-            </Link>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Clock class="w-3.5 h-3.5" /> In approval
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ procurement.in_approval }}</p>
-            </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Banknote class="w-3.5 h-3.5" /> Open value
-                </p>
-                <p class="text-xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ formatAmount(procurement.open_value) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{{ procurement.completed_month }} completed this month</p>
-            </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-8">
+            <StatCard label="Awaiting your review" :icon="ClipboardList" label-class="text-amber-600 dark:text-amber-400"
+                      :href="route('manage.procurement.index') + '?status=pending'" :value="procurement.to_review"
+                      accent="amber" :active="procurement.to_review > 0" />
+            <StatCard label="Ready to purchase" :icon="ShoppingCart" label-class="text-violet-600 dark:text-violet-400"
+                      :href="route('manage.procurement.index') + '?status=ceo_approved'" :value="procurement.to_purchase"
+                      accent="violet" :active="procurement.to_purchase > 0" />
+            <StatCard label="In approval" :icon="Clock" label-class="text-blue-600 dark:text-blue-400"
+                      :value="procurement.in_approval" />
+            <StatCard label="Open value" :icon="Banknote"
+                      :value="formatAmount(procurement.open_value)"
+                      :sublabel="`${procurement.completed_month} completed this month`" />
         </div>
 
         <!-- The two action queues -->

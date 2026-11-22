@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
+import StatCard from '@/Components/StatCard.vue'
 import { ClipboardCheck, Search, Sparkles, CheckCircle2, ArrowRight } from 'lucide-vue-next'
 import { ago, arrivesLabel } from './helpers'
 
@@ -10,39 +11,19 @@ defineProps({ qc: Object })
     <div>
         <!-- Turnover pipeline -->
         <h2 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Unit turnover</h2>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <Link :href="route('manage.inspections.index')"
-                  class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
-                  :class="qc.counts.ready_for_qa > 0 ? 'ring-1 ring-blue-300/60 dark:ring-blue-700/40' : ''">
-                <p class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <ClipboardCheck class="w-3.5 h-3.5" /> Ready to inspect
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ qc.counts.ready_for_qa }}</p>
-            </Link>
-            <Link :href="route('manage.inspections.index')"
-                  class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all"
-                  :class="qc.counts.qa_in_progress > 0 ? 'ring-1 ring-amber-300/60 dark:ring-amber-700/40' : ''">
-                <p class="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Search class="w-3.5 h-3.5" /> Inspecting now
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ qc.counts.qa_in_progress }}</p>
-            </Link>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Sparkles class="w-3.5 h-3.5" /> In cleaning
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ qc.counts.cleaning }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{{ qc.counts.needs_cleaning }} awaiting cleaning</p>
-            </div>
-            <div class="bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-sm shadow-gray-200/50 dark:shadow-none p-5">
-                <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <CheckCircle2 class="w-3.5 h-3.5" /> Guest ready
-                </p>
-                <p class="text-2xl font-semibold tabular-nums text-gray-900 dark:text-white">{{ qc.counts.ready }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                    {{ qc.counts.occupied }} occupied<span v-if="qc.counts.blocked > 0"> · {{ qc.counts.blocked }} blocked</span>
-                </p>
-            </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+            <StatCard label="Ready to inspect" :icon="ClipboardCheck" label-class="text-blue-600 dark:text-blue-400"
+                      :href="route('manage.inspections.index')" :value="qc.counts.ready_for_qa"
+                      accent="blue" :active="qc.counts.ready_for_qa > 0" />
+            <StatCard label="Inspecting now" :icon="Search" label-class="text-amber-600 dark:text-amber-400"
+                      :href="route('manage.inspections.index')" :value="qc.counts.qa_in_progress"
+                      accent="amber" :active="qc.counts.qa_in_progress > 0" />
+            <StatCard label="In cleaning" :icon="Sparkles" :value="qc.counts.cleaning"
+                      :sublabel="`${qc.counts.needs_cleaning} awaiting cleaning`" />
+            <StatCard label="Guest ready" :icon="CheckCircle2" label-class="text-emerald-600 dark:text-emerald-400"
+                      :value="qc.counts.ready">
+                <template #sublabel>{{ qc.counts.occupied }} occupied<span v-if="qc.counts.blocked > 0"> · {{ qc.counts.blocked }} blocked</span></template>
+            </StatCard>
         </div>
 
         <!-- QC worklist: units waiting to be inspected -->

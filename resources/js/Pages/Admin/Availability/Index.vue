@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { Head, router, usePage } from '@inertiajs/vue3'
 import ManageLayout from '@/Layouts/ManageLayout.vue'
+import StatCard from '@/Components/StatCard.vue'
 import { Building2, ChevronRight, ChevronLeft, ChevronDown, X, Loader2 } from 'lucide-vue-next'
 
 defineOptions({ layout: ManageLayout })
@@ -364,26 +365,18 @@ const monthGroups = computed(() => {
 
         <!-- ── KPIs ── -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
-            <div class="rounded-lg border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
-                <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Occupancy</p>
-                <p class="text-lg font-semibold tabular-nums text-gray-900 dark:text-white">{{ stats.occupancy }}%</p>
-                <p class="text-[10px] text-gray-400 dark:text-gray-500">over {{ rangeDays }} days</p>
-            </div>
-            <div class="rounded-lg border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
-                <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Free today</p>
-                <p class="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{{ stats.freeToday }}</p>
-                <p class="text-[10px] text-gray-400 dark:text-gray-500">of {{ stats.totalUnits }} units</p>
-            </div>
-            <div class="rounded-lg border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
-                <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Arrivals today</p>
-                <p class="text-lg font-semibold tabular-nums text-blue-600 dark:text-blue-400">{{ stats.arrivals }}</p>
-                <p class="text-[10px] text-gray-400 dark:text-gray-500">check-ins</p>
-            </div>
-            <div class="rounded-lg border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 px-3 py-2">
-                <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Departures today</p>
-                <p class="text-lg font-semibold tabular-nums text-amber-600 dark:text-amber-400">{{ stats.departures }}</p>
-                <p class="text-[10px] text-gray-400 dark:text-gray-500">check-outs</p>
-            </div>
+            <StatCard label="Occupancy" :sublabel="`over ${rangeDays} days`">
+                <template #value>{{ stats.occupancy }}%</template>
+            </StatCard>
+            <StatCard label="Free today" :sublabel="`of ${stats.totalUnits} units`">
+                <template #value><span class="text-emerald-600 dark:text-emerald-400">{{ stats.freeToday }}</span></template>
+            </StatCard>
+            <StatCard label="Arrivals today" sublabel="check-ins">
+                <template #value><span class="text-blue-600 dark:text-blue-400">{{ stats.arrivals }}</span></template>
+            </StatCard>
+            <StatCard label="Departures today" sublabel="check-outs">
+                <template #value><span class="text-amber-600 dark:text-amber-400">{{ stats.departures }}</span></template>
+            </StatCard>
         </div>
 
         <!-- ── Legend ── -->

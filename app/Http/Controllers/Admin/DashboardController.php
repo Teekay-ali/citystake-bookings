@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Building;
 use App\Models\FinancialTransaction;
+use App\Models\MaintenanceReport;
+use App\Models\ProcurementRequest;
 use App\Models\Unit;
 use App\Models\User;
 use App\Traits\ScopedByBuilding;
@@ -88,23 +90,45 @@ class DashboardController extends Controller
             ? round((($revenue['this_month'] - $revenue['last_month']) / $revenue['last_month']) * 100, 1)
             : ($revenue['this_month'] > 0 ? 100 : 0);
 
-        // 12-month income trend (unified with the hero KPI - FinancialTransaction income)
-        $start = Carbon::now()->subMonths(11)->startOfMonth();
-        $monthlyRevenueRaw = FinancialTransaction::whereIn('building_id', $scopedIds)
-            ->where('type', 'income')
-            ->where('transaction_date', '>=', $start->toDateString())
-            ->selectRaw('YEAR(transaction_date) as yr, MONTH(transaction_date) as mo, SUM(amount) as total')
-            ->groupBy('yr', 'mo')
-            ->get()
-            ->keyBy(fn ($row) => sprintf('%d-%02d', $row->yr, $row->mo));
+        // Expenses — same shape as revenue, so the CEO sees the other side of the ledger.
+        $expenseRow = FinancialTransaction::whereIn('building_id', $scopedIds)
+            ->where('type', 'expense')
+            ->selectRaw("
+                SUM(amount) as total,
+                SUM(CASE WHEN YEAR(transaction_date) = ? AND MONTH(transaction_date) = ? THEN amount ELSE 0 END) as this_month,
+                SUM(CASE WHEN YEAR(transaction_date) = ?                                THEN amount ELSE 0 END) as this_year
+            ", [$now->year, $now->month, $now->year])
+            ->first();
 
-        $monthlyRevenue = [];
+        $expenses = [
+            'total'      => (float) ($expenseRow->total      ?? 0),
+            'this_month' => (float) ($expenseRow->this_month ?? 0),
+            'this_year'  => (float) ($expenseRow->this_year  ?? 0),
+        ];
+
+        $net = [
+            'this_month' => $revenue['this_month'] - $expenses['this_month'],
+            'this_year'  => $revenue['this_year'] - $expenses['this_year'],
+        ];
+
+        // 12-month income vs expense trend.
+        $start = Carbon::now()->subMonths(11)->startOfMonth();
+        $monthlyRaw = FinancialTransaction::whereIn('building_id', $scopedIds)
+            ->whereIn('type', ['income', 'expense'])
+            ->where('transaction_date', '>=', $start->toDateString())
+            ->selectRaw('YEAR(transaction_date) as yr, MONTH(transaction_date) as mo, type, SUM(amount) as total')
+            ->groupBy('yr', 'mo', 'type')
+            ->get()
+            ->keyBy(fn ($row) => sprintf('%d-%02d-%s', $row->yr, $row->mo, $row->type));
+
+        $monthlyTrend = [];
         for ($i = 11; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
             $key   = $month->format('Y-m');
-            $monthlyRevenue[] = [
-                'month' => $month->format('M Y'),
-                'total' => (float) ($monthlyRevenueRaw[$key]?->total ?? 0),
+            $monthlyTrend[] = [
+                'month'   => $month->format('M'),
+                'income'  => (float) ($monthlyRaw["{$key}-income"]?->total ?? 0),
+                'expense' => (float) ($monthlyRaw["{$key}-expense"]?->total ?? 0),
             ];
         }
 
@@ -147,29 +171,34 @@ class DashboardController extends Controller
             'paused'     => (int) ($statusCounts['paused']     ?? 0),
         ];
 
-        $recentBookings = $bookings()
-            ->with(['building', 'unitType', 'user'])
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+        // Outstanding receivables — money owed on live bookings.
+        $receivables = (float) $bookings()
+            ->whereNotIn('status', ['cancelled'])
+            ->selectRaw('COALESCE(SUM(GREATEST(total_amount - amount_received, 0)), 0) as due')
+            ->value('due');
 
-        $upcomingCheckIns = $bookings()
-            ->with(['building', 'unitType'])
-            ->where('status', 'confirmed')
-            ->whereBetween('check_in', [$today, $today->copy()->addDays(7)])
-            ->orderBy('check_in')
-            ->limit(5)
-            ->get();
+        // Spend awaiting the owner's sign-off (the CEO step of each chain).
+        $maintenancePending = MaintenanceReport::whereIn('building_id', $scopedIds)->where('status', 'accountant_approved');
+        $procurementPending = ProcurementRequest::whereIn('building_id', $scopedIds)->where('status', 'accountant_approved');
+
+        $approvals = [
+            'maintenance_count' => (clone $maintenancePending)->count(),
+            'maintenance_value' => (float) (clone $maintenancePending)->sum(DB::raw('COALESCE(actual_cost, estimated_cost, 0)')),
+            'procurement_count' => (clone $procurementPending)->count(),
+            'procurement_value' => (float) (clone $procurementPending)->sum('total_amount'),
+        ];
 
         return Inertia::render('Admin/Dashboard', [
-            'stats'              => $stats,
-            'revenue'            => $revenue,
-            'monthlyRevenue'     => $monthlyRevenue,
-            'revenueByProperty'  => $revenueByProperty,
-            'paymentBreakdown'   => $paymentBreakdown,
-            'statusBreakdown'    => $statusBreakdown,
-            'recentBookings'     => $recentBookings,
-            'upcomingCheckIns'   => $upcomingCheckIns,
+            'stats'             => $stats,
+            'revenue'           => $revenue,
+            'expenses'          => $expenses,
+            'net'               => $net,
+            'monthlyTrend'      => $monthlyTrend,
+            'revenueByProperty' => $revenueByProperty,
+            'paymentBreakdown'  => $paymentBreakdown,
+            'statusBreakdown'   => $statusBreakdown,
+            'receivables'       => $receivables,
+            'approvals'         => $approvals,
         ]);
     }
 

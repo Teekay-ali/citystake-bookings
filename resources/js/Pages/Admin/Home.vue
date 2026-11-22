@@ -4,6 +4,7 @@ import ManageLayout from '@/Layouts/ManageLayout.vue'
 import { CheckCircle2, AlertTriangle, ChevronRight } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { formatDate } from './Home/helpers'
+import OwnerDashboard from './Home/OwnerDashboard.vue'
 import ReceptionistDashboard from './Home/ReceptionistDashboard.vue'
 import ManagerDashboard from './Home/ManagerDashboard.vue'
 import AccountantDashboard from './Home/AccountantDashboard.vue'
@@ -41,6 +42,9 @@ const props = defineProps({
 
     // Housekeeping
     housekeeping:      Object,
+
+    // Owner (CEO)
+    owner:             Object,
 })
 
 const greeting = computed(() => {
@@ -86,6 +90,8 @@ const priorityColors = {
             </div>
 
             <!-- Role dashboards -->
+            <OwnerDashboard v-if="owner" :owner="owner" />
+
             <ReceptionistDashboard v-if="availability"
                 :availability="availability" :today-checkins="todayCheckins"
                 :today-checkouts="todayCheckouts" :currently-occupied="currentlyOccupied" />

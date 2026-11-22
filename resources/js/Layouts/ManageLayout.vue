@@ -159,6 +159,22 @@ function saveScroll() {
     if (navRef.value) localStorage.setItem('sidebar-scroll', navRef.value.scrollTop)
 }
 
+// Bring the current page's nav item into view when it's below the fold.
+function scrollActiveIntoView() {
+    nextTick(() => {
+        const nav = navRef.value
+        const el  = nav?.querySelector('[data-active="true"]')
+        if (!nav || !el) return
+        const n = nav.getBoundingClientRect()
+        const e = el.getBoundingClientRect()
+        if (e.top < n.top + 8 || e.bottom > n.bottom - 8) {
+            el.scrollIntoView({ block: 'center' })
+        }
+    })
+}
+onMounted(scrollActiveIntoView)
+watch(() => page.url, scrollActiveIntoView)
+
 // ── Tooltip (nav item hover, collapsed mode only) ─────────────
 const hoveredItem = ref(null)
 const tooltipAnchor = ref(null)
@@ -473,7 +489,7 @@ function treeClass(idx, len) {
 </script>
 
 <template>
-    <div class="fixed inset-0 overflow-hidden bg-gray-200/70 dark:bg-black flex flex-col">
+    <div class="fixed inset-0 overflow-hidden app-ambient flex flex-col">
 
         <!-- ── Role preview banner + picker ────────────────── -->
         <RolePreviewBar ref="previewBar" />
@@ -528,8 +544,8 @@ function treeClass(idx, len) {
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 collapsed ? 'lg:w-16' : 'lg:w-64',
                 !isOnline ? 'top-10' : 'top-0',
-                'fixed left-0 bottom-0 w-64 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:left-3 lg:top-3 lg:bottom-3 lg:rounded-2xl lg:border lg:border-white/40 dark:lg:border-white/10 lg:shadow-lg lg:shadow-gray-300/30 dark:lg:shadow-black/40',
-                'bg-gray-100 dark:bg-gray-900 lg:bg-gradient-to-b lg:from-white/70 lg:via-gray-100/60 lg:to-gray-200/70 dark:lg:from-gray-800/70 dark:lg:via-gray-900/60 dark:lg:to-gray-950/70 lg:backdrop-blur-xl'
+                'fixed left-0 bottom-0 w-64 z-50 flex flex-col transition-all duration-300 lg:translate-x-0 lg:left-3 lg:top-3 lg:bottom-3 lg:rounded-2xl',
+                'bg-gray-100 dark:bg-gray-900 lg:bg-transparent glass-sidebar'
             ]">
 
             <!-- Logo row -->
@@ -577,7 +593,7 @@ function treeClass(idx, len) {
             <!-- Nav items -->
             <nav ref="navRef"
                  @scroll="saveScroll"
-                 class="flex-1 overflow-y-auto overscroll-contain py-2 px-2"
+                 class="nav-fade flex-1 overflow-y-auto overscroll-contain py-2 px-2"
                  style="scrollbar-width: none; -ms-overflow-style: none;">
                 <template v-for="group in navGroups" :key="group.label">
                     <div v-if="group.items.some(item => canSeeItem(item))" class="mb-3 first:mt-1">
@@ -587,7 +603,7 @@ function treeClass(idx, len) {
                                 type="button"
                                 @click="toggleGroup(group.label)"
                                 :aria-expanded="isGroupOpen(group.label)"
-                                class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg mb-1 group/hdr hover:bg-white/70 dark:hover:bg-gray-800/50 transition-colors">
+                                class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg mb-1 group/hdr hover:bg-gray-900/[0.06] dark:hover:bg-white/10 transition-colors">
                             <component :is="group.icon"
                                        :class="isGroupActive(group) ? 'text-amber-500' : 'text-gray-400 dark:text-gray-500 group-hover/hdr:text-gray-600 dark:group-hover/hdr:text-gray-300'"
                                        class="w-3.5 h-3.5 shrink-0 transition-colors" />
@@ -609,13 +625,14 @@ function treeClass(idx, len) {
                             <div :class="navCollapsed ? 'space-y-0.5' : 'space-y-0.5 pl-6'">
                             <template v-for="(item, idx) in visibleItems(group)" :key="item.label">
                                 <Link :href="route(item.route)"
+                                      :data-active="isActive(item.match)"
                                       @click="sidebarOpen = false"
                                       @mouseenter="(e) => onMouseEnter(item, e.currentTarget)"
                                       @mouseleave="onMouseLeave"
                                       :class="[
                                           isActive(item.match)
-                                              ? 'bg-white dark:bg-gray-800/60 shadow-sm ring-1 ring-gray-900/5 dark:ring-0 text-gray-900 dark:text-white font-medium'
-                                              : 'text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
+                                              ? 'bg-white/70 dark:bg-white/10 backdrop-blur-sm shadow-sm ring-1 ring-white/70 dark:ring-white/15 text-gray-900 dark:text-white font-medium'
+                                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-900/[0.06] dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white',
                                           navCollapsed ? 'justify-center px-0' : 'px-3',
                                           treeClass(idx, visibleItems(group).length)
                                       ]"
@@ -642,6 +659,29 @@ function treeClass(idx, len) {
                 </template>
             </nav>
 
+            <!-- User footer -->
+            <div class="shrink-0 border-t border-white/40 dark:border-white/5 p-2">
+                <div class="flex items-center gap-1" :class="navCollapsed ? 'justify-center' : ''">
+                    <Link :href="route('profile.edit')"
+                          @click="sidebarOpen = false"
+                          @mouseenter="(e) => navCollapsed && onMouseEnter({ label: user?.name ?? 'Account' }, e.currentTarget)"
+                          @mouseleave="onMouseLeave"
+                          :class="navCollapsed ? 'justify-center' : 'flex-1'"
+                          class="flex items-center gap-2.5 min-w-0 px-2 py-1.5 rounded-lg hover:bg-gray-900/[0.06] dark:hover:bg-white/10 transition-colors">
+                        <div class="w-8 h-8 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center shrink-0">
+                            <span class="text-white dark:text-gray-900 text-xs font-semibold">{{ user?.name?.charAt(0)?.toUpperCase() }}</span>
+                        </div>
+                        <div v-if="!navCollapsed" class="min-w-0">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate leading-tight">{{ user?.name }}</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">{{ roleLabels[user?.roles?.[0]] ?? 'Admin' }}</p>
+                        </div>
+                    </Link>
+                    <Link v-if="!navCollapsed" :href="route('logout')" method="post" as="button" title="Sign out"
+                          class="shrink-0 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-900/[0.06] dark:hover:bg-white/10 transition-colors">
+                        <LogOut class="w-4 h-4" />
+                    </Link>
+                </div>
+            </div>
 
         </aside>
 
@@ -928,3 +968,49 @@ function treeClass(idx, len) {
 
     </div>
 </template>
+
+<style>
+/* ── Soft fade so nav items melt under the top/bottom edges instead of hard-clipping ── */
+.nav-fade {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+
+/* ── Ambient backdrop: soft colour blooms so the glass has something to refract ── */
+.app-ambient {
+    background-color: #eef1f6;
+    background-image:
+        radial-gradient(1000px 520px at -6% -12%, rgba(59, 130, 246, 0.12), transparent 60%),
+        radial-gradient(820px 620px at 106% 0%, rgba(20, 184, 166, 0.10), transparent 55%),
+        radial-gradient(760px 760px at 55% 118%, rgba(139, 92, 246, 0.12), transparent 60%);
+}
+html.dark .app-ambient {
+    background-color: #060810;
+    background-image:
+        radial-gradient(1000px 520px at -6% -12%, rgba(59, 130, 246, 0.16), transparent 60%),
+        radial-gradient(820px 620px at 106% 0%, rgba(20, 184, 166, 0.12), transparent 55%),
+        radial-gradient(760px 760px at 55% 118%, rgba(139, 92, 246, 0.20), transparent 60%);
+}
+
+/* ── Liquid-glass sidebar (desktop only; mobile keeps a solid drawer) ── */
+@media (min-width: 1024px) {
+    .glass-sidebar {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.28));
+        -webkit-backdrop-filter: blur(28px) saturate(185%);
+        backdrop-filter: blur(28px) saturate(185%);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow:
+            0 20px 50px -20px rgba(15, 23, 42, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.70),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+    }
+    html.dark .glass-sidebar {
+        background: linear-gradient(180deg, rgba(30, 41, 59, 0.55), rgba(2, 6, 23, 0.42));
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        box-shadow:
+            0 24px 60px -20px rgba(0, 0, 0, 0.60),
+            inset 0 1px 0 rgba(255, 255, 255, 0.10),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+}
+</style>
