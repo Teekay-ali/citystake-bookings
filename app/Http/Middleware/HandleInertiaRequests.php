@@ -156,8 +156,9 @@ class HandleInertiaRequests extends Middleware
             'unreadChangelogs' => fn () => ($user && $isManageRoute && \App\Models\Changelog::canBeSeenBy($user))
                 ? \App\Models\Changelog::published()
                     ->whereNotIn('id', $user->changelogReads()->pluck('changelog_id'))
+                    ->with('author.roles')
                     ->latest('published_at')
-                    ->get(['id', 'title', 'body', 'version', 'type', 'published_at'])
+                    ->get(['id', 'title', 'body', 'version', 'type', 'published_at', 'created_by'])
                     ->map(fn($c) => [
                         'id'           => $c->id,
                         'title'        => $c->title,
@@ -165,6 +166,11 @@ class HandleInertiaRequests extends Middleware
                         'version'      => $c->version,
                         'type'         => $c->type,
                         'published_at' => $c->published_at->toISOString(),
+                        'author'       => $c->author ? [
+                            'name' => $c->author->name,
+                            'role' => \Illuminate\Support\Str::of($c->author->getRoleNames()->first() ?? '')
+                                ->replace('-', ' ')->title()->toString() ?: null,
+                        ] : null,
                     ])
                 : [],
 
